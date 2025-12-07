@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     const data = await resend.emails.send({
       from: 'Solaire Nettoyage <devis@solairenettoyage.fr>',
       to: ['devis@solairenettoyage.fr'],
-      replyTo: email,
+      reply_to: email,
       subject: `Nouvelle demande de devis - ${entreprise}`,
       html: `
         <!DOCTYPE html>
