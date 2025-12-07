@@ -15,7 +15,7 @@ export default function Clients() {
   ]
 
   return (
-    <section className="bg-dark-bg py-20 border-t border-b border-white/8">
+    <section id="clients" className="bg-dark-bg py-20 border-t border-b border-white/8">
       <div className="max-w-[1400px] mx-auto px-12">
         {/* Label */}
         <div className="text-center mb-12">
