@@ -41,7 +41,7 @@ interface WeatherData {
   }>
   sunrise?: number
   sunset?: number
-  city?: string
+  city: string
 }
 
 export default function WeatherWidget() {
@@ -152,7 +152,7 @@ export default function WeatherWidget() {
         daily: dailyFormatted,
         sunrise: currentData.sys.sunrise,
         sunset: currentData.sys.sunset,
-        city: currentData.name
+        city: currentData.name || 'Votre position'
       }
       
       setWeather(formattedData)
