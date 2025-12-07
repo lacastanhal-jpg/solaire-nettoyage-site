@@ -24,10 +24,10 @@ export default function Footer() {
           <div>
             <h3 className="text-white font-semibold mb-4">Services</h3>
             <ul className="space-y-2 text-sm text-gray-400">
-              <li><Link href="#" className="hover:text-white transition-colors">Nettoyage centrales au sol</Link></li>
-              <li><Link href="#" className="hover:text-white transition-colors">Nettoyage toitures</Link></li>
-              <li><Link href="#" className="hover:text-white transition-colors">Nettoyage ombrières</Link></li>
-              <li><Link href="#" className="hover:text-white transition-colors">Sites industriels Seveso</Link></li>
+              <li><Link href="/services/centrales-sol" className="hover:text-white transition-colors">Nettoyage centrales au sol</Link></li>
+              <li><Link href="/services/toitures" className="hover:text-white transition-colors">Nettoyage toitures</Link></li>
+              <li><Link href="/services/ombrieres" className="hover:text-white transition-colors">Nettoyage ombrières</Link></li>
+              <li><Link href="/services/seveso" className="hover:text-white transition-colors">Sites industriels Seveso</Link></li>
             </ul>
           </div>
 
