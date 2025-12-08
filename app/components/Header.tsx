@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useState, useEffect } from 'react'
 
 export default function Header() {
@@ -21,9 +22,13 @@ export default function Header() {
       <div className="max-w-[1400px] mx-auto px-12 py-5 flex justify-between items-center">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-4 group">
-          <div className="w-11 h-11 bg-white flex items-center justify-center font-bold text-navy text-lg tracking-tighter">
-            SN
-          </div>
+          <Image 
+            src="/logo.png" 
+            alt="Solaire Nettoyage" 
+            width={44} 
+            height={44}
+            className="object-contain"
+          />
           <span className="text-lg font-semibold text-white tracking-tight group-hover:text-gold transition-colors">
             Solaire Nettoyage
           </span>
