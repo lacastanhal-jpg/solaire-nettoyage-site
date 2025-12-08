@@ -18,7 +18,7 @@ export default function Services() {
   ]
 
   return (
-    <section id="services" className="bg-dark-surface py-24">
+    <section id="expertise" className="bg-dark-surface py-24">
       <div className="max-w-[1400px] mx-auto px-12">
         {/* Titre section */}
         <div className="mb-16">

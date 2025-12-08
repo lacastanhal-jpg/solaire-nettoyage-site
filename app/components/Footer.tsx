@@ -21,7 +21,7 @@ export default function Footer() {
           </div>
 
           {/* Colonne 2 - Services */}
-          <div>
+          <div id="services">
             <h3 className="text-white font-semibold mb-4">Services</h3>
             <ul className="space-y-2 text-sm text-gray-400">
               <li><Link href="/services/centrales-sol" className="hover:text-white transition-colors">Nettoyage centrales au sol</Link></li>
