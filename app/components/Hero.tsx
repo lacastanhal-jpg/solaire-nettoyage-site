@@ -17,7 +17,7 @@ export default function Hero({ onOpenDevis }: HeroProps) {
         </div>
 
         {/* Titre Principal */}
-        <h1 className="font-display text-6xl md:text-7xl lg:text-8xl font-semibold text-white leading-none tracking-tight mb-6 max-w-[900px]">
+        <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-semibold text-white leading-none tracking-tight mb-6 max-w-[900px]">
           Nettoyage Professionnel de Panneaux Photovoltaïques
         </h1>
 
