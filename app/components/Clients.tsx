@@ -1,17 +1,18 @@
 export default function Clients() {
   const clients = [
     'EDF Solutions Solaires',
-    'ENGIE Green France',
+    'ENGIE Green',
     'TotalEnergies',
     'CGN Europe Energy',
-    'Arkolia Energies',
-    'Générale du Solaire',
-    'RES SAS',
-    'Urbasolar',
-    'Électricité de Provence',
-    'Cap Vert Énergie',
-    'Technique Solaire',
-    'Amaury Solar',
+    'JPEE',
+    'Idex Solar',
+    'GreenYellow',
+    'Tenergie',
+    'Séolis',
+    'Mecojit',
+    'Coopérative U',
+    'ArcelorMittal',
+    'Safran Landing Systems',
   ]
 
   return (
