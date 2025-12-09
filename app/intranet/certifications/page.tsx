@@ -61,11 +61,19 @@ export default function CertificationsPage() {
       nom: 'Jérôme Gely',
       poste: 'Gérant',
       certifications: [
-        { name: 'CACES R486 (PEMP)', dateExpiration: '2025-08-15', status: getStatus('2025-08-15') },
-        { name: 'CACES R482 Cat A', dateExpiration: '2025-09-20', status: getStatus('2025-09-20') },
-        { name: 'CACES R482 Cat F', dateExpiration: '2025-09-20', status: getStatus('2025-09-20') },
+        { name: 'CACES R486 (PEMP)', dateExpiration: '2025-08-15', status: getStatus('2025-08-15'), rapports: [
+          { label: 'Autorisation conduite', url: '/documents/certifications/Autorisation_conduite_Je_ro_me_Se_bastien.pdf' }
+        ]},
+        { name: 'CACES R482 Cat A', dateExpiration: '2025-09-20', status: getStatus('2025-09-20'), rapports: [
+          { label: 'Autorisation conduite', url: '/documents/certifications/Autorisation_conduite_Je_ro_me_Se_bastien.pdf' }
+        ]},
+        { name: 'CACES R482 Cat F', dateExpiration: '2025-09-20', status: getStatus('2025-09-20'), rapports: [
+          { label: 'Autorisation conduite', url: '/documents/certifications/Autorisation_conduite_Je_ro_me_Se_bastien.pdf' }
+        ]},
         { name: 'SST', dateExpiration: '2025-11-30', status: getStatus('2025-11-30') },
-        { name: 'Habilitation électrique B0 H0V BP', dateExpiration: '2026-03-15', status: getStatus('2026-03-15') },
+        { name: 'Habilitation électrique B0 H0V BP', dateExpiration: '2026-03-15', status: getStatus('2026-03-15'), rapports: [
+          { label: 'Certificat habilitation', url: '/documents/certifications/H0_B0_PEMP.pdf' }
+        ]},
         { name: 'GIES 1 & 2', dateExpiration: '2026-01-10', status: getStatus('2026-01-10') },
         { name: 'Travail en hauteur', dateExpiration: '2025-12-20', status: getStatus('2025-12-20') },
         { name: 'Visite médicale', dateExpiration: '2026-10-18', status: getStatus('2026-10-18'), rapports: [
@@ -79,11 +87,19 @@ export default function CertificationsPage() {
       nom: 'Axel',
       poste: 'Chef d\'équipe',
       certifications: [
-        { name: 'CACES R486 (PEMP)', dateExpiration: '2025-07-10', status: getStatus('2025-07-10') },
-        { name: 'CACES R482 Cat A', dateExpiration: '2025-10-05', status: getStatus('2025-10-05') },
-        { name: 'CACES R482 Cat F', dateExpiration: '2025-10-05', status: getStatus('2025-10-05') },
+        { name: 'CACES R486 (PEMP)', dateExpiration: '2025-07-10', status: getStatus('2025-07-10'), rapports: [
+          { label: 'Autorisation conduite', url: '/documents/certifications/Autorisation_conduite_axel_joffrey.pdf' }
+        ]},
+        { name: 'CACES R482 Cat A', dateExpiration: '2025-10-05', status: getStatus('2025-10-05'), rapports: [
+          { label: 'Autorisation conduite', url: '/documents/certifications/Autorisation_conduite_axel_joffrey.pdf' }
+        ]},
+        { name: 'CACES R482 Cat F', dateExpiration: '2025-10-05', status: getStatus('2025-10-05'), rapports: [
+          { label: 'Autorisation conduite', url: '/documents/certifications/Autorisation_conduite_axel_joffrey.pdf' }
+        ]},
         { name: 'SST', dateExpiration: '2026-02-15', status: getStatus('2026-02-15') },
-        { name: 'Habilitation électrique B0 H0V BP', dateExpiration: '2025-09-30', status: getStatus('2025-09-30') },
+        { name: 'Habilitation électrique B0 H0V BP', dateExpiration: '2025-09-30', status: getStatus('2025-09-30'), rapports: [
+          { label: 'Certificat habilitation', url: '/documents/certifications/H0_B0_PEMP.pdf' }
+        ]},
         { name: 'Chef de manœuvre', dateExpiration: '2026-04-20', status: getStatus('2026-04-20') },
         { name: 'Travail en hauteur', dateExpiration: '2025-11-15', status: getStatus('2025-11-15') },
         { name: 'Visite médicale', dateExpiration: '2026-10-25', status: getStatus('2026-10-25'), rapports: [
@@ -97,10 +113,16 @@ export default function CertificationsPage() {
       nom: 'Sébastien',
       poste: 'Technicien',
       certifications: [
-        { name: 'CACES R486 (PEMP)', dateExpiration: '2026-01-15', status: getStatus('2026-01-15') },
-        { name: 'CACES R482 Cat A', dateExpiration: '2025-12-10', status: getStatus('2025-12-10') },
+        { name: 'CACES R486 (PEMP)', dateExpiration: '2026-01-15', status: getStatus('2026-01-15'), rapports: [
+          { label: 'Autorisation conduite', url: '/documents/certifications/Autorisation_conduite_Je_ro_me_Se_bastien.pdf' }
+        ]},
+        { name: 'CACES R482 Cat A', dateExpiration: '2025-12-10', status: getStatus('2025-12-10'), rapports: [
+          { label: 'Autorisation conduite', url: '/documents/certifications/Autorisation_conduite_Je_ro_me_Se_bastien.pdf' }
+        ]},
         { name: 'SST', dateExpiration: '2025-10-25', status: getStatus('2025-10-25') },
-        { name: 'Habilitation électrique B0 H0V BP', dateExpiration: '2026-05-15', status: getStatus('2026-05-15') },
+        { name: 'Habilitation électrique B0 H0V BP', dateExpiration: '2026-05-15', status: getStatus('2026-05-15'), rapports: [
+          { label: 'Certificat habilitation', url: '/documents/certifications/H0_B0_PEMP.pdf' }
+        ]},
         { name: 'Travail en hauteur', dateExpiration: '2026-02-28', status: getStatus('2026-02-28') },
         { name: 'Visite médicale', dateExpiration: '2026-10-25', status: getStatus('2026-10-25'), rapports: [
           { label: 'Avis aptitude', url: '/documents/visites/HENRY_SEBASTIEN_-_25_11_2024_-_Avis_d_aptitude.pdf' },
@@ -113,10 +135,16 @@ export default function CertificationsPage() {
       nom: 'Joffrey',
       poste: 'Technicien',
       certifications: [
-        { name: 'CACES R486 (PEMP)', dateExpiration: '2025-06-20', status: getStatus('2025-06-20') },
-        { name: 'CACES R482 Cat A', dateExpiration: '2025-11-30', status: getStatus('2025-11-30') },
+        { name: 'CACES R486 (PEMP)', dateExpiration: '2025-06-20', status: getStatus('2025-06-20'), rapports: [
+          { label: 'Autorisation conduite', url: '/documents/certifications/Autorisation_conduite_axel_joffrey.pdf' }
+        ]},
+        { name: 'CACES R482 Cat A', dateExpiration: '2025-11-30', status: getStatus('2025-11-30'), rapports: [
+          { label: 'Autorisation conduite', url: '/documents/certifications/Autorisation_conduite_axel_joffrey.pdf' }
+        ]},
         { name: 'SST', dateExpiration: '2026-03-10', status: getStatus('2026-03-10') },
-        { name: 'Habilitation électrique B0 H0V BP', dateExpiration: '2025-08-25', status: getStatus('2025-08-25') },
+        { name: 'Habilitation électrique B0 H0V BP', dateExpiration: '2025-08-25', status: getStatus('2025-08-25'), rapports: [
+          { label: 'Certificat habilitation', url: '/documents/certifications/H0_B0_PEMP.pdf' }
+        ]},
         { name: 'Travail en hauteur', dateExpiration: '2025-12-05', status: getStatus('2025-12-05') },
         { name: 'Visite médicale', dateExpiration: '2026-10-18', status: getStatus('2026-10-18'), rapports: [
           { label: 'Avis aptitude', url: '/documents/visites/BELVEZE_JOFFREY_-_18_11_2024_-_Avis_d_aptitude.pdf' },
