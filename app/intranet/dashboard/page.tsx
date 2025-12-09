@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import IntranetHeader from '../components/IntranetHeader'
 import WeatherWidget from '../components/WeatherWidget'
 
@@ -104,10 +105,13 @@ export default function DashboardPage() {
               </div>
             </a>
 
-            {/* Certifications - BIENTÔT */}
-            <div className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-8 opacity-60 cursor-not-allowed relative">
-              <span className="absolute top-4 right-4 bg-gray-200 text-gray-600 px-3 py-1 rounded text-xs font-semibold uppercase">
-                Bientôt
+            {/* Certifications - ACTIF */}
+            <Link
+              href="/intranet/certifications"
+              className="bg-white border-2 border-green-500 rounded-xl p-8 hover:shadow-lg transition-all relative overflow-hidden bg-gradient-to-br from-green-50/50 to-white"
+            >
+              <span className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded text-xs font-semibold uppercase">
+                Actif
               </span>
               <div className="text-4xl mb-4">🎓</div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Certifications & Conformité</h3>
@@ -115,9 +119,10 @@ export default function DashboardPage() {
                 CACES, SST, habilitations, visites médicales, VGP matériel, alertes automatiques
               </p>
               <div className="pt-4 border-t border-gray-200 flex items-center gap-4 text-xs text-gray-500">
-                <span>📅 Phase 2</span>
+                <span>👥 6 collaborateurs</span>
+                <span>🔧 5 VGP</span>
               </div>
-            </div>
+            </Link>
 
             {/* Documents - BIENTÔT */}
             <div className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-8 opacity-60 cursor-not-allowed relative">
@@ -250,10 +255,13 @@ export default function DashboardPage() {
               <div className="font-semibold text-gray-900 text-sm">Gestion Flotte</div>
             </a>
 
-            <button className="bg-white border border-gray-200 rounded-lg p-4 hover:border-blue-500 hover:shadow-md transition-all text-left opacity-50 cursor-not-allowed">
+            <Link
+              href="/intranet/certifications"
+              className="bg-white border border-gray-200 rounded-lg p-4 hover:border-blue-500 hover:shadow-md transition-all text-left block"
+            >
               <div className="text-2xl mb-2">🎓</div>
               <div className="font-semibold text-gray-900 text-sm">Certifications</div>
-            </button>
+            </Link>
 
             <button className="bg-white border border-gray-200 rounded-lg p-4 hover:border-blue-500 hover:shadow-md transition-all text-left opacity-50 cursor-not-allowed">
               <div className="text-2xl mb-2">📁</div>
