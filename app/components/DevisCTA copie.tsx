@@ -6,19 +6,19 @@ interface DevisCTAProps {
 
 export default function DevisCTA({ onOpenModal }: DevisCTAProps) {
   return (
-    <section className="py-24 bg-gradient-to-br from-blue-600 to-blue-400 relative overflow-hidden">
+    <section className="py-24 bg-navy relative overflow-hidden">
       {/* Effet de fond */}
       <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-yellow-400 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-yellow-400 rounded-full blur-3xl" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#C9A961] rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#C9A961] rounded-full blur-3xl" />
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div className="text-center max-w-4xl mx-auto">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 bg-yellow-500/20 border border-yellow-500/30 rounded-full px-6 py-2 mb-8">
+          <div className="inline-flex items-center gap-2 bg-[#C9A961]/20 border border-[#C9A961]/30 rounded-full px-6 py-2 mb-8">
             <span className="text-2xl">🎯</span>
-            <span className="text-yellow-500 font-semibold">Devis gratuit</span>
+            <span className="text-[#C9A961] font-semibold">Devis gratuit</span>
           </div>
 
           {/* Titre */}
@@ -27,7 +27,7 @@ export default function DevisCTA({ onOpenModal }: DevisCTAProps) {
           </h2>
 
           {/* Description */}
-          <p className="text-xl text-blue-100 mb-12 max-w-3xl mx-auto">
+          <p className="text-xl text-gray-300 mb-12 max-w-3xl mx-auto">
             Nos équipes interviennent partout en France avec un matériel de pointe. 
             Demandez votre devis personnalisé et recevez une réponse sous 24h.
           </p>
@@ -35,7 +35,7 @@ export default function DevisCTA({ onOpenModal }: DevisCTAProps) {
           {/* Bouton principal */}
           <button
             onClick={onOpenModal}
-            className="group inline-flex items-center gap-3 bg-yellow-500 text-blue-900 px-10 py-5 rounded-xl hover:bg-yellow-600 transition-all shadow-2xl hover:shadow-yellow-500/50 font-bold text-lg"
+            className="group inline-flex items-center gap-3 bg-[#C9A961] text-white px-10 py-5 rounded-xl hover:bg-[#B8984E] transition-all shadow-2xl hover:shadow-[#C9A961]/50 font-bold text-lg"
           >
             Demander un devis gratuit
             <svg 
@@ -53,23 +53,23 @@ export default function DevisCTA({ onOpenModal }: DevisCTAProps) {
             <div className="flex flex-col items-center">
               <div className="text-3xl mb-2">⏱️</div>
               <div className="text-white font-semibold">Réponse sous 24h</div>
-              <div className="text-sm text-blue-100">Délai garanti</div>
+              <div className="text-sm text-gray-400">Délai garanti</div>
             </div>
 
             <div className="flex flex-col items-center">
               <div className="text-3xl mb-2">📞</div>
               <div className="text-white font-semibold">
-                <a href="tel:+33632134766" className="hover:text-yellow-500 transition-colors">
+                <a href="tel:+33632134766" className="hover:text-[#C9A961] transition-colors">
                   06 32 13 47 66
                 </a>
               </div>
-              <div className="text-sm text-blue-100">Lun-Ven 8h-18h</div>
+              <div className="text-sm text-gray-400">Lun-Ven 8h-18h</div>
             </div>
 
             <div className="flex flex-col items-center">
               <div className="text-3xl mb-2">✅</div>
               <div className="text-white font-semibold">Sans engagement</div>
-              <div className="text-sm text-blue-100">Devis 100% gratuit</div>
+              <div className="text-sm text-gray-400">Devis 100% gratuit</div>
             </div>
           </div>
         </div>
