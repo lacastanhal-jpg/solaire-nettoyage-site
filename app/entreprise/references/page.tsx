@@ -1,180 +1,237 @@
+'use client'
+
 import Link from 'next/link'
 
-export default function References() {
-  const majors = [
-    'EDF Solutions Solaires',
-    'ENGIE Green',
-    'TotalEnergies',
-    'CGN Europe Energy',
-  ]
-
-  const producteurs = [
-    'JPEE',
-    'Idex Solar',
-    'GreenYellow',
-    'Tenergie',
-    'Séolis',
-    'Mecojit',
-    'Coopérative U',
-  ]
-
-  const seveso = [
-    'ArcelorMittal',
-    'Safran Landing Systems',
+export default function ReferencesPage() {
+  const clients = [
+    {
+      name: 'EDF Solutions Solaires',
+      category: 'Énergéticien majeur',
+      desc: 'Partenaire historique depuis 2018'
+    },
+    {
+      name: 'ENGIE Green France',
+      category: 'Énergies renouvelables',
+      desc: 'Interventions nationales régulières'
+    },
+    {
+      name: 'TotalEnergies',
+      category: 'Groupe énergétique',
+      desc: 'Centrales sol et toitures industrielles'
+    },
+    {
+      name: 'CGN Europe Energy',
+      category: 'Producteur indépendant',
+      desc: 'Contrats de maintenance pluriannuels'
+    },
+    {
+      name: 'Coopérative U',
+      category: 'Distribution',
+      desc: 'Référencé exclusivement pour les ombrières'
+    },
+    {
+      name: 'Ombrière Concept',
+      category: 'Constructeur',
+      desc: 'Maintenance post-installation'
+    },
+    {
+      name: 'Générale du Solaire',
+      category: 'Producteur',
+      desc: 'Interventions terrains difficiles'
+    },
+    {
+      name: 'Albioma',
+      category: 'Énergies renouvelables',
+      desc: 'Sites Seveso et industriels'
+    }
   ]
 
   return (
-    <main className="bg-dark-bg pt-24">
+    <div className="min-h-screen bg-black text-white">
       {/* Hero */}
-      <section className="bg-navy py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl">
-            <Link href="/" className="text-gold hover:text-white transition-colors text-sm mb-4 inline-block">
-              ← Retour à l'accueil
-            </Link>
-            <h1 className="font-display text-5xl md:text-6xl font-bold text-white mb-6">
-              Nos Références
-            </h1>
-            <p className="text-xl text-gray-300 leading-relaxed">
-              La confiance des leaders de l'énergie et de l'industrie française
-            </p>
-          </div>
+      <section className="relative h-screen flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-yellow-600/10 via-black to-amber-600/10" />
+        
+        <div className="absolute inset-0 opacity-10">
+          <div className="h-full w-full" style={{
+            backgroundImage: 'radial-gradient(circle, rgba(218, 165, 32, 0.3) 1px, transparent 1px)',
+            backgroundSize: '50px 50px'
+          }} />
         </div>
-      </section>
 
-      {/* Contenu */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="relative z-10 max-w-6xl mx-auto px-6 text-center">
+          <div className="inline-block px-6 py-2 bg-yellow-600/20 border border-yellow-600 rounded-full text-yellow-400 text-sm font-bold mb-8">
+            NOS CLIENTS
+          </div>
           
-          {/* Intro */}
-          <div className="mb-16 max-w-4xl">
-            <p className="text-lg text-gray-300 leading-relaxed mb-4">
-              Depuis 2016, Solaire Nettoyage a l'honneur d'être le partenaire privilégié des plus grands 
-              énergéticiens et industriels français.
-            </p>
-            <p className="text-lg text-gray-300 leading-relaxed">
-              Avec plus de 3600 sites nettoyés annuellement, notre expertise et notre professionnalisme 
-              nous ont permis de construire des relations durables avec nos clients.
-            </p>
-          </div>
-
-          {/* Majors */}
-          <div className="mb-16">
-            <h2 className="text-3xl font-bold text-white mb-8">Majors de l'énergie</h2>
-            <div className="grid md:grid-cols-2 gap-6">
-              {majors.map((client, index) => (
-                <div 
-                  key={index}
-                  className="bg-dark-surface border border-white/8 p-8 hover:border-gold/30 transition-all"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="text-4xl">⭐</div>
-                    <h3 className="text-2xl font-bold text-white">{client}</h3>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Producteurs */}
-          <div className="mb-16">
-            <h2 className="text-3xl font-bold text-white mb-8">Producteurs & Installateurs</h2>
-            <div className="grid md:grid-cols-3 gap-6">
-              {producteurs.map((client, index) => (
-                <div 
-                  key={index}
-                  className="bg-dark-surface border border-white/8 p-6 hover:border-gold/30 transition-all"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-gold text-2xl">✓</span>
-                    <h3 className="text-lg font-bold text-white">{client}</h3>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Sites Seveso */}
-          <div className="mb-16">
-            <h2 className="text-3xl font-bold text-white mb-8">Sites Seveso</h2>
-            <div className="bg-gold/10 border-2 border-gold p-8 mb-6">
-              <div className="flex items-start gap-4 mb-6">
-                <div className="text-4xl">🏆</div>
-                <div>
-                  <h3 className="text-xl font-bold text-white mb-2">Exclusivité GIES 1 & 2</h3>
-                  <p className="text-gray-200">
-                    Seul prestataire en France habilité pour l'ensemble des sites classés Seveso
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="grid md:grid-cols-2 gap-6">
-              {seveso.map((client, index) => (
-                <div 
-                  key={index}
-                  className="bg-dark-surface border border-white/8 p-8 hover:border-gold/30 transition-all"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="text-4xl">🛡️</div>
-                    <h3 className="text-2xl font-bold text-white">{client}</h3>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Chiffres clés */}
-          <div className="bg-navy p-12 mb-16">
-            <h2 className="text-3xl font-bold text-white mb-8 text-center">Notre activité en chiffres</h2>
-            <div className="grid md:grid-cols-4 gap-8">
-              <div className="text-center">
-                <div className="text-5xl font-bold text-gold mb-2">3600+</div>
-                <div className="text-gray-300">Sites nettoyés / an</div>
-              </div>
-              <div className="text-center">
-                <div className="text-5xl font-bold text-gold mb-2">13</div>
-                <div className="text-gray-300">Clients majeurs</div>
-              </div>
-              <div className="text-center">
-                <div className="text-5xl font-bold text-gold mb-2">8 ans</div>
-                <div className="text-gray-300">D'expérience</div>
-              </div>
-              <div className="text-center">
-                <div className="text-5xl font-bold text-gold mb-2">1,5M€</div>
-                <div className="text-gray-300">Parc matériel</div>
-              </div>
-            </div>
-          </div>
-
-          {/* CTA */}
-          <div className="bg-dark-surface border border-white/8 p-12 text-center">
-            <h2 className="text-3xl font-bold text-white mb-4">
-              Rejoignez nos clients
-            </h2>
-            <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-              Bénéficiez de l'expertise du leader français du nettoyage photovoltaïque
-            </p>
-            <div className="flex gap-4 justify-center">
-              <Link 
-                href="/#contact"
-                className="bg-gold text-navy px-10 py-4 font-bold hover:bg-[#B8984E] transition-all inline-flex items-center gap-2"
-              >
-                Demander un devis
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-              </Link>
-              <a 
-                href="tel:+33632134766"
-                className="bg-transparent text-white px-10 py-4 font-bold border-2 border-white/30 hover:border-white transition-all"
-              >
-                06 32 13 47 66
-              </a>
-            </div>
-          </div>
-
+          <h1 className="text-6xl md:text-8xl font-bold mb-8 tracking-tight" style={{ fontFamily: "'Playfair Display', serif" }}>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-200">
+              Références
+            </span>
+          </h1>
+          
+          <p className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed mb-12">
+            Plus de 3 600 sites nettoyés pour les plus grands acteurs de l'énergie photovoltaïque en France
+          </p>
         </div>
       </section>
-    </main>
+
+      {/* Stats */}
+      <section className="py-32 bg-gradient-to-b from-black to-gray-900">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="grid md:grid-cols-4 gap-8 mb-20">
+            {[
+              { value: '3 600+', label: 'Sites nettoyés' },
+              { value: '4M m²', label: 'Par an' },
+              { value: '8+', label: 'Grands clients' },
+              { value: '100%', label: 'France entière' }
+            ].map((stat, idx) => (
+              <div key={idx} className="text-center">
+                <div className="text-6xl font-bold text-yellow-400 mb-4" style={{ fontFamily: "'Playfair Display', serif" }}>
+                  {stat.value}
+                </div>
+                <p className="text-gray-300 text-lg">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Clients */}
+      <section className="py-32">
+        <div className="max-w-6xl mx-auto px-6">
+          <h2 className="text-5xl font-bold mb-16 text-center" style={{ fontFamily: "'Playfair Display', serif" }}>
+            Nos <span className="text-yellow-500">clients</span>
+          </h2>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            {clients.map((client, idx) => (
+              <div key={idx} className="bg-gradient-to-br from-gray-900 to-black border border-yellow-600/30 rounded-2xl p-8 hover:border-yellow-600 transition-all duration-300">
+                <h3 className="text-2xl font-bold text-white mb-2">{client.name}</h3>
+                <p className="text-yellow-400 font-semibold mb-3">{client.category}</p>
+                <p className="text-gray-400">{client.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Secteurs */}
+      <section className="py-32 bg-gradient-to-b from-gray-900 to-black">
+        <div className="max-w-6xl mx-auto px-6">
+          <h2 className="text-5xl font-bold mb-16 text-center" style={{ fontFamily: "'Playfair Display', serif" }}>
+            Nos <span className="text-yellow-500">secteurs</span> d'intervention
+          </h2>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                icon: '🏭',
+                title: 'Industriel',
+                desc: 'Toitures usines, hangars agricoles, entrepôts logistiques'
+              },
+              {
+                icon: '🏬',
+                title: 'Commercial',
+                desc: 'Ombrières supermarchés, centres commerciaux, parkings'
+              },
+              {
+                icon: '⚡',
+                title: 'Centrales au sol',
+                desc: 'Terrains plats, marécageux ou accidentés de toutes tailles'
+              },
+              {
+                icon: '🛡️',
+                title: 'Sites Seveso',
+                desc: 'Sites classés haute sécurité avec certifications GIES 1&2'
+              },
+              {
+                icon: '🚛',
+                title: 'Logistique',
+                desc: 'Plateformes logistiques, entrepôts, zones de stockage'
+              },
+              {
+                icon: '🌾',
+                title: 'Agricole',
+                desc: 'Hangars, bâtiments d\'élevage, serres photovoltaïques'
+              }
+            ].map((secteur, idx) => (
+              <div key={idx} className="bg-gradient-to-br from-gray-900 to-black border border-yellow-600/30 rounded-xl p-6 hover:border-yellow-600 transition-all duration-300 transform hover:scale-105">
+                <div className="text-5xl mb-4">{secteur.icon}</div>
+                <h3 className="text-xl font-bold text-yellow-400 mb-2">{secteur.title}</h3>
+                <p className="text-gray-400">{secteur.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Témoignage */}
+      <section className="py-32">
+        <div className="max-w-4xl mx-auto px-6">
+          <h2 className="text-5xl font-bold mb-16 text-center" style={{ fontFamily: "'Playfair Display', serif" }}>
+            Ce qu'ils <span className="text-yellow-500">disent</span> de nous
+          </h2>
+
+          <div className="space-y-8">
+            {[
+              {
+                quote: "Partenaire fiable et réactif depuis plusieurs années. Le matériel professionnel et l'expertise technique font la différence.",
+                author: 'Responsable maintenance',
+                company: 'EDF Solutions Solaires'
+              },
+              {
+                quote: "La qualité d'intervention et le respect des normes de sécurité sur nos sites Seveso sont irréprochables.",
+                author: 'Chef de projet',
+                company: 'Albioma'
+              },
+              {
+                quote: "Interventions de nuit sur nos parkings sans aucune gêne pour nos clients. Service impeccable.",
+                author: 'Directeur technique',
+                company: 'Coopérative U'
+              }
+            ].map((temoignage, idx) => (
+              <div key={idx} className="bg-gradient-to-br from-gray-900 to-black border border-yellow-600/30 rounded-2xl p-8 hover:border-yellow-600 transition-all duration-300">
+                <p className="text-lg text-gray-300 italic mb-6 leading-relaxed">
+                  "{temoignage.quote}"
+                </p>
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-yellow-600/20 rounded-full flex items-center justify-center">
+                    <span className="text-2xl">💼</span>
+                  </div>
+                  <div>
+                    <p className="text-white font-semibold">{temoignage.author}</p>
+                    <p className="text-yellow-400 text-sm">{temoignage.company}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-32 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-yellow-600/20 via-amber-600/20 to-yellow-600/20" />
+        
+        <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
+          <h2 className="text-5xl md:text-6xl font-bold mb-8" style={{ fontFamily: "'Playfair Display', serif" }}>
+            Rejoignez nos <span className="text-yellow-500">clients prestigieux</span>
+          </h2>
+          
+          <p className="text-xl text-gray-300 mb-12 leading-relaxed">
+            Faites confiance au leader français du nettoyage photovoltaïque. Devis gratuit sous 24h.
+          </p>
+
+          <Link href="/#contact" className="inline-block px-12 py-5 bg-gradient-to-r from-yellow-600 to-amber-600 text-black text-xl font-bold rounded-xl hover:shadow-2xl hover:shadow-yellow-500/50 transition-all duration-300 transform hover:scale-105">
+            Demander un devis gratuit
+          </Link>
+        </div>
+      </section>
+
+      <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&display=swap');
+      `}</style>
+    </div>
   )
 }

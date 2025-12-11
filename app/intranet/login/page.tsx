@@ -4,117 +4,150 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
+  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const router = useRouter()
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
+    setError('')
     
-    // Authentification temporaire (à remplacer par Supabase)
-    const users = {
-      'jerome@solairenettoyage.fr': 'Jérôme Gely',
-      'axel@solairenettoyage.fr': 'Axel',
-      'sebastien@solairenettoyage.fr': 'Sébastien',
-      'joffrey@solairenettoyage.fr': 'Joffrey',
-      'fabien@solairenettoyage.fr': 'Fabien',
-      'angelo@solairenettoyage.fr': 'Angelo'
+    // Liste des utilisateurs avec mots de passe personnalisés
+    const users: { [key: string]: { name: string; role: string; password: string } } = {
+      'jerome@solairenettoyage.fr': { 
+        name: 'Jérôme Gely', 
+        role: 'admin',
+        password: 'Jerome2024!'
+      },
+      'axel@solairenettoyage.fr': { 
+        name: 'Axel Gely', 
+        role: 'admin',
+        password: 'Axel2024!'
+      },
+      'sebastien@solairenettoyage.fr': { 
+        name: 'Sébastien Henry', 
+        role: 'employee',
+        password: 'Sebastien2024!'
+      },
+      'joffrey@solairenettoyage.fr': { 
+        name: 'Joffrey Belveze', 
+        role: 'employee',
+        password: 'Joffrey2024!'
+      },
+      'fabien@solairenettoyage.fr': { 
+        name: 'Fabien', 
+        role: 'employee',
+        password: 'Fabien2024!'
+      },
+      'angelo@solairenettoyage.fr': { 
+        name: 'Angelo', 
+        role: 'employee',
+        password: 'Angelo2024!'
+      }
     }
-    
-    if (users[email as keyof typeof users] && password === 'solaire2024') {
-      localStorage.setItem('intranet_logged_in', 'true')
-      localStorage.setItem('user_name', users[email as keyof typeof users])
-      router.push('/intranet/dashboard')
-    } else {
-      setError('Email ou mot de passe incorrect')
+
+    const user = users[email.toLowerCase()]
+
+    // Vérifier si l'utilisateur existe et si le mot de passe est correct
+    if (!user) {
+      setError('Email incorrect')
+      return
     }
+
+    if (user.password !== password) {
+      setError('Mot de passe incorrect')
+      return
+    }
+
+    // Connexion réussie - Stocker les infos
+    localStorage.setItem('intranet_logged_in', 'true')
+    localStorage.setItem('user_name', user.name)
+    localStorage.setItem('user_email', email.toLowerCase())
+    localStorage.setItem('user_role', user.role)
+
+    // Rediriger vers le dashboard
+    router.push('/intranet/dashboard')
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
-      <div className="max-w-md w-full">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-navy flex items-center justify-center text-white font-bold text-lg">
-              SN
+    <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-400 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {/* Card login */}
+        <div className="bg-white rounded-2xl shadow-2xl p-8">
+          {/* Logo et titre */}
+          <div className="text-center mb-8">
+            <div className="w-20 h-20 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-4xl">🔐</span>
             </div>
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900">Solaire Nettoyage</h1>
-              <span className="text-sm text-blue-600 font-semibold uppercase tracking-wide">Intranet</span>
-            </div>
+            <h1 className="text-3xl font-bold text-blue-900 mb-2">Intranet</h1>
+            <p className="text-blue-700">Solaire Nettoyage</p>
           </div>
-        </div>
 
-        {/* Formulaire de connexion */}
-        <div className="bg-white rounded-lg shadow-md border border-gray-200 p-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Connexion</h2>
-          
-          <form onSubmit={handleLogin} className="space-y-4">
+          {/* Formulaire */}
+          <form onSubmit={handleLogin} className="space-y-6">
+            {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="email" className="block text-sm font-semibold text-blue-900 mb-2">
                 Email
               </label>
               <input
-                type="email"
                 id="email"
+                type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                placeholder="jerome@solairenettoyage.fr"
+                className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900"
+                placeholder="prenom@solairenettoyage.fr"
                 required
+                autoComplete="email"
               />
             </div>
 
+            {/* Mot de passe - UNE SEULE FOIS */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="password" className="block text-sm font-semibold text-blue-900 mb-2">
                 Mot de passe
               </label>
               <input
-                type="password"
                 id="password"
+                type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900"
                 placeholder="••••••••"
                 required
+                autoComplete="current-password"
               />
             </div>
 
+            {/* Message d'erreur */}
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                 {error}
               </div>
             )}
 
+            {/* Bouton connexion */}
             <button
               type="submit"
-              className="w-full bg-navy text-white py-3 px-4 rounded-lg font-semibold hover:bg-navy-light transition-colors"
+              className="w-full bg-yellow-500 hover:bg-yellow-600 text-blue-900 font-bold py-3 px-4 rounded-lg transition-colors"
             >
               Se connecter
             </button>
           </form>
 
-          {/* Info de test */}
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-xs font-semibold text-blue-900 mb-2">🔑 Comptes disponibles :</p>
-            <div className="space-y-1 text-xs text-blue-700">
-              <p>• jerome@solairenettoyage.fr</p>
-              <p>• axel@solairenettoyage.fr</p>
-              <p>• sebastien@solairenettoyage.fr</p>
-              <p>• joffrey@solairenettoyage.fr</p>
-              <p>• fabien@solairenettoyage.fr</p>
-              <p>• angelo@solairenettoyage.fr</p>
-              <p className="mt-2 font-semibold">Mot de passe (tous) : solaire2024</p>
-            </div>
+          {/* Aide */}
+          <div className="mt-6 text-center">
+            <p className="text-sm text-blue-600">
+              Problème de connexion ? Contactez Jérôme ou Axel
+            </p>
           </div>
         </div>
 
-        {/* Retour au site public */}
-        <div className="text-center mt-6">
-          <a href="/" className="text-sm text-gray-600 hover:text-gray-900">
-            ← Retour au site public
+        {/* Lien retour */}
+        <div className="mt-6 text-center">
+          <a href="/" className="text-white hover:text-blue-100 text-sm font-medium">
+            ← Retour au site
           </a>
         </div>
       </div>
