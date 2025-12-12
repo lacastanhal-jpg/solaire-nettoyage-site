@@ -3,15 +3,20 @@ import {
   doc, 
   setDoc, 
   getDoc,
-  writeBatch,
+  getDocs,
+  updateDoc,
+  deleteDoc,
   query,
   where,
-  getDocs
+  orderBy
 } from 'firebase/firestore'
 import { db } from './config'
 
+// Interface complète d'un site (23 champs + liens)
 export interface SiteComplet {
   id?: string
+  clientId?: string      // ← AJOUTÉ : Lien vers le client (société)
+  groupeId?: string      // ← AJOUTÉ : Lien vers le groupe
   complementNom: string  // ID unique
   nomSite: string
   tel: string
@@ -38,130 +43,138 @@ export interface SiteComplet {
 
 export interface SiteImport extends SiteComplet {
   clientId: string
+  groupeId: string
   createdAt: string
 }
 
 const SITES_COLLECTION = 'sites'
 
-// Importer plusieurs sites en masse (batch)
-export async function importSitesEnMasse(
-  sites: SiteImport[]
-): Promise<{
-  created: number
-  updated: number
-  errors: string[]
-}> {
-  const results = {
-    created: 0,
-    updated: 0,
-    errors: [] as string[]
-  }
+// Importer plusieurs sites depuis Excel
+export async function importSitesFromExcel(
+  sites: Omit<SiteComplet, 'id'>[],
+  clientId: string,
+  groupeId: string
+): Promise<{ success: number; errors: string[] }> {
+  let success = 0
+  const errors: string[] = []
 
-  try {
-    // Firestore batch limit = 500 operations
-    const batchSize = 500
-    
-    for (let i = 0; i < sites.length; i += batchSize) {
-      const batch = writeBatch(db)
-      const chunk = sites.slice(i, i + batchSize)
-      
-      for (const site of chunk) {
-        try {
-          // Utiliser complementNom comme ID unique
-          const siteId = site.complementNom
-            .toLowerCase()
-            .replace(/[^a-z0-9]/g, '-')
-          
-          const siteRef = doc(db, SITES_COLLECTION, siteId)
-          
-          // Vérifier si le site existe déjà
-          const existingDoc = await getDoc(siteRef)
-          
-          if (existingDoc.exists()) {
-            // Mise à jour
-            batch.update(siteRef, { ...site })
-            results.updated++
-          } else {
-            // Création
-            batch.set(siteRef, { ...site })
-            results.created++
-          }
-        } catch (error) {
-          results.errors.push(`Erreur site ${site.complementNom}: ${error}`)
-        }
-      }
-      
-      // Commit le batch
-      await batch.commit()
-    }
-    
-    return results
-  } catch (error) {
-    console.error('Erreur import masse:', error)
-    throw error
-  }
-}
-
-// Vérifier les doublons avant import
-export async function verifierDoublons(
-  complementNoms: string[]
-): Promise<string[]> {
-  const doublons: string[] = []
-  
-  for (const complementNom of complementNoms) {
-    const siteId = complementNom
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, '-')
-    
-    const siteRef = doc(db, SITES_COLLECTION, siteId)
-    const siteSnap = await getDoc(siteRef)
-    
-    if (siteSnap.exists()) {
-      doublons.push(complementNom)
+  for (const site of sites) {
+    try {
+      const siteRef = doc(collection(db, SITES_COLLECTION))
+      await setDoc(siteRef, {
+        ...site,
+        clientId,
+        groupeId,
+        createdAt: new Date().toISOString()
+      })
+      success++
+    } catch (error) {
+      console.error('Erreur import site:', error)
+      errors.push(`${site.nomSite}: ${error}`)
     }
   }
-  
-  return doublons
+
+  return { success, errors }
 }
 
-// Parser les coordonnées GPS
-export function parseGPS(gpsString: string): { lat: number; lng: number } | null {
-  try {
-    if (!gpsString) return null
-    
-    // Format: "45.939046 / 3.468672"
-    const parts = gpsString.split('/')
-    if (parts.length !== 2) return null
-    
-    const lat = parseFloat(parts[0].trim())
-    const lng = parseFloat(parts[1].trim())
-    
-    if (isNaN(lat) || isNaN(lng)) return null
-    
-    return { lat, lng }
-  } catch (error) {
-    return null
-  }
-}
-
-// Récupérer les sites complets d'un client
-export async function getSitesCompletByClient(clientId: string): Promise<(SiteComplet & { id: string })[]> {
+// Récupérer tous les sites
+export async function getAllSitesComplet(): Promise<(SiteComplet & { id: string })[]> {
   try {
     const sitesRef = collection(db, SITES_COLLECTION)
-    const q = query(sitesRef, where('clientId', '==', clientId))
+    const q = query(sitesRef, orderBy('nomSite', 'asc'))
     const snapshot = await getDocs(q)
     
     const sites: (SiteComplet & { id: string })[] = []
-    snapshot.forEach((docSnap) => {
+    snapshot.forEach((doc) => {
       sites.push({
-        id: docSnap.id,
-        ...docSnap.data()
+        id: doc.id,
+        ...doc.data()
       } as SiteComplet & { id: string })
     })
     
     return sites
   } catch (error) {
-    console.error('Erreur récupération sites complets:', error)
+    console.error('Erreur récupération sites:', error)
     return []
+  }
+}
+
+// Récupérer les sites d'un client
+export async function getSitesCompletByClient(clientId: string): Promise<(SiteComplet & { id: string })[]> {
+  try {
+    const sitesRef = collection(db, SITES_COLLECTION)
+    const q = query(sitesRef, where('clientId', '==', clientId), orderBy('nomSite', 'asc'))
+    const snapshot = await getDocs(q)
+    
+    const sites: (SiteComplet & { id: string })[] = []
+    snapshot.forEach((doc) => {
+      sites.push({
+        id: doc.id,
+        ...doc.data()
+      } as SiteComplet & { id: string })
+    })
+    
+    return sites
+  } catch (error) {
+    console.error('Erreur récupération sites par client:', error)
+    return []
+  }
+}
+
+// Récupérer les sites d'un groupe
+export async function getSitesCompletByGroupe(groupeId: string): Promise<(SiteComplet & { id: string })[]> {
+  try {
+    const sitesRef = collection(db, SITES_COLLECTION)
+    const q = query(sitesRef, where('groupeId', '==', groupeId), orderBy('nomSite', 'asc'))
+    const snapshot = await getDocs(q)
+    
+    const sites: (SiteComplet & { id: string })[] = []
+    snapshot.forEach((doc) => {
+      sites.push({
+        id: doc.id,
+        ...doc.data()
+      } as SiteComplet & { id: string })
+    })
+    
+    return sites
+  } catch (error) {
+    console.error('Erreur récupération sites par groupe:', error)
+    return []
+  }
+}
+
+// Compter les sites d'un client
+export async function countSitesByClient(clientId: string): Promise<number> {
+  try {
+    const sites = await getSitesCompletByClient(clientId)
+    return sites.length
+  } catch (error) {
+    console.error('Erreur comptage sites:', error)
+    return 0
+  }
+}
+
+// Mettre à jour un site
+export async function updateSiteComplet(
+  siteId: string, 
+  updates: Partial<Omit<SiteComplet, 'id'>>
+): Promise<void> {
+  try {
+    const siteRef = doc(db, SITES_COLLECTION, siteId)
+    await updateDoc(siteRef, updates)
+  } catch (error) {
+    console.error('Erreur mise à jour site:', error)
+    throw error
+  }
+}
+
+// Supprimer un site
+export async function deleteSiteComplet(siteId: string): Promise<void> {
+  try {
+    const siteRef = doc(db, SITES_COLLECTION, siteId)
+    await deleteDoc(siteRef)
+  } catch (error) {
+    console.error('Erreur suppression site:', error)
+    throw error
   }
 }

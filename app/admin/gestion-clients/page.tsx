@@ -7,12 +7,18 @@ import {
   getAllClients, 
   updateClient, 
   deleteClient,
-  type Client 
+  getAllGroupes,
+  getAllSitesComplet,
+  type Client,
+  type Groupe,
+  type SiteComplet
 } from '@/lib/firebase'
 
 export default function GestionClientsPage() {
   const router = useRouter()
   const [clients, setClients] = useState<Client[]>([])
+  const [groupes, setGroupes] = useState<Groupe[]>([])
+  const [sites, setSites] = useState<(SiteComplet & { id: string })[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editingClient, setEditingClient] = useState<Client | null>(null)
@@ -24,7 +30,8 @@ export default function GestionClientsPage() {
     email: '',
     password: '',
     contactName: '',
-    phone: ''
+    phone: '',
+    groupeId: ''
   })
 
   useEffect(() => {
@@ -34,20 +41,30 @@ export default function GestionClientsPage() {
       router.push('/intranet/login')
       return
     }
-    loadClients()
+    loadData()
   }, [router])
 
-  const loadClients = async () => {
+  const loadData = async () => {
     try {
       setLoading(true)
-      const clientsList = await getAllClients()
+      const [clientsList, groupesList, sitesList] = await Promise.all([
+        getAllClients(),
+        getAllGroupes(),
+        getAllSitesComplet()
+      ])
       setClients(clientsList)
+      setGroupes(groupesList)
+      setSites(sitesList)
     } catch (error) {
-      console.error('Erreur chargement clients:', error)
-      alert('Erreur lors du chargement des clients')
+      console.error('Erreur chargement données:', error)
+      alert('Erreur lors du chargement des données')
     } finally {
       setLoading(false)
     }
+  }
+
+  const getSitesCount = (clientId: string) => {
+    return sites.filter(s => s.clientId === clientId).length
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -62,7 +79,8 @@ export default function GestionClientsPage() {
           email: formData.email,
           password: formData.password,
           contactName: formData.contactName,
-          phone: formData.phone
+          phone: formData.phone,
+          groupeId: formData.groupeId || undefined
         })
         alert('✅ Client modifié avec succès !')
       } else {
@@ -73,6 +91,7 @@ export default function GestionClientsPage() {
           password: formData.password,
           contactName: formData.contactName,
           phone: formData.phone,
+          groupeId: formData.groupeId || undefined,
           createdAt: new Date().toISOString(),
           active: true
         })
@@ -80,7 +99,7 @@ export default function GestionClientsPage() {
       }
 
       // Recharger la liste
-      await loadClients()
+      await loadData()
 
       // Reset
       setShowModal(false)
@@ -90,7 +109,8 @@ export default function GestionClientsPage() {
         email: '',
         password: '',
         contactName: '',
-        phone: ''
+        phone: '',
+        groupeId: ''
       })
     } catch (error) {
       console.error('Erreur sauvegarde client:', error)
@@ -107,7 +127,8 @@ export default function GestionClientsPage() {
       email: client.email,
       password: client.password,
       contactName: client.contactName,
-      phone: client.phone
+      phone: client.phone,
+      groupeId: client.groupeId || ''
     })
     setShowModal(true)
   }
@@ -120,7 +141,7 @@ export default function GestionClientsPage() {
     try {
       await deleteClient(id)
       alert('✅ Client supprimé')
-      await loadClients()
+      await loadData()
     } catch (error) {
       console.error('Erreur suppression client:', error)
       alert('❌ Erreur lors de la suppression')
@@ -134,9 +155,16 @@ export default function GestionClientsPage() {
       email: '',
       password: '',
       contactName: '',
-      phone: ''
+      phone: '',
+      groupeId: ''
     })
     setShowModal(true)
+  }
+
+  const getGroupeNom = (groupeId?: string) => {
+    if (!groupeId) return '-'
+    const groupe = groupes.find(g => g.id === groupeId)
+    return groupe ? groupe.nom : 'Groupe inconnu'
   }
 
   if (loading) {
@@ -175,7 +203,7 @@ export default function GestionClientsPage() {
       {/* Contenu */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-6 mb-8">
           <div className="bg-white rounded-xl p-6 shadow-lg border border-blue-200">
             <div className="text-4xl font-bold text-blue-500 mb-2">{clients.length}</div>
             <div className="text-blue-700 font-medium">Clients actifs</div>
@@ -196,10 +224,26 @@ export default function GestionClientsPage() {
           </div>
           <div className="bg-white rounded-xl p-6 shadow-lg border border-blue-200 flex items-center justify-center">
             <a
-              href="/admin/import-sites"
+              href="/admin/gestion-sites"
               className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg transition-colors"
             >
+              📍 Voir Sites
+            </a>
+          </div>
+          <div className="bg-white rounded-xl p-6 shadow-lg border border-blue-200 flex items-center justify-center">
+            <a
+              href="/admin/import-sites"
+              className="px-6 py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-lg transition-colors"
+            >
               📊 Import Sites
+            </a>
+          </div>
+          <div className="bg-white rounded-xl p-6 shadow-lg border border-blue-200 flex items-center justify-center">
+            <a
+              href="/admin/gestion-groupes"
+              className="px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white font-bold rounded-lg transition-colors"
+            >
+              🏢 Gestion Groupes
             </a>
           </div>
         </div>
@@ -220,6 +264,8 @@ export default function GestionClientsPage() {
                 <thead className="bg-blue-50 border-b border-blue-200">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase">Entreprise</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase">Groupe</th>
+                    <th className="px-6 py-3 text-center text-xs font-bold text-blue-900 uppercase">Sites</th>
                     <th className="px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase">Email</th>
                     <th className="px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase">Contact</th>
                     <th className="px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase">Créé le</th>
@@ -231,6 +277,16 @@ export default function GestionClientsPage() {
                     <tr key={client.id} className="hover:bg-blue-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="font-semibold text-blue-900">{client.company}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="px-3 py-1 bg-purple-100 text-purple-900 rounded-full text-xs font-bold">
+                          🏢 {getGroupeNom(client.groupeId)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <span className="px-3 py-1 bg-green-100 text-green-900 rounded-full text-sm font-bold">
+                          📍 {getSitesCount(client.id)}
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-blue-700">{client.email}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-blue-700">{client.contactName || '-'}</td>
@@ -269,6 +325,30 @@ export default function GestionClientsPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-blue-900 mb-2">
+                  Groupe *
+                </label>
+                <select
+                  value={formData.groupeId}
+                  onChange={(e) => setFormData({ ...formData, groupeId: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900"
+                  required
+                >
+                  <option value="">-- Sélectionner un groupe --</option>
+                  {groupes.map((groupe) => (
+                    <option key={groupe.id} value={groupe.id}>
+                      {groupe.nom}
+                    </option>
+                  ))}
+                </select>
+                {groupes.length === 0 && (
+                  <p className="text-xs text-orange-600 mt-1">
+                    ⚠️ Aucun groupe disponible. Créez d'abord un groupe !
+                  </p>
+                )}
+              </div>
+
               <div>
                 <label className="block text-sm font-semibold text-blue-900 mb-2">
                   Nom de l'entreprise *

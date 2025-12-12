@@ -2,150 +2,130 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getAllClients, type Client } from '@/lib/firebase'
-import { importSitesEnMasse, verifierDoublons, parseGPS, type SiteImport } from '@/lib/firebase/import-sites'
+import { 
+  getAllClients,
+  getAllGroupes,
+  importSitesFromExcel,
+  type Client,
+  type Groupe,
+  type SiteComplet
+} from '@/lib/firebase'
 import * as XLSX from 'xlsx'
-
-interface SitePreview extends SiteImport {
-  isDoublon?: boolean
-  selected?: boolean
-}
 
 export default function ImportSitesPage() {
   const router = useRouter()
   const [clients, setClients] = useState<Client[]>([])
+  const [groupes, setGroupes] = useState<Groupe[]>([])
   const [selectedClientId, setSelectedClientId] = useState('')
-  const [file, setFile] = useState<File | null>(null)
-  const [sites, setSites] = useState<SitePreview[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [importing, setImporting] = useState(false)
-  const [importResults, setImportResults] = useState<any>(null)
-  const [filterGPS, setFilterGPS] = useState<'all' | 'with' | 'without'>('all')
+  const [sites, setSites] = useState<Omit<SiteComplet, 'id'>[]>([])
+  const [importResult, setImportResult] = useState<{ success: number; errors: string[] } | null>(null)
 
-  // Charger les clients au démarrage
   useEffect(() => {
-    const loadClients = async () => {
-      try {
-        const clientsList = await getAllClients()
-        setClients(clientsList)
-      } catch (error) {
-        console.error('Erreur chargement clients:', error)
-      }
-    }
-    loadClients()
-  }, [])
-
-  // Parser le fichier Excel
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const uploadedFile = e.target.files?.[0]
-    if (!uploadedFile || !selectedClientId) {
-      alert('Sélectionnez d\'abord un client !')
+    // Vérifier admin
+    const userRole = localStorage.getItem('user_role')
+    if (userRole !== 'admin') {
+      router.push('/intranet/login')
       return
     }
+    loadData()
+  }, [router])
 
-    setFile(uploadedFile)
-    setLoading(true)
-    setImportResults(null)
-
+  const loadData = async () => {
     try {
-      const data = await uploadedFile.arrayBuffer()
-      const workbook = XLSX.read(data)
-      const worksheet = workbook.Sheets[workbook.SheetNames[0]]
-      const jsonData = XLSX.utils.sheet_to_json(worksheet)
-
-      const parsedSites: SitePreview[] = []
-
-      for (const row of jsonData as any[]) {
-        const gpsCoords = parseGPS(row['GPS'] || '')
-        
-        // Parser surface correctement
-        let surface = 0
-        const surfaceStr = String(row['m2'] || '').trim()
-        if (surfaceStr && surfaceStr !== '') {
-          const parsed = parseFloat(surfaceStr)
-          if (!isNaN(parsed)) {
-            surface = parsed
-          }
-        }
-
-        parsedSites.push({
-          clientId: selectedClientId,
-          complementNom: row['Complément nom'] || '',
-          nomSite: row['Nom du Site'] || '',
-          tel: row['Tél'] || '',
-          portable: row['Portable'] || '',
-          codePostal: row['CP'] || '',
-          ville: row['Ville'] || '',
-          adresse1: row['Adresse1'] || '',
-          adresse2: row['Adresse2'] || '',
-          adresse3: row['Adresse3'] || '',
-          pays: row['Pays'] || '',
-          internet: row['Internet'] || '',
-          email: row['Email'] || '',
-          contact: row['Contact'] || '',
-          surface: surface,
-          pente: row['Pente'] || '',
-          eau: row['Eau'] || '',
-          infosCompl: row['Infos compl.'] || '',
-          typeInterv: row['Type interv.'] || '',
-          accesCamion: row['accès camion'] || '',
-          gps: row['GPS'] || '',
-          lat: gpsCoords?.lat || 0,
-          lng: gpsCoords?.lng || 0,
-          createdAt: new Date().toISOString(),
-          selected: !!gpsCoords  // Sélectionner automatiquement si GPS valide
-        })
-      }
-
-      // Vérifier les doublons
-      const complementNoms = parsedSites.map(s => s.complementNom)
-      const doublons = await verifierDoublons(complementNoms)
-
-      // Marquer les doublons
-      parsedSites.forEach(site => {
-        site.isDoublon = doublons.includes(site.complementNom)
-      })
-
-      setSites(parsedSites)
+      setLoading(true)
+      const [clientsList, groupesList] = await Promise.all([
+        getAllClients(),
+        getAllGroupes()
+      ])
+      setClients(clientsList)
+      setGroupes(groupesList)
     } catch (error) {
-      console.error('Erreur parsing Excel:', error)
-      alert('Erreur lors de la lecture du fichier Excel')
+      console.error('Erreur chargement:', error)
+      alert('Erreur lors du chargement des données')
     } finally {
       setLoading(false)
     }
   }
 
-  // Importer les sites sélectionnés
-  const handleImport = async () => {
-    const selectedSites = sites.filter(s => s.selected)
-    
-    if (selectedSites.length === 0) {
-      alert('Sélectionnez au moins un site !')
-      return
-    }
-
-    const sitesWithoutGPS = selectedSites.filter(s => !s.lat || !s.lng)
-    
-    if (sitesWithoutGPS.length > 0) {
-      if (!confirm(`⚠️ ${sitesWithoutGPS.length} sites n'ont pas de GPS.\n\nVoulez-vous les importer quand même ?\n(Ils ne seront pas affichés sur la carte)`)) {
-        return
-      }
-    }
-
-    if (!confirm(`Importer ${selectedSites.length} sites ?\n${selectedSites.filter(s => s.isDoublon).length} seront mis à jour.`)) {
-      return
-    }
-
-    setImporting(true)
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
 
     try {
-      const results = await importSitesEnMasse(selectedSites)
-      setImportResults(results)
-      alert(`✅ Import terminé !\n${results.created} créés\n${results.updated} mis à jour`)
+      const data = await file.arrayBuffer()
+      const workbook = XLSX.read(data)
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]]
+      const jsonData = XLSX.utils.sheet_to_json(worksheet)
+
+      // Parser les données
+      const parsedSites: Omit<SiteComplet, 'id'>[] = jsonData.map((row: any) => ({
+        complementNom: row['Complément Nom'] || row['ID'] || '',
+        nomSite: row['Nom Site'] || row['Nom'] || '',
+        tel: row['Téléphone'] || row['Tel'] || '',
+        portable: row['Portable'] || row['Mobile'] || '',
+        codePostal: row['Code Postal'] || row['CP'] || '',
+        ville: row['Ville'] || '',
+        adresse1: row['Adresse 1'] || row['Adresse'] || '',
+        adresse2: row['Adresse 2'] || '',
+        adresse3: row['Adresse 3'] || '',
+        pays: row['Pays'] || 'France',
+        internet: row['Internet'] || row['Site Web'] || '',
+        email: row['Email'] || '',
+        contact: row['Contact'] || '',
+        surface: parseFloat(row['Surface'] || row['Surface (m²)'] || '0'),
+        pente: row['Pente'] || '',
+        eau: row['Eau'] || '',
+        infosCompl: row['Infos Complémentaires'] || row['Infos'] || '',
+        typeInterv: row['Type Intervention'] || row['Type'] || '',
+        accesCamion: row['Accès Camion'] || '',
+        gps: row['GPS'] || row['Coordonnées GPS'] || '',
+        lat: parseFloat(row['Latitude'] || row['Lat'] || '0'),
+        lng: parseFloat(row['Longitude'] || row['Lng'] || row['Lon'] || '0')
+      }))
+
+      setSites(parsedSites)
+      alert(`✅ ${parsedSites.length} sites chargés depuis Excel`)
+    } catch (error) {
+      console.error('Erreur lecture fichier:', error)
+      alert('❌ Erreur lors de la lecture du fichier Excel')
+    }
+  }
+
+  const handleImport = async () => {
+    if (!selectedClientId) {
+      alert('⚠️ Veuillez sélectionner un client')
+      return
+    }
+
+    if (sites.length === 0) {
+      alert('⚠️ Veuillez d\'abord charger un fichier Excel')
+      return
+    }
+
+    const client = clients.find(c => c.id === selectedClientId)
+    if (!client || !client.groupeId) {
+      alert('❌ Client invalide ou groupe manquant')
+      return
+    }
+
+    if (!confirm(`Importer ${sites.length} sites pour le client "${client.company}" ?`)) {
+      return
+    }
+
+    try {
+      setImporting(true)
+      const result = await importSitesFromExcel(sites, selectedClientId, client.groupeId)
+      setImportResult(result)
       
-      // Réinitialiser
-      setSites([])
-      setFile(null)
+      if (result.errors.length === 0) {
+        alert(`✅ ${result.success} sites importés avec succès !`)
+        setSites([])
+        setSelectedClientId('')
+      } else {
+        alert(`⚠️ ${result.success} sites importés, ${result.errors.length} erreurs`)
+      }
     } catch (error) {
       console.error('Erreur import:', error)
       alert('❌ Erreur lors de l\'import')
@@ -154,31 +134,19 @@ export default function ImportSitesPage() {
     }
   }
 
-  // Tout sélectionner/désélectionner
-  const toggleAll = (selected: boolean) => {
-    setSites(sites.map(s => ({ ...s, selected })))
+  const getGroupeNom = (groupeId?: string) => {
+    if (!groupeId) return '-'
+    const groupe = groupes.find(g => g.id === groupeId)
+    return groupe ? groupe.nom : 'Groupe inconnu'
   }
 
-  // Sélectionner uniquement sites avec GPS
-  const selectOnlyWithGPS = () => {
-    setSites(sites.map(s => ({ ...s, selected: !!(s.lat && s.lng) })))
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-blue-50 flex items-center justify-center">
+        <div className="text-blue-900 text-xl">Chargement...</div>
+      </div>
+    )
   }
-
-  // Toggle un site
-  const toggleSite = (index: number) => {
-    const newSites = [...sites]
-    newSites[index].selected = !newSites[index].selected
-    setSites(newSites)
-  }
-
-  // Filtrer les sites
-  const filteredSites = sites.filter(site => {
-    if (filterGPS === 'with') return site.lat && site.lng
-    if (filterGPS === 'without') return !site.lat || !site.lng
-    return true
-  })
-
-  const selectedCount = sites.filter(s => s.selected).length
 
   return (
     <div className="min-h-screen bg-blue-50">
@@ -192,14 +160,14 @@ export default function ImportSitesPage() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-blue-900">Import Sites Excel</h1>
-                <p className="text-sm text-blue-600">Importer les sites depuis un fichier Excel</p>
+                <p className="text-sm text-blue-600">Importer des sites depuis Excel</p>
               </div>
             </div>
             <a
               href="/admin/gestion-clients"
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
             >
-              ← Retour
+              ← Retour Clients
             </a>
           </div>
         </div>
@@ -207,210 +175,125 @@ export default function ImportSitesPage() {
 
       {/* Contenu */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Étape 1 : Sélectionner client */}
+        {/* Étape 1: Sélection client */}
         <div className="bg-white rounded-xl shadow-lg border border-blue-200 p-6 mb-6">
-          <h3 className="text-lg font-bold text-blue-900 mb-4">1️⃣ Sélectionner le client</h3>
+          <h2 className="text-lg font-bold text-blue-900 mb-4">1️⃣ Sélectionner le Client</h2>
           <select
             value={selectedClientId}
             onChange={(e) => setSelectedClientId(e.target.value)}
             className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900"
           >
-            <option value="">-- Choisir un client --</option>
+            <option value="">-- Sélectionner un client --</option>
             {clients.map((client) => (
               <option key={client.id} value={client.id}>
-                {client.company}
+                {client.company} - 🏢 {getGroupeNom(client.groupeId)}
               </option>
             ))}
           </select>
+          {selectedClientId && (
+            <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+              <p className="text-sm text-blue-900">
+                ✅ Client sélectionné: <strong>{clients.find(c => c.id === selectedClientId)?.company}</strong>
+              </p>
+              <p className="text-xs text-blue-700 mt-1">
+                Les sites seront automatiquement liés à ce client et son groupe
+              </p>
+            </div>
+          )}
         </div>
 
-        {/* Étape 2 : Upload fichier */}
-        {selectedClientId && (
+        {/* Étape 2: Upload fichier */}
+        <div className="bg-white rounded-xl shadow-lg border border-blue-200 p-6 mb-6">
+          <h2 className="text-lg font-bold text-blue-900 mb-4">2️⃣ Charger le Fichier Excel</h2>
+          <input
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={handleFileUpload}
+            className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900"
+          />
+          {sites.length > 0 && (
+            <div className="mt-3 p-3 bg-green-50 rounded-lg">
+              <p className="text-sm text-green-900">
+                ✅ <strong>{sites.length} sites</strong> chargés depuis Excel
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Étape 3: Aperçu sites */}
+        {sites.length > 0 && (
           <div className="bg-white rounded-xl shadow-lg border border-blue-200 p-6 mb-6">
-            <h3 className="text-lg font-bold text-blue-900 mb-4">2️⃣ Uploader le fichier Excel</h3>
-            <input
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleFileUpload}
-              className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900"
-            />
-            {loading && (
-              <div className="mt-4 text-blue-600">⏳ Lecture du fichier en cours...</div>
-            )}
+            <h2 className="text-lg font-bold text-blue-900 mb-4">3️⃣ Aperçu Sites ({sites.length})</h2>
+            <div className="overflow-x-auto max-h-96">
+              <table className="w-full text-sm">
+                <thead className="bg-blue-50 border-b border-blue-200">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-bold text-blue-900">ID</th>
+                    <th className="px-4 py-2 text-left text-xs font-bold text-blue-900">Nom Site</th>
+                    <th className="px-4 py-2 text-left text-xs font-bold text-blue-900">Ville</th>
+                    <th className="px-4 py-2 text-left text-xs font-bold text-blue-900">Surface (m²)</th>
+                    <th className="px-4 py-2 text-left text-xs font-bold text-blue-900">GPS</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-blue-100">
+                  {sites.slice(0, 10).map((site, idx) => (
+                    <tr key={idx} className="hover:bg-blue-50">
+                      <td className="px-4 py-2 text-blue-900 font-mono text-xs">{site.complementNom}</td>
+                      <td className="px-4 py-2 text-blue-900">{site.nomSite}</td>
+                      <td className="px-4 py-2 text-blue-700">{site.codePostal} {site.ville}</td>
+                      <td className="px-4 py-2 text-blue-700">{site.surface}</td>
+                      <td className="px-4 py-2 text-blue-700 font-mono text-xs">{site.gps || `${site.lat},${site.lng}`}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {sites.length > 10 && (
+                <p className="text-xs text-blue-600 mt-2 text-center">
+                  ... et {sites.length - 10} autres sites
+                </p>
+              )}
+            </div>
           </div>
         )}
 
-        {/* Étape 3 : Prévisualisation */}
+        {/* Bouton Import */}
         {sites.length > 0 && (
-          <>
-            <div className="bg-white rounded-xl shadow-lg border border-blue-200 p-6 mb-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-bold text-blue-900">
-                  3️⃣ Sélectionner les sites à importer ({selectedCount}/{sites.length})
-                </h3>
-                <button
-                  onClick={handleImport}
-                  disabled={importing || selectedCount === 0}
-                  className="px-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-blue-900 font-bold rounded-lg transition-colors disabled:opacity-50"
-                >
-                  {importing ? '⏳ Import en cours...' : `🚀 Importer ${selectedCount} sites`}
-                </button>
-              </div>
-
-              {/* Stats détaillées */}
-              <div className="grid grid-cols-5 gap-4 mb-6">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="text-2xl font-bold text-blue-600">{sites.length}</div>
-                  <div className="text-sm text-blue-700">Total sites</div>
-                </div>
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <div className="text-2xl font-bold text-green-600">
-                    {sites.filter(s => s.lat && s.lng).length}
-                  </div>
-                  <div className="text-sm text-green-700">Avec GPS</div>
-                </div>
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <div className="text-2xl font-bold text-red-600">
-                    {sites.filter(s => !s.lat || !s.lng).length}
-                  </div>
-                  <div className="text-sm text-red-700">Sans GPS</div>
-                </div>
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                  <div className="text-2xl font-bold text-purple-600">
-                    {sites.filter(s => s.surface > 0).length}
-                  </div>
-                  <div className="text-sm text-purple-700">Avec surface</div>
-                </div>
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                  <div className="text-2xl font-bold text-orange-600">
-                    {sites.filter(s => s.isDoublon).length}
-                  </div>
-                  <div className="text-sm text-orange-700">Doublons</div>
-                </div>
-              </div>
-
-              {/* Actions de sélection */}
-              <div className="flex gap-3 mb-4">
-                <button
-                  onClick={() => toggleAll(true)}
-                  className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium"
-                >
-                  ✅ Tout sélectionner
-                </button>
-                <button
-                  onClick={() => toggleAll(false)}
-                  className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-sm font-medium"
-                >
-                  ❌ Tout désélectionner
-                </button>
-                <button
-                  onClick={selectOnlyWithGPS}
-                  className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium"
-                >
-                  📍 Seulement avec GPS
-                </button>
-                <select
-                  value={filterGPS}
-                  onChange={(e) => setFilterGPS(e.target.value as any)}
-                  className="px-4 py-2 border-2 border-blue-200 rounded-lg text-blue-900 text-sm"
-                >
-                  <option value="all">Tous ({sites.length})</option>
-                  <option value="with">Avec GPS ({sites.filter(s => s.lat && s.lng).length})</option>
-                  <option value="without">Sans GPS ({sites.filter(s => !s.lat || !s.lng).length})</option>
-                </select>
-              </div>
-
-              {/* Liste sites */}
-              <div className="overflow-x-auto max-h-96 overflow-y-auto border border-blue-200 rounded-lg">
-                <table className="w-full text-sm">
-                  <thead className="bg-blue-50 border-b border-blue-200 sticky top-0">
-                    <tr>
-                      <th className="px-4 py-2 text-left">
-                        <input 
-                          type="checkbox" 
-                          checked={selectedCount === sites.length}
-                          onChange={(e) => toggleAll(e.target.checked)}
-                          className="w-4 h-4"
-                        />
-                      </th>
-                      <th className="px-4 py-2 text-left text-blue-900 font-bold">ID</th>
-                      <th className="px-4 py-2 text-left text-blue-900 font-bold">Nom</th>
-                      <th className="px-4 py-2 text-left text-blue-900 font-bold">Ville</th>
-                      <th className="px-4 py-2 text-left text-blue-900 font-bold">GPS</th>
-                      <th className="px-4 py-2 text-left text-blue-900 font-bold">Surface</th>
-                      <th className="px-4 py-2 text-left text-blue-900 font-bold">Statut</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-blue-100">
-                    {filteredSites.map((site, index) => {
-                      const originalIndex = sites.indexOf(site)
-                      return (
-                        <tr 
-                          key={index} 
-                          className={`hover:bg-blue-50 ${site.selected ? 'bg-green-50' : ''}`}
-                        >
-                          <td className="px-4 py-2">
-                            <input 
-                              type="checkbox" 
-                              checked={site.selected || false}
-                              onChange={() => toggleSite(originalIndex)}
-                              className="w-4 h-4"
-                            />
-                          </td>
-                          <td className="px-4 py-2 text-blue-900 font-mono text-xs">{site.complementNom}</td>
-                          <td className="px-4 py-2 text-blue-900">{site.nomSite}</td>
-                          <td className="px-4 py-2 text-blue-700">{site.ville || '-'}</td>
-                          <td className="px-4 py-2">
-                            {site.lat && site.lng ? (
-                              <span className="text-green-700 font-mono text-xs">
-                                {site.lat.toFixed(4)}, {site.lng.toFixed(4)}
-                              </span>
-                            ) : (
-                              <span className="text-red-700 font-bold">❌ Manquant</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-2 text-blue-700">
-                            {site.surface > 0 ? `${site.surface} m²` : '-'}
-                          </td>
-                          <td className="px-4 py-2">
-                            {site.isDoublon ? (
-                              <span className="px-2 py-1 bg-orange-100 text-orange-900 text-xs rounded-full">
-                                🔄 Mise à jour
-                              </span>
-                            ) : (
-                              <span className="px-2 py-1 bg-green-100 text-green-900 text-xs rounded-full">
-                                ✨ Nouveau
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </>
+          <div className="bg-white rounded-xl shadow-lg border border-blue-200 p-6">
+            <button
+              onClick={handleImport}
+              disabled={importing || !selectedClientId}
+              className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {importing ? '⏳ Import en cours...' : `✅ Importer ${sites.length} sites`}
+            </button>
+          </div>
         )}
 
         {/* Résultats import */}
-        {importResults && (
-          <div className="bg-green-50 border border-green-200 rounded-xl p-6">
-            <h3 className="text-lg font-bold text-green-900 mb-4">✅ Import terminé !</h3>
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <div className="text-3xl font-bold text-green-600">{importResults.created}</div>
-                <div className="text-sm text-green-700">Sites créés</div>
+        {importResult && (
+          <div className={`mt-6 rounded-xl shadow-lg border p-6 ${
+            importResult.errors.length === 0 
+              ? 'bg-green-50 border-green-200' 
+              : 'bg-orange-50 border-orange-200'
+          }`}>
+            <h2 className="text-lg font-bold mb-4">
+              {importResult.errors.length === 0 ? '✅ Import Réussi' : '⚠️ Import Terminé avec Erreurs'}
+            </h2>
+            <p className="text-sm mb-2">
+              <strong>{importResult.success}</strong> sites importés avec succès
+            </p>
+            {importResult.errors.length > 0 && (
+              <div className="mt-4">
+                <p className="text-sm font-bold text-orange-900 mb-2">
+                  Erreurs ({importResult.errors.length}):
+                </p>
+                <div className="max-h-64 overflow-y-auto bg-white rounded p-3">
+                  {importResult.errors.map((error, idx) => (
+                    <p key={idx} className="text-xs text-red-700 mb-1">{error}</p>
+                  ))}
+                </div>
               </div>
-              <div>
-                <div className="text-3xl font-bold text-orange-600">{importResults.updated}</div>
-                <div className="text-sm text-orange-700">Sites mis à jour</div>
-              </div>
-              <div>
-                <div className="text-3xl font-bold text-red-600">{importResults.errors.length}</div>
-                <div className="text-sm text-red-700">Erreurs</div>
-              </div>
-            </div>
+            )}
           </div>
         )}
       </main>

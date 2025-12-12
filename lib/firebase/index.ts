@@ -5,6 +5,7 @@ export { db, storage, auth } from './config'
 export {
   createClient,
   getAllClients,
+  getClientsByGroupe,
   getClientByEmail,
   updateClient,
   deleteClient,
@@ -22,6 +23,18 @@ export {
   getAllSites
 } from './sites'
 export type { Site } from './sites'
+
+// Export Site Complet functions (import Excel)
+export {
+  importSitesFromExcel,
+  getAllSitesComplet,
+  getSitesCompletByClient,
+  getSitesCompletByGroupe,
+  countSitesByClient,
+  updateSiteComplet,
+  deleteSiteComplet
+} from './import-sites'
+export type { SiteComplet, SiteImport } from './import-sites'
 
 // Export Intervention functions
 export {
@@ -56,11 +69,14 @@ export {
 } from './demandes'
 export type { DemandeAcces } from './demandes'
 
-// Export Import Sites functions
+// Export Groupe functions
 export {
-  importSitesEnMasse,
-  verifierDoublons,
-  parseGPS,
-  getSitesCompletByClient
-} from './import-sites'
-export type { SiteComplet, SiteImport } from './import-sites'
+  createGroupe,
+  getAllGroupes,
+  getGroupeById,
+  getGroupeByNom,
+  updateGroupe,
+  deleteGroupe,
+  countGroupesActifs
+} from './groupes'
+export type { Groupe } from './groupes'
