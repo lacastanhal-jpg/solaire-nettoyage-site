@@ -175,7 +175,7 @@ export default function GestionClientsPage() {
       {/* Contenu */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-xl p-6 shadow-lg border border-blue-200">
             <div className="text-4xl font-bold text-blue-500 mb-2">{clients.length}</div>
             <div className="text-blue-700 font-medium">Clients actifs</div>
@@ -193,6 +193,14 @@ export default function GestionClientsPage() {
             >
               ➕ Nouveau Client
             </button>
+          </div>
+          <div className="bg-white rounded-xl p-6 shadow-lg border border-blue-200 flex items-center justify-center">
+            <a
+              href="/admin/import-sites"
+              className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg transition-colors"
+            >
+              📊 Import Sites
+            </a>
           </div>
         </div>
 

@@ -55,3 +55,11 @@ export {
   deleteDemande
 } from './demandes'
 export type { DemandeAcces } from './demandes'
+
+// Export Import Sites functions
+export {
+  importSitesEnMasse,
+  verifierDoublons,
+  parseGPS
+} from './import-sites'
+export type { SiteComplet, SiteImport } from './import-sites'
