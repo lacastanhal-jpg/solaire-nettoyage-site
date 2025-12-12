@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
+import type { SiteComplet } from '@/lib/firebase'
 
 // Fix pour les icônes Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -13,27 +14,15 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 })
 
-interface Site {
-  id: string
-  nomSite: string
-  lat: number
-  lng: number
-  adresse1?: string
-  ville?: string
-  codePostal?: string
-  surface?: number
-  infosCompl?: string
-}
-
 interface MapViewProps {
-  sites: Site[]
+  sites: SiteComplet[]
   center?: { lat: number; lng: number }
   zoom?: number
   height?: string
 }
 
 // Composant pour ajuster les bounds automatiquement
-function MapBounds({ sites }: { sites: Site[] }) {
+function MapBounds({ sites }: { sites: SiteComplet[] }) {
   const map = useMap()
   
   useEffect(() => {
