@@ -3,7 +3,10 @@ import {
   doc, 
   setDoc, 
   getDoc,
-  writeBatch
+  writeBatch,
+  query,
+  where,
+  getDocs
 } from 'firebase/firestore'
 import { db } from './config'
 
@@ -137,5 +140,27 @@ export function parseGPS(gpsString: string): { lat: number; lng: number } | null
     return { lat, lng }
   } catch (error) {
     return null
+  }
+}
+
+// Récupérer les sites complets d'un client
+export async function getSitesCompletByClient(clientId: string): Promise<(SiteComplet & { id: string })[]> {
+  try {
+    const sitesRef = collection(db, SITES_COLLECTION)
+    const q = query(sitesRef, where('clientId', '==', clientId))
+    const snapshot = await getDocs(q)
+    
+    const sites: (SiteComplet & { id: string })[] = []
+    snapshot.forEach((docSnap) => {
+      sites.push({
+        id: docSnap.id,
+        ...docSnap.data()
+      } as SiteComplet & { id: string })
+    })
+    
+    return sites
+  } catch (error) {
+    console.error('Erreur récupération sites complets:', error)
+    return []
   }
 }

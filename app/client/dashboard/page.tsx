@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { 
   getInterventionsByClient, 
   getClientStats, 
-  getSitesByClient,
+  getSitesCompletByClient,
   type Intervention,
   type SiteComplet
 } from '@/lib/firebase'
@@ -70,7 +70,7 @@ export default function ClientDashboard() {
       setStats(statsData)
 
       // Récupérer les sites
-      const sitesData = await getSitesByClient(clientId)
+      const sitesData = await getSitesCompletByClient(clientId)
       setSites(sitesData)
     } catch (error) {
       console.error('Erreur chargement données:', error)

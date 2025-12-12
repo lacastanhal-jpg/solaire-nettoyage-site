@@ -60,6 +60,7 @@ export type { DemandeAcces } from './demandes'
 export {
   importSitesEnMasse,
   verifierDoublons,
-  parseGPS
+  parseGPS,
+  getSitesCompletByClient
 } from './import-sites'
 export type { SiteComplet, SiteImport } from './import-sites'
