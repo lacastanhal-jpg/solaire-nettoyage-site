@@ -122,12 +122,20 @@ export default function ClientDashboard() {
                 <p className="text-sm text-blue-600">{clientCompany}</p>
               </div>
             </div>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors"
-            >
-              Déconnexion
-            </button>
+            <div className="flex gap-3">
+              <a
+                href="/client/interventions"
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold rounded-lg transition-all"
+              >
+                📅 Mes Interventions
+              </a>
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors"
+              >
+                Déconnexion
+              </button>
+            </div>
           </div>
         </div>
       </header>

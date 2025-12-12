@@ -1,0 +1,79 @@
+app/entreprise/references/page.tsx
+app/entreprise/references/page copie.tsx
+app/entreprise/a-propos/page copie 2.tsx
+app/entreprise/a-propos/page.tsx
+app/entreprise/a-propos/page copie.tsx
+app/entreprise/layout.tsx
+app/entreprise/certifications/page.tsx
+app/entreprise/certifications/page copie.tsx
+app/entreprise/carrieres/page.tsx
+app/entreprise/carrieres/page copie.tsx
+app/admin/init-equipes/page.tsx
+app/admin/gestion-equipes/page.tsx
+app/admin/gestion-groupes/page.tsx
+app/admin/import-sites/page.tsx
+app/admin/affectation-masse/page.tsx
+app/admin/gestion-sites/page.tsx
+app/admin/gestion-clients/page.tsx
+app/admin/calendrier/page.tsx
+app/admin/upload-rapport/page.tsx
+app/admin/gestion-operateurs/page.tsx
+app/admin/nouvelle-intervention/page.tsx
+app/admin/init-operateurs/page.tsx
+app/notre-histoire/page 2.tsx
+app/notre-histoire/page.tsx
+app/components/Hero.tsx
+app/components/DevisCTA copie.tsx
+app/components/Clients copie.tsx
+app/components/ServicesDetailed.tsx
+app/components/DevisModal.tsx
+app/components/Footer copie.tsx
+app/components/Services copie.tsx
+app/components/DevisForm.tsx
+app/components/Services.tsx
+app/components/Footer.tsx
+app/components/Header copie.tsx
+app/components/Stats.tsx
+app/components/Stats copie.tsx
+app/components/Header.tsx
+app/components/Hero copie.tsx
+app/components/Clients.tsx
+app/components/DevisCTA.tsx
+app/layout.tsx
+app/page.tsx
+app/client/demande-acces/page.tsx
+app/client/dashboard/page.tsx
+app/client/page.tsx
+app/client/login/page.tsx
+app/intranet/dashboard/page.tsx
+app/intranet/dashboard/page copie.tsx
+app/intranet/components/IntranetHeader.tsx
+app/intranet/components/WeatherWidget.tsx
+app/intranet/components/WeatherModal.tsx
+app/intranet/certifications/page.tsx
+app/intranet/certifications/page copie.tsx
+app/intranet/page.tsx
+app/intranet/login/page.tsx
+app/intranet/page copie.tsx
+app/services/toitures/page.tsx
+app/services/toitures/page copie.tsx
+app/services/centrales-sol/page copie 2.tsx
+app/services/centrales-sol/centrales-page.tsx
+app/services/centrales-sol/page.tsx
+app/services/centrales-sol/page copie.tsx
+app/services/ombrieres/page.tsx
+app/services/ombrieres/page copie.tsx
+app/services/layout.tsx
+app/services/seveso/page.tsx
+app/services/seveso/page copie.tsx
+lib/firebase/clients.ts
+lib/firebase/interventions.ts
+lib/firebase/storage.ts
+lib/firebase/sites.ts
+lib/firebase/groupes.ts
+lib/firebase/import-sites.ts
+lib/firebase/demandes.ts
+lib/firebase/operateurs.ts
+lib/firebase/index.ts
+lib/firebase/interventions-calendar.ts
+lib/firebase/config.ts

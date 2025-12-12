@@ -214,6 +214,27 @@ export default function DashboardPage() {
               </Link>
             )}
 
+            {/* NOUVEAU : Demandes Modifications - ACTIF (Seulement pour admins) */}
+            {isAdmin && (
+              <Link
+                href="/admin/demandes-modifications"
+                className="bg-white border-2 border-orange-500 rounded-xl p-8 hover:shadow-lg transition-all relative overflow-hidden bg-gradient-to-br from-orange-50/50 to-white"
+              >
+                <span className="absolute top-4 right-4 bg-orange-500 text-white px-3 py-1 rounded text-xs font-semibold uppercase">
+                  Actif
+                </span>
+                <div className="text-4xl mb-4">🔄</div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Demandes Modifications</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Traiter les demandes de changement de date clients
+                </p>
+                <div className="pt-4 border-t border-gray-200 flex items-center gap-4 text-xs text-gray-500">
+                  <span>🔐 Admins uniquement</span>
+                  <span>📅 Clients</span>
+                </div>
+              </Link>
+            )}
+
             {/* Documents - BIENTÔT */}
             <div className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-8 opacity-60 cursor-not-allowed relative">
               <span className="absolute top-4 right-4 bg-gray-200 text-gray-600 px-3 py-1 rounded text-xs font-semibold uppercase">
