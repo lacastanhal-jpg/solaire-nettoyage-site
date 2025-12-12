@@ -6,7 +6,8 @@ import {
   getInterventionsByClient, 
   getClientStats, 
   getSitesByClient,
-  type Intervention 
+  type Intervention,
+  type Site
 } from '@/lib/firebase'
 import dynamic from 'next/dynamic'
 
@@ -19,18 +20,6 @@ const MapView = dynamic(() => import('@/components/MapView'), {
     </div>
   )
 })
-
-interface Site {
-  id: string
-  nomSite: string
-  lat: number
-  lng: number
-  adresse1: string
-  ville: string
-  codePostal: string
-  surface: number
-  infosCompl: string
-}
 
 export default function ClientDashboard() {
   const router = useRouter()
@@ -81,7 +70,7 @@ export default function ClientDashboard() {
       setStats(statsData)
 
       // Récupérer les sites
-      const sitesData = await getSitesByClient(clientId) as Site[]
+      const sitesData = await getSitesByClient(clientId)
       setSites(sitesData)
     } catch (error) {
       console.error('Erreur chargement données:', error)
