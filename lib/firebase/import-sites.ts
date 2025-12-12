@@ -11,6 +11,7 @@ import {
 import { db } from './config'
 
 export interface SiteComplet {
+  id?: string
   complementNom: string  // ID unique
   nomSite: string
   tel: string
