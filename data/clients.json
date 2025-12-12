@@ -1,0 +1,15 @@
+{
+  "clients": [
+    {
+      "id": "1",
+      "company": "MECOJIT",
+      "email": "mecojit@client.solairenettoyage.fr",
+      "password": "Mecojit2024!",
+      "contactName": "Contact MECOJIT",
+      "phone": "",
+      "sites": ["19-0226 CANTALOUBE 2"],
+      "createdAt": "2024-12-11",
+      "active": true
+    }
+  ]
+}
