@@ -49,6 +49,42 @@ export {
 } from './interventions'
 export type { Intervention } from './interventions'
 
+// Export Intervention Calendar functions
+export {
+  createInterventionCalendar,
+  getAllInterventionsCalendar,
+  getInterventionsByEquipe,
+  getInterventionsByClientCalendar,
+  getInterventionsBySiteCalendar,
+  getInterventionsByPeriode,
+  updateInterventionCalendar,
+  deleteInterventionCalendar,
+  demanderChangementDate,
+  accepterChangementDate,
+  refuserChangementDate,
+  createEquipe,
+  getAllEquipes,
+  verifyEquipeCredentials,
+  updateEquipeComposition,
+  getEquipeById
+} from './interventions-calendar'
+export type { InterventionCalendar, Equipe } from './interventions-calendar'
+
+// Export Operateur functions
+export {
+  createOperateur,
+  getAllOperateurs,
+  getOperateursDisponibles,
+  getOperateurById,
+  updateOperateur,
+  deleteOperateur,
+  createConge,
+  getCongesByOperateur,
+  deleteConge,
+  isOperateurDisponible
+} from './operateurs'
+export type { Operateur, CongeOperateur } from './operateurs'
+
 // Export Storage functions
 export {
   uploadRapport,

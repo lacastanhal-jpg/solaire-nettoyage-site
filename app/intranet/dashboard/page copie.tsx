@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import IntranetHeader from '../components/IntranetHeader'
@@ -8,13 +8,19 @@ import WeatherWidget from '../components/WeatherWidget'
 
 export default function DashboardPage() {
   const router = useRouter()
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     // Vérifier authentification
     const isLoggedIn = localStorage.getItem('intranet_logged_in')
     if (!isLoggedIn) {
       router.push('/intranet/login')
+      return
     }
+
+    // Vérifier si admin (Jérôme ou Axel)
+    const userRole = localStorage.getItem('user_role')
+    setIsAdmin(userRole === 'admin')
   }, [router])
 
   return (
@@ -123,6 +129,27 @@ export default function DashboardPage() {
                 <span>🔧 5 VGP</span>
               </div>
             </Link>
+
+            {/* NOUVEAU : Gestion Clients - ACTIF (Seulement pour admins) */}
+            {isAdmin && (
+              <Link
+                href="/admin/gestion-clients"
+                className="bg-white border-2 border-green-500 rounded-xl p-8 hover:shadow-lg transition-all relative overflow-hidden bg-gradient-to-br from-green-50/50 to-white"
+              >
+                <span className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded text-xs font-semibold uppercase">
+                  Actif
+                </span>
+                <div className="text-4xl mb-4">👥</div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Gestion Clients</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Créer, modifier et supprimer les accès clients à l'espace dataroom
+                </p>
+                <div className="pt-4 border-t border-gray-200 flex items-center gap-4 text-xs text-gray-500">
+                  <span>🔐 Admins uniquement</span>
+                  <span>💼 Espace Client</span>
+                </div>
+              </Link>
+            )}
 
             {/* Documents - BIENTÔT */}
             <div className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-8 opacity-60 cursor-not-allowed relative">
@@ -263,10 +290,15 @@ export default function DashboardPage() {
               <div className="font-semibold text-gray-900 text-sm">Certifications</div>
             </Link>
 
-            <button className="bg-white border border-gray-200 rounded-lg p-4 hover:border-blue-500 hover:shadow-md transition-all text-left opacity-50 cursor-not-allowed">
-              <div className="text-2xl mb-2">📁</div>
-              <div className="font-semibold text-gray-900 text-sm">Documents</div>
-            </button>
+            {isAdmin && (
+              <Link
+                href="/admin/gestion-clients"
+                className="bg-white border border-gray-200 rounded-lg p-4 hover:border-blue-500 hover:shadow-md transition-all text-left block"
+              >
+                <div className="text-2xl mb-2">👥</div>
+                <div className="font-semibold text-gray-900 text-sm">Gestion Clients</div>
+              </Link>
+            )}
           </div>
         </div>
       </main>

@@ -1,0 +1,260 @@
+═══════════════════════════════════════════════════════════════════
+    📂 ARBORESCENCE RÉELLE SITE SOLAIRE NETTOYAGE
+    Date: 12 Décembre 2025 - BASÉE SUR FICHIERS RÉELS
+═══════════════════════════════════════════════════════════════════
+
+solaire-nettoyage-site/
+│
+├── 📁 app/
+│   ├── layout.tsx                          # Layout principal
+│   ├── page.tsx                            # Page d'accueil
+│   │
+│   ├── 📁 admin/                           # Section Admin (12 pages)
+│   │   ├── 📁 affectation-masse/
+│   │   │   └── page.tsx
+│   │   ├── 📁 calendrier/
+│   │   │   └── page.tsx                    ← MODIFIÉ AUJOURD'HUI (textes daltonien + boutons)
+│   │   ├── 📁 gestion-clients/
+│   │   │   └── page.tsx
+│   │   ├── 📁 gestion-equipes/
+│   │   │   └── page.tsx                    ← CRÉÉ AUJOURD'HUI (composition équipes)
+│   │   ├── 📁 gestion-groupes/
+│   │   │   └── page.tsx
+│   │   ├── 📁 gestion-operateurs/
+│   │   │   └── page.tsx                    ← MODIFIÉ AUJOURD'HUI (textes daltonien + bouton)
+│   │   ├── 📁 gestion-sites/
+│   │   │   └── page.tsx
+│   │   ├── 📁 import-sites/
+│   │   │   └── page.tsx
+│   │   ├── 📁 init-equipes/
+│   │   │   └── page.tsx                    ← MODIFIÉ AUJOURD'HUI (textes daltonien + boutons)
+│   │   ├── 📁 init-operateurs/
+│   │   │   └── page.tsx                    ← MODIFIÉ AUJOURD'HUI (textes daltonien + bouton)
+│   │   ├── 📁 nouvelle-intervention/
+│   │   │   └── page.tsx                    ← MODIFIÉ AUJOURD'HUI (textes daltonien + bouton)
+│   │   └── 📁 upload-rapport/
+│   │       └── page.tsx
+│   │
+│   ├── 📁 client/                          # Section Client (4 pages)
+│   │   ├── page.tsx                        # Redirect → /client/login
+│   │   ├── 📁 dashboard/
+│   │   │   └── page.tsx                    # Dashboard client (interventions passées + sites + carte)
+│   │   ├── 📁 demande-acces/
+│   │   │   └── page.tsx
+│   │   └── 📁 login/
+│   │       └── page.tsx
+│   │
+│   ├── 📁 intranet/                        # Section Intranet (7 pages + 3 composants)
+│   │   ├── page.tsx
+│   │   ├── page copie.tsx
+│   │   ├── 📁 certifications/
+│   │   │   ├── page.tsx
+│   │   │   └── page copie.tsx
+│   │   ├── 📁 components/
+│   │   │   ├── IntranetHeader.tsx
+│   │   │   ├── WeatherModal.tsx
+│   │   │   └── WeatherWidget.tsx
+│   │   ├── 📁 dashboard/
+│   │   │   ├── page.tsx                    ← MODIFIÉ AUJOURD'HUI (bouton Gestion Équipes)
+│   │   │   └── page copie.tsx
+│   │   └── 📁 login/
+│   │       └── page.tsx
+│   │
+│   ├── 📁 entreprise/                      # Section Entreprise (10 pages)
+│   │   ├── layout.tsx
+│   │   ├── 📁 a-propos/
+│   │   │   ├── page.tsx
+│   │   │   ├── page copie.tsx
+│   │   │   └── page copie 2.tsx
+│   │   ├── 📁 carrieres/
+│   │   │   ├── page.tsx
+│   │   │   └── page copie.tsx
+│   │   ├── 📁 certifications/
+│   │   │   ├── page.tsx
+│   │   │   └── page copie.tsx
+│   │   └── 📁 references/
+│   │       ├── page.tsx
+│   │       └── page copie.tsx
+│   │
+│   ├── 📁 services/                        # Section Services (11 pages)
+│   │   ├── layout.tsx
+│   │   ├── 📁 centrales-sol/
+│   │   │   ├── centrales-page.tsx
+│   │   │   ├── page.tsx
+│   │   │   ├── page copie.tsx
+│   │   │   └── page copie 2.tsx
+│   │   ├── 📁 ombrieres/
+│   │   │   ├── page.tsx
+│   │   │   └── page copie.tsx
+│   │   ├── 📁 seveso/
+│   │   │   ├── page.tsx
+│   │   │   └── page copie.tsx
+│   │   └── 📁 toitures/
+│   │       ├── page.tsx
+│   │       └── page copie.tsx
+│   │
+│   ├── 📁 notre-histoire/                  # Section Histoire (2 pages)
+│   │   ├── page.tsx
+│   │   └── page 2.tsx
+│   │
+│   └── 📁 components/                      # Composants site public (19 fichiers)
+│       ├── Clients.tsx
+│       ├── Clients copie.tsx
+│       ├── DevisCTA.tsx
+│       ├── DevisCTA copie.tsx
+│       ├── DevisForm.tsx
+│       ├── DevisModal.tsx
+│       ├── Footer.tsx
+│       ├── Footer copie.tsx
+│       ├── Header.tsx
+│       ├── Header copie.tsx
+│       ├── Hero.tsx
+│       ├── Hero copie.tsx
+│       ├── Services.tsx
+│       ├── Services copie.tsx
+│       ├── ServicesDetailed.tsx
+│       ├── Stats.tsx
+│       └── Stats copie.tsx
+│
+├── 📁 lib/
+│   └── 📁 firebase/                        # Firebase (11 fichiers)
+│       ├── clients.ts
+│       ├── config.ts
+│       ├── demandes.ts
+│       ├── groupes.ts
+│       ├── import-sites.ts
+│       ├── index.ts                        ← MODIFIÉ AUJOURD'HUI (exports equipes)
+│       ├── interventions.ts
+│       ├── interventions-calendar.ts       ← MODIFIÉ AUJOURD'HUI (membresIds + membresNoms)
+│       ├── operateurs.ts
+│       ├── sites.ts
+│       └── storage.ts
+│
+├── 📁 components/                          # Composants globaux
+│   └── MapView.tsx
+│
+├── 📁 public/
+├── 📁 node_modules/
+├── 📁 .next/
+│
+├── package.json
+├── package-lock.json
+├── tsconfig.json
+├── next.config.js
+├── tailwind.config.js
+├── .env.local
+├── .gitignore
+└── README.md
+
+═══════════════════════════════════════════════════════════════════
+📊 STATISTIQUES FICHIERS
+═══════════════════════════════════════════════════════════════════
+
+TOTAL PAGES APP/:
+- Admin: 12 pages
+- Client: 4 pages
+- Intranet: 7 pages (dont 2 copies)
+- Entreprise: 10 pages (dont 5 copies)
+- Services: 11 pages (dont 6 copies)
+- Notre-histoire: 2 pages
+- Components: 19 composants (dont 8 copies)
+- Root: 2 pages (layout.tsx + page.tsx)
+
+TOTAL: 67 fichiers .tsx dans app/
+
+TOTAL FIREBASE:
+- 11 fichiers .ts
+
+═══════════════════════════════════════════════════════════════════
+✅ FICHIERS MODIFIÉS AUJOURD'HUI (9 FICHIERS)
+═══════════════════════════════════════════════════════════════════
+
+FIREBASE (2 fichiers):
+1. lib/firebase/interventions-calendar.ts   # Interface Equipe + updateEquipeComposition() + getEquipeById()
+2. lib/firebase/index.ts                    # Exports nouvelles fonctions
+
+ADMIN (6 fichiers):
+3. app/admin/calendrier/page.tsx            # Boutons Équipes + Dashboard + textes daltonien
+4. app/admin/nouvelle-intervention/page.tsx # Bouton Dashboard + textes daltonien
+5. app/admin/init-equipes/page.tsx          # Boutons Gérer Équipes + Dashboard + textes daltonien
+6. app/admin/init-operateurs/page.tsx       # Bouton Dashboard + textes daltonien
+7. app/admin/gestion-operateurs/page.tsx    # Bouton Dashboard + textes daltonien
+8. app/admin/gestion-equipes/page.tsx       # CRÉÉ (composition équipes flexible)
+
+INTRANET (1 fichier):
+9. app/intranet/dashboard/page.tsx          # Bouton Gestion Équipes
+
+═══════════════════════════════════════════════════════════════════
+❌ CE QUI N'EXISTE PAS (À CRÉER SI BESOIN)
+═══════════════════════════════════════════════════════════════════
+
+CLIENT - CALENDRIER:
+❌ app/client/interventions/page.tsx        # Voir interventions futures
+❌ app/client/interventions/[id]/modifier/page.tsx  # Demander changement date
+
+ADMIN - TRAITER DEMANDES:
+❌ app/admin/demandes-modifications/page.tsx  # Accepter/Refuser demandes clients
+
+═══════════════════════════════════════════════════════════════════
+📋 COLLECTIONS FIREBASE
+═══════════════════════════════════════════════════════════════════
+
+clients/
+groupes/
+sites/
+interventions/                              # Ancien système
+interventions_calendar/                     # Nouveau système (aujourd'hui)
+equipes/                                    # Créé aujourd'hui
+operateurs/                                 # Créé aujourd'hui
+conges_operateurs/                          # Créé aujourd'hui
+demandes/                                   # Demandes accès client
+
+═══════════════════════════════════════════════════════════════════
+🎯 SECTIONS SITE
+═══════════════════════════════════════════════════════════════════
+
+1. SITE PUBLIC:
+   - Page accueil (app/page.tsx)
+   - Notre histoire
+   - Services (toitures, centrales-sol, ombrières, seveso)
+   - Entreprise (à-propos, références, certifications, carrières)
+   - Components (Header, Hero, Footer, Stats, etc.)
+
+2. ADMIN:
+   - Gestion clients
+   - Gestion groupes
+   - Gestion sites
+   - Import sites
+   - Affectation masse
+   - Upload rapport
+   - Calendrier interventions ← MODIFIÉ
+   - Nouvelle intervention ← MODIFIÉ
+   - Gestion opérateurs ← MODIFIÉ
+   - Gestion équipes ← CRÉÉ
+   - Init équipes ← MODIFIÉ
+   - Init opérateurs ← MODIFIÉ
+
+3. CLIENT (DATAROOM):
+   - Login
+   - Demande accès
+   - Dashboard (interventions passées + sites + carte)
+
+4. INTRANET:
+   - Login
+   - Dashboard ← MODIFIÉ
+   - Certifications
+   - Components (Header, Weather)
+
+═══════════════════════════════════════════════════════════════════
+🔥 NOTES IMPORTANTES
+═══════════════════════════════════════════════════════════════════
+
+1. Beaucoup de fichiers "copie" partout (backups?)
+2. Pas de /client/interventions/ (calendrier client)
+3. Pas de page pour traiter demandes modifications
+4. Site public complet (entreprise, services, histoire)
+5. Composants dupliqués (avec/sans "copie")
+
+═══════════════════════════════════════════════════════════════════
+FIN ARBORESCENCE RÉELLE
+═══════════════════════════════════════════════════════════════════
