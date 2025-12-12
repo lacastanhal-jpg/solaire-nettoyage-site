@@ -2,18 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-
-interface Client {
-  id: string
-  company: string
-  email: string
-  password: string
-  contactName: string
-  phone: string
-  sites: string[]
-  createdAt: string
-  active: boolean
-}
+import { 
+  createClient, 
+  getAllClients, 
+  updateClient, 
+  deleteClient,
+  type Client 
+} from '@/lib/firebase'
 
 export default function GestionClientsPage() {
   const router = useRouter()
@@ -21,6 +16,7 @@ export default function GestionClientsPage() {
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editingClient, setEditingClient] = useState<Client | null>(null)
+  const [saving, setSaving] = useState(false)
 
   // Formulaire
   const [formData, setFormData] = useState({
@@ -28,8 +24,7 @@ export default function GestionClientsPage() {
     email: '',
     password: '',
     contactName: '',
-    phone: '',
-    sites: ''
+    phone: ''
   })
 
   useEffect(() => {
@@ -44,64 +39,65 @@ export default function GestionClientsPage() {
 
   const loadClients = async () => {
     try {
-      // TODO: Remplacer par vraie API
-      // Pour l'instant, données en dur
-      const mockClients: Client[] = [
-        {
-          id: '1',
-          company: 'MECOJIT',
-          email: 'mecojit@client.solairenettoyage.fr',
-          password: 'Mecojit2024!',
-          contactName: 'Contact MECOJIT',
-          phone: '',
-          sites: ['19-0226 CANTALOUBE 2'],
-          createdAt: '2024-12-11',
-          active: true
-        }
-      ]
-      setClients(mockClients)
-      setLoading(false)
+      setLoading(true)
+      const clientsList = await getAllClients()
+      setClients(clientsList)
     } catch (error) {
       console.error('Erreur chargement clients:', error)
+      alert('Erreur lors du chargement des clients')
+    } finally {
       setLoading(false)
     }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setSaving(true)
     
-    const newClient: Client = {
-      id: editingClient?.id || Date.now().toString(),
-      company: formData.company,
-      email: formData.email,
-      password: formData.password,
-      contactName: formData.contactName,
-      phone: formData.phone,
-      sites: formData.sites.split(',').map(s => s.trim()).filter(s => s),
-      createdAt: editingClient?.createdAt || new Date().toISOString().split('T')[0],
-      active: true
+    try {
+      if (editingClient) {
+        // Modifier un client existant
+        await updateClient(editingClient.id, {
+          company: formData.company,
+          email: formData.email,
+          password: formData.password,
+          contactName: formData.contactName,
+          phone: formData.phone
+        })
+        alert('✅ Client modifié avec succès !')
+      } else {
+        // Créer un nouveau client
+        await createClient({
+          company: formData.company,
+          email: formData.email,
+          password: formData.password,
+          contactName: formData.contactName,
+          phone: formData.phone,
+          createdAt: new Date().toISOString(),
+          active: true
+        })
+        alert('✅ Client créé avec succès !')
+      }
+
+      // Recharger la liste
+      await loadClients()
+
+      // Reset
+      setShowModal(false)
+      setEditingClient(null)
+      setFormData({
+        company: '',
+        email: '',
+        password: '',
+        contactName: '',
+        phone: ''
+      })
+    } catch (error) {
+      console.error('Erreur sauvegarde client:', error)
+      alert('❌ Erreur lors de la sauvegarde')
+    } finally {
+      setSaving(false)
     }
-
-    // TODO: Appel API pour sauvegarder
-    console.log('Client à sauvegarder:', newClient)
-
-    if (editingClient) {
-      setClients(clients.map(c => c.id === newClient.id ? newClient : c))
-    } else {
-      setClients([...clients, newClient])
-    }
-
-    // Reset
-    setShowModal(false)
-    setEditingClient(null)
-    setFormData({
-      company: '',
-      email: '',
-      password: '',
-      contactName: '',
-      phone: '',
-      sites: ''
-    })
   }
 
   const handleEdit = (client: Client) => {
@@ -111,16 +107,23 @@ export default function GestionClientsPage() {
       email: client.email,
       password: client.password,
       contactName: client.contactName,
-      phone: client.phone,
-      sites: client.sites.join(', ')
+      phone: client.phone
     })
     setShowModal(true)
   }
 
-  const handleDelete = (id: string) => {
-    if (confirm('Supprimer ce client ?')) {
-      setClients(clients.filter(c => c.id !== id))
-      // TODO: Appel API pour supprimer
+  const handleDelete = async (id: string) => {
+    if (!confirm('Supprimer ce client ? Cette action est irréversible.')) {
+      return
+    }
+
+    try {
+      await deleteClient(id)
+      alert('✅ Client supprimé')
+      await loadClients()
+    } catch (error) {
+      console.error('Erreur suppression client:', error)
+      alert('❌ Erreur lors de la suppression')
     }
   }
 
@@ -131,8 +134,7 @@ export default function GestionClientsPage() {
       email: '',
       password: '',
       contactName: '',
-      phone: '',
-      sites: ''
+      phone: ''
     })
     setShowModal(true)
   }
@@ -140,7 +142,7 @@ export default function GestionClientsPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-blue-50 flex items-center justify-center">
-        <div className="text-blue-900 text-xl">Chargement...</div>
+        <div className="text-blue-900 text-xl">Chargement des clients...</div>
       </div>
     )
   }
@@ -180,9 +182,9 @@ export default function GestionClientsPage() {
           </div>
           <div className="bg-white rounded-xl p-6 shadow-lg border border-blue-200">
             <div className="text-4xl font-bold text-yellow-500 mb-2">
-              {clients.reduce((sum, c) => sum + c.sites.length, 0)}
+              {clients.filter(c => c.active).length}
             </div>
-            <div className="text-blue-700 font-medium">Sites totaux</div>
+            <div className="text-blue-700 font-medium">Comptes activés</div>
           </div>
           <div className="bg-white rounded-xl p-6 shadow-lg border border-blue-200 flex items-center justify-center">
             <button
@@ -202,7 +204,7 @@ export default function GestionClientsPage() {
 
           {clients.length === 0 ? (
             <div className="p-12 text-center text-blue-600">
-              Aucun client pour le moment
+              Aucun client pour le moment. Cliquez sur "Nouveau Client" pour en créer un.
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -212,7 +214,6 @@ export default function GestionClientsPage() {
                     <th className="px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase">Entreprise</th>
                     <th className="px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase">Email</th>
                     <th className="px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase">Contact</th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase">Sites</th>
                     <th className="px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase">Créé le</th>
                     <th className="px-6 py-3 text-right text-xs font-bold text-blue-900 uppercase">Actions</th>
                   </tr>
@@ -225,7 +226,6 @@ export default function GestionClientsPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-blue-700">{client.email}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-blue-700">{client.contactName || '-'}</td>
-                      <td className="px-6 py-4 text-blue-700">{client.sites.length} site(s)</td>
                       <td className="px-6 py-4 whitespace-nowrap text-blue-700">{client.createdAt}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
                         <button
@@ -285,7 +285,11 @@ export default function GestionClientsPage() {
                   className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900"
                   placeholder="client@entreprise.fr"
                   required
+                  disabled={!!editingClient}
                 />
+                {editingClient && (
+                  <p className="text-xs text-blue-600 mt-1">L'email ne peut pas être modifié</p>
+                )}
               </div>
 
               <div>
@@ -328,29 +332,18 @@ export default function GestionClientsPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-blue-900 mb-2">
-                  Sites / Centrales (séparés par des virgules)
-                </label>
-                <textarea
-                  value={formData.sites}
-                  onChange={(e) => setFormData({ ...formData, sites: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900"
-                  rows={3}
-                  placeholder="19-0226 CANTALOUBE 2, Centrale Toulouse, ..."
-                />
-              </div>
-
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-blue-900 font-bold py-3 px-4 rounded-lg transition-colors"
+                  disabled={saving}
+                  className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-blue-900 font-bold py-3 px-4 rounded-lg transition-colors disabled:opacity-50"
                 >
-                  {editingClient ? 'Modifier' : 'Créer'}
+                  {saving ? '⏳ Enregistrement...' : (editingClient ? 'Modifier' : 'Créer')}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
+                  disabled={saving}
                   className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-lg transition-colors"
                 >
                   Annuler
