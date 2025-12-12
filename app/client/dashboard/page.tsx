@@ -7,7 +7,7 @@ import {
   getClientStats, 
   getSitesByClient,
   type Intervention,
-  type Site
+  type SiteComplet
 } from '@/lib/firebase'
 import dynamic from 'next/dynamic'
 
@@ -27,7 +27,7 @@ export default function ClientDashboard() {
   const [clientCompany, setClientCompany] = useState('')
   const [clientId, setClientId] = useState('')
   const [interventions, setInterventions] = useState<Intervention[]>([])
-  const [sites, setSites] = useState<Site[]>([])
+  const [sites, setSites] = useState<SiteComplet[]>([])
   const [stats, setStats] = useState({
     total: 0,
     terminees: 0,
@@ -35,7 +35,7 @@ export default function ClientDashboard() {
   })
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'interventions' | 'sites' | 'carte'>('interventions')
-  const [selectedSite, setSelectedSite] = useState<Site | null>(null)
+  const [selectedSite, setSelectedSite] = useState<SiteComplet | null>(null)
 
   useEffect(() => {
     // Vérifier si le client est connecté
