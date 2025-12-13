@@ -17,7 +17,7 @@ export default function Header() {
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-      scrolled ? 'bg-[#1e3a8a]/95 backdrop-blur-lg border-b border-white/8' : 'bg-[#1e3a8a]/95 backdrop-blur-lg border-b border-white/8'
+      scrolled ? 'bg-dark-bg/95 backdrop-blur-lg border-b border-white/8' : 'bg-dark-bg/95 backdrop-blur-lg border-b border-white/8'
     }`}>
       <div className="max-w-[1400px] mx-auto px-12 py-5 flex justify-between items-center">
         {/* Logo */}
