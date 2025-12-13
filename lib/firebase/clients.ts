@@ -15,11 +15,11 @@ import { db } from './config'
 export interface Client {
   id: string
   company: string
-  email: string
-  password: string
+  email?: string      // OPTIONNEL (login par groupe maintenant)
+  password?: string   // OPTIONNEL (login par groupe maintenant)
   contactName: string
   phone: string
-  groupeId?: string  // ← AJOUTÉ : Lien vers le groupe
+  groupeId?: string
   createdAt: string
   active: boolean
 }
