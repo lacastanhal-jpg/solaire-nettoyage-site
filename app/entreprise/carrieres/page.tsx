@@ -4,44 +4,42 @@ import Link from 'next/link'
 
 export default function CarrieresPage() {
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen">
       {/* Hero */}
-      <section className="relative h-screen flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-yellow-600/10 via-black to-amber-600/10" />
-        
-        <div className="absolute inset-0 opacity-10">
-          <div className="h-full w-full" style={{
-            backgroundImage: 'radial-gradient(circle, rgba(218, 165, 32, 0.3) 1px, transparent 1px)',
-            backgroundSize: '50px 50px'
-          }} />
-        </div>
-
-        <div className="relative z-10 max-w-6xl mx-auto px-6 text-center">
-          <div className="inline-block px-6 py-2 bg-yellow-600/20 border border-yellow-600 rounded-full text-yellow-400 text-sm font-bold mb-8">
-            REJOIGNEZ-NOUS
-          </div>
-          
-          <h1 className="text-6xl md:text-8xl font-bold mb-8 tracking-tight" style={{ fontFamily: "'Playfair Display', serif" }}>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-200">
-              Carrières
+      <section className="mt-[77px] bg-gradient-to-br from-blue-600 to-blue-400 relative">
+        <div className="max-w-[1400px] mx-auto px-12 py-32 pb-24">
+          <div className="inline-flex items-center gap-2 bg-[#fbbf24]/20 border border-[#fbbf24] px-4 py-2 mb-8">
+            <span className="w-1.5 h-1.5 bg-[#fbbf24] rounded-full"></span>
+            <span className="text-xs font-semibold text-[#fbbf24] tracking-widest uppercase">
+              REJOIGNEZ-NOUS
             </span>
+          </div>
+
+          <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-semibold text-white leading-none tracking-tight mb-6 max-w-[900px]">
+            Carrières
           </h1>
-          
-          <p className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed mb-12">
+
+          <p className="text-xl text-blue-100 max-w-[700px] mb-12 leading-relaxed">
             Rejoignez le leader français du nettoyage photovoltaïque et participez à la transition énergétique
           </p>
 
-          <Link href="/#contact" className="inline-block px-8 py-4 bg-gradient-to-r from-yellow-600 to-amber-600 text-black font-bold rounded-lg hover:shadow-2xl hover:shadow-yellow-500/50 transition-all duration-300 transform hover:scale-105">
+          <Link 
+            href="/#contact"
+            className="bg-[#fbbf24] text-blue-900 px-10 py-4 text-base font-semibold hover:bg-[#fbbf24]/90 transition-all hover:-translate-y-0.5 inline-flex items-center gap-2"
+          >
             Postuler
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
           </Link>
         </div>
       </section>
 
       {/* Pourquoi nous */}
-      <section className="py-32 bg-gradient-to-b from-black to-gray-900">
+      <section className="py-32 bg-white">
         <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-5xl font-bold mb-16 text-center" style={{ fontFamily: "'Playfair Display', serif" }}>
-            Pourquoi <span className="text-yellow-500">Solaire Nettoyage</span> ?
+          <h2 className="text-5xl font-bold mb-16 text-center text-blue-900">
+            Pourquoi <span className="text-[#fbbf24]">Solaire Nettoyage</span> ?
           </h2>
 
           <div className="grid md:grid-cols-3 gap-8">
@@ -77,10 +75,10 @@ export default function CarrieresPage() {
                 desc: 'Participez à l\'optimisation de la production d\'énergie solaire en France'
               }
             ].map((raison, idx) => (
-              <div key={idx} className="bg-gradient-to-br from-gray-900 to-black border border-yellow-600/30 rounded-2xl p-8 hover:border-yellow-600 transition-all duration-300 transform hover:scale-105">
+              <div key={idx} className="bg-gradient-to-br from-blue-50 to-white border border-blue-200 rounded-2xl p-8 hover:border-[#fbbf24] hover:shadow-lg transition-all duration-300">
                 <div className="text-6xl mb-6">{raison.icon}</div>
-                <h3 className="text-2xl font-bold text-yellow-400 mb-4">{raison.title}</h3>
-                <p className="text-gray-400 leading-relaxed">{raison.desc}</p>
+                <h3 className="text-2xl font-bold text-blue-900 mb-4">{raison.title}</h3>
+                <p className="text-gray-600 leading-relaxed">{raison.desc}</p>
               </div>
             ))}
           </div>
@@ -88,10 +86,10 @@ export default function CarrieresPage() {
       </section>
 
       {/* Profils recherchés */}
-      <section className="py-32">
+      <section className="py-32 bg-gradient-to-b from-blue-50 to-white">
         <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-5xl font-bold mb-16 text-center" style={{ fontFamily: "'Playfair Display', serif" }}>
-            Profils <span className="text-yellow-500">recherchés</span>
+          <h2 className="text-5xl font-bold mb-16 text-center text-blue-900">
+            Profils <span className="text-[#fbbf24]">recherchés</span>
           </h2>
 
           <div className="space-y-6 max-w-4xl mx-auto">
@@ -115,19 +113,19 @@ export default function CarrieresPage() {
                 competences: ['Permis B', 'Aisance en hauteur', 'Précision', 'Sécurité']
               }
             ].map((poste, idx) => (
-              <div key={idx} className="bg-gradient-to-r from-gray-900 to-black border border-yellow-600/30 rounded-2xl p-8 hover:border-yellow-600 transition-all duration-300">
+              <div key={idx} className="bg-white border border-blue-200 rounded-2xl p-8 hover:border-[#fbbf24] hover:shadow-lg transition-all duration-300">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h3 className="text-2xl font-bold text-white mb-2">{poste.title}</h3>
-                    <span className="inline-block px-4 py-1 bg-yellow-600/20 border border-yellow-600 rounded-full text-yellow-400 text-sm font-bold">
+                    <h3 className="text-2xl font-bold text-blue-900 mb-2">{poste.title}</h3>
+                    <span className="inline-block px-4 py-1 bg-[#fbbf24]/20 border border-[#fbbf24] rounded-full text-blue-900 text-sm font-bold">
                       {poste.type}
                     </span>
                   </div>
                 </div>
-                <p className="text-gray-300 mb-4">{poste.desc}</p>
+                <p className="text-gray-700 mb-4">{poste.desc}</p>
                 <div className="flex flex-wrap gap-2">
                   {poste.competences.map((comp, i) => (
-                    <span key={i} className="px-3 py-1 bg-black border border-yellow-600/20 rounded-lg text-sm text-gray-400">
+                    <span key={i} className="px-3 py-1 bg-blue-50 border border-blue-200 rounded-lg text-sm text-gray-600">
                       {comp}
                     </span>
                   ))}
@@ -139,10 +137,10 @@ export default function CarrieresPage() {
       </section>
 
       {/* Avantages */}
-      <section className="py-32 bg-gradient-to-b from-gray-900 to-black">
+      <section className="py-32 bg-white">
         <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-5xl font-bold mb-16 text-center" style={{ fontFamily: "'Playfair Display', serif" }}>
-            Nos <span className="text-yellow-500">avantages</span>
+          <h2 className="text-5xl font-bold mb-16 text-center text-blue-900">
+            Nos <span className="text-[#fbbf24]">avantages</span>
           </h2>
 
           <div className="grid md:grid-cols-2 gap-6">
@@ -154,12 +152,12 @@ export default function CarrieresPage() {
               { icon: '⏰', title: 'Horaires flexibles', desc: 'Adaptés selon les chantiers (journée, nuit, weekend)' },
               { icon: '🎯', title: 'Évolution', desc: 'Possibilités d\'évolution vers chef d\'équipe ou responsable' }
             ].map((avantage, idx) => (
-              <div key={idx} className="bg-gradient-to-br from-gray-900 to-black border border-yellow-600/20 rounded-xl p-6 hover:border-yellow-600 transition-all">
+              <div key={idx} className="bg-gradient-to-br from-blue-50 to-white border border-blue-200 rounded-xl p-6 hover:border-[#fbbf24] hover:shadow-lg transition-all">
                 <div className="flex items-start gap-4">
                   <span className="text-4xl">{avantage.icon}</span>
                   <div>
-                    <h3 className="text-xl font-bold text-yellow-400 mb-2">{avantage.title}</h3>
-                    <p className="text-gray-400">{avantage.desc}</p>
+                    <h3 className="text-xl font-bold text-blue-900 mb-2">{avantage.title}</h3>
+                    <p className="text-gray-600">{avantage.desc}</p>
                   </div>
                 </div>
               </div>
@@ -169,10 +167,10 @@ export default function CarrieresPage() {
       </section>
 
       {/* Processus recrutement */}
-      <section className="py-32">
+      <section className="py-32 bg-gradient-to-b from-blue-50 to-white">
         <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-5xl font-bold mb-16 text-center" style={{ fontFamily: "'Playfair Display', serif" }}>
-            Processus de <span className="text-yellow-500">recrutement</span>
+          <h2 className="text-5xl font-bold mb-16 text-center text-blue-900">
+            Processus de <span className="text-[#fbbf24]">recrutement</span>
           </h2>
 
           <div className="max-w-4xl mx-auto space-y-6">
@@ -182,14 +180,14 @@ export default function CarrieresPage() {
               { num: '03', title: 'Entretien', desc: 'Rencontre avec le dirigeant pour présenter l\'entreprise' },
               { num: '04', title: 'Intégration', desc: 'Formation terrain avec un technicien expérimenté' }
             ].map((etape, idx) => (
-              <div key={idx} className="bg-gradient-to-r from-gray-900 to-black border border-yellow-600/20 rounded-xl p-6 hover:border-yellow-600 transition-all">
+              <div key={idx} className="bg-white border border-blue-200 rounded-xl p-6 hover:border-[#fbbf24] hover:shadow-lg transition-all">
                 <div className="flex items-center gap-6">
-                  <div className="text-5xl font-bold text-yellow-600/30" style={{ fontFamily: "'Playfair Display', serif" }}>
+                  <div className="text-5xl font-bold text-[#fbbf24]/30">
                     {etape.num}
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-xl font-bold text-yellow-400 mb-2">{etape.title}</h3>
-                    <p className="text-gray-400">{etape.desc}</p>
+                    <h3 className="text-xl font-bold text-blue-900 mb-2">{etape.title}</h3>
+                    <p className="text-gray-600">{etape.desc}</p>
                   </div>
                 </div>
               </div>
@@ -199,31 +197,25 @@ export default function CarrieresPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-32 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-yellow-600/20 via-amber-600/20 to-yellow-600/20" />
-        
-        <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
-          <h2 className="text-5xl md:text-6xl font-bold mb-8" style={{ fontFamily: "'Playfair Display', serif" }}>
-            Prêt à nous <span className="text-yellow-500">rejoindre</span> ?
+      <section className="py-32 bg-gradient-to-br from-blue-600 to-blue-400">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <h2 className="text-5xl md:text-6xl font-bold text-white mb-8">
+            Prêt à nous <span className="text-[#fbbf24]">rejoindre</span> ?
           </h2>
           
-          <p className="text-xl text-gray-300 mb-8 leading-relaxed">
+          <p className="text-xl text-blue-100 mb-8 leading-relaxed">
             Envoyez votre candidature à :
           </p>
           
-          <a href="mailto:contact@solairenettoyage.fr" className="inline-block px-12 py-5 bg-gradient-to-r from-yellow-600 to-amber-600 text-black text-xl font-bold rounded-xl hover:shadow-2xl hover:shadow-yellow-500/50 transition-all duration-300 transform hover:scale-105 mb-6">
+          <a href="mailto:contact@solairenettoyage.fr" className="inline-block px-12 py-5 bg-[#fbbf24] text-blue-900 text-xl font-bold rounded-xl hover:bg-[#fbbf24]/90 transition-all duration-300 transform hover:scale-105 mb-6">
             contact@solairenettoyage.fr
           </a>
 
-          <p className="text-gray-400 text-lg">
-            Ou appelez-nous au <a href="tel:+33632134766" className="text-yellow-400 hover:text-yellow-300">06 32 13 47 66</a>
+          <p className="text-blue-100 text-lg">
+            Ou appelez-nous au <a href="tel:+33632134766" className="text-[#fbbf24] hover:text-[#fbbf24]/80">06 32 13 47 66</a>
           </p>
         </div>
       </section>
-
-      <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&display=swap');
-      `}</style>
     </div>
   )
 }

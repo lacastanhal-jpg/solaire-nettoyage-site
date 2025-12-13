@@ -4,40 +4,32 @@ import Link from 'next/link'
 
 export default function CertificationsPage() {
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen">
       {/* Hero */}
-      <section className="relative h-screen flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-yellow-600/10 via-black to-amber-600/10" />
-        
-        <div className="absolute inset-0 opacity-10">
-          <div className="h-full w-full" style={{
-            backgroundImage: 'radial-gradient(circle, rgba(218, 165, 32, 0.3) 1px, transparent 1px)',
-            backgroundSize: '50px 50px'
-          }} />
-        </div>
-
-        <div className="relative z-10 max-w-6xl mx-auto px-6 text-center">
-          <div className="inline-block px-6 py-2 bg-yellow-600/20 border border-yellow-600 rounded-full text-yellow-400 text-sm font-bold mb-8">
-            QUALIFICATIONS PROFESSIONNELLES
-          </div>
-          
-          <h1 className="text-6xl md:text-8xl font-bold mb-8 tracking-tight" style={{ fontFamily: "'Playfair Display', serif" }}>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-200">
-              Certifications
+      <section className="mt-[77px] bg-gradient-to-br from-blue-600 to-blue-400 relative">
+        <div className="max-w-[1400px] mx-auto px-12 py-32 pb-24">
+          <div className="inline-flex items-center gap-2 bg-[#fbbf24]/20 border border-[#fbbf24] px-4 py-2 mb-8">
+            <span className="w-1.5 h-1.5 bg-[#fbbf24] rounded-full"></span>
+            <span className="text-xs font-semibold text-[#fbbf24] tracking-widest uppercase">
+              QUALIFICATIONS PROFESSIONNELLES
             </span>
+          </div>
+
+          <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-semibold text-white leading-none tracking-tight mb-6 max-w-[900px]">
+            Certifications
           </h1>
-          
-          <p className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed mb-12">
+
+          <p className="text-xl text-blue-100 max-w-[700px] mb-12 leading-relaxed">
             Toutes nos équipes sont formées et certifiées pour intervenir en toute sécurité sur vos installations
           </p>
         </div>
       </section>
 
       {/* Certifications équipe */}
-      <section className="py-32 bg-gradient-to-b from-black to-gray-900">
+      <section className="py-32 bg-white">
         <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-5xl font-bold mb-16 text-center" style={{ fontFamily: "'Playfair Display', serif" }}>
-            Certifications <span className="text-yellow-500">équipe</span>
+          <h2 className="text-5xl font-bold mb-16 text-center text-blue-900">
+            Certifications <span className="text-[#fbbf24]">équipe</span>
           </h2>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -73,7 +65,7 @@ export default function CertificationsPage() {
                 desc: 'Protection contre les chutes de hauteur'
               },
               {
-                icon: '🔐',
+                icon: '🔧',
                 title: 'Habilitation élingueur',
                 name: 'Chef de manœuvre',
                 desc: 'Levage et manutention en sécurité'
@@ -97,11 +89,11 @@ export default function CertificationsPage() {
                 desc: 'Protocoles adaptés à chaque site'
               }
             ].map((cert, idx) => (
-              <div key={idx} className="bg-gradient-to-br from-gray-900 to-black border border-yellow-600/30 rounded-xl p-6 hover:border-yellow-600 transition-all duration-300 transform hover:scale-105">
+              <div key={idx} className="bg-gradient-to-br from-blue-50 to-white border border-blue-200 rounded-xl p-6 hover:border-[#fbbf24] hover:shadow-lg transition-all duration-300">
                 <div className="text-5xl mb-4">{cert.icon}</div>
-                <h3 className="text-xl font-bold text-yellow-400 mb-2">{cert.title}</h3>
-                <p className="text-white font-semibold mb-2">{cert.name}</p>
-                <p className="text-gray-400 text-sm">{cert.desc}</p>
+                <h3 className="text-xl font-bold text-blue-900 mb-2">{cert.title}</h3>
+                <p className="text-gray-900 font-semibold mb-2">{cert.name}</p>
+                <p className="text-gray-600 text-sm">{cert.desc}</p>
               </div>
             ))}
           </div>
@@ -109,14 +101,14 @@ export default function CertificationsPage() {
       </section>
 
       {/* EPI */}
-      <section className="py-32">
+      <section className="py-32 bg-gradient-to-b from-blue-50 to-white">
         <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-5xl font-bold mb-16 text-center" style={{ fontFamily: "'Playfair Display', serif" }}>
-            Équipements de <span className="text-yellow-500">protection</span>
+          <h2 className="text-5xl font-bold mb-16 text-center text-blue-900">
+            Équipements de <span className="text-[#fbbf24]">protection</span>
           </h2>
 
-          <div className="bg-gradient-to-br from-gray-900 to-black border border-yellow-600/30 rounded-2xl p-8 md:p-12">
-            <p className="text-lg text-gray-300 mb-8 text-center">
+          <div className="bg-white border border-blue-200 rounded-2xl p-8 md:p-12">
+            <p className="text-lg text-gray-700 mb-8 text-center">
               Tous nos techniciens sont équipés d'EPI certifiés et portent des tenues de travail identiques floquées
             </p>
 
@@ -129,9 +121,9 @@ export default function CertificationsPage() {
                 { icon: '🕶️', title: 'Lunettes anti-UV et reflets' },
                 { icon: '🧤', title: 'Gants de protection adaptés' }
               ].map((epi, idx) => (
-                <div key={idx} className="flex items-center gap-4 bg-black/50 border border-yellow-600/20 rounded-lg p-4 hover:border-yellow-600 transition-all">
+                <div key={idx} className="flex items-center gap-4 bg-blue-50 border border-blue-200 rounded-lg p-4 hover:border-[#fbbf24] transition-all">
                   <span className="text-3xl">{epi.icon}</span>
-                  <span className="text-gray-300">{epi.title}</span>
+                  <span className="text-gray-700">{epi.title}</span>
                 </div>
               ))}
             </div>
@@ -140,61 +132,61 @@ export default function CertificationsPage() {
       </section>
 
       {/* Matériel contrôlé */}
-      <section className="py-32 bg-gradient-to-b from-gray-900 to-black">
+      <section className="py-32 bg-white">
         <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-5xl font-bold mb-16 text-center" style={{ fontFamily: "'Playfair Display', serif" }}>
-            Matériel <span className="text-yellow-500">contrôlé</span>
+          <h2 className="text-5xl font-bold mb-16 text-center text-blue-900">
+            Matériel <span className="text-[#fbbf24]">contrôlé</span>
           </h2>
 
           <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-gradient-to-br from-gray-900 to-black border border-yellow-600/30 rounded-2xl p-8">
-              <h3 className="text-2xl font-bold text-yellow-400 mb-6">VGP - Vérifications Générales Périodiques</h3>
-              <ul className="space-y-4 text-gray-300">
+            <div className="bg-gradient-to-br from-blue-50 to-white border border-blue-200 rounded-2xl p-8">
+              <h3 className="text-2xl font-bold text-blue-900 mb-6">VGP - Vérifications Générales Périodiques</h3>
+              <ul className="space-y-4 text-gray-700">
                 <li className="flex items-start gap-3">
-                  <span className="text-yellow-500 mt-1">✓</span>
+                  <span className="text-[#fbbf24] mt-1">✓</span>
                   <span>Contrôles tous les 6 mois par organisme agréé</span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <span className="text-yellow-500 mt-1">✓</span>
+                  <span className="text-[#fbbf24] mt-1">✓</span>
                   <span>Nacelles HA16, HA20 RTJ PRO, Matilsa 17m</span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <span className="text-yellow-500 mt-1">✓</span>
+                  <span className="text-[#fbbf24] mt-1">✓</span>
                   <span>Camions et engins de chantier</span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <span className="text-yellow-500 mt-1">✓</span>
+                  <span className="text-[#fbbf24] mt-1">✓</span>
                   <span>Documentation complète disponible</span>
                 </li>
               </ul>
             </div>
 
-            <div className="bg-gradient-to-br from-gray-900 to-black border border-yellow-600/30 rounded-2xl p-8">
-              <h3 className="text-2xl font-bold text-yellow-400 mb-6">Harnais et EPI</h3>
-              <ul className="space-y-4 text-gray-300">
+            <div className="bg-gradient-to-br from-blue-50 to-white border border-blue-200 rounded-2xl p-8">
+              <h3 className="text-2xl font-bold text-blue-900 mb-6">Harnais et EPI</h3>
+              <ul className="space-y-4 text-gray-700">
                 <li className="flex items-start gap-3">
-                  <span className="text-yellow-500 mt-1">✓</span>
+                  <span className="text-[#fbbf24] mt-1">✓</span>
                   <span>Contrôles visuels avant chaque utilisation</span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <span className="text-yellow-500 mt-1">✓</span>
+                  <span className="text-[#fbbf24] mt-1">✓</span>
                   <span>Vérifications périodiques tous les 6 mois</span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <span className="text-yellow-500 mt-1">✓</span>
+                  <span className="text-[#fbbf24] mt-1">✓</span>
                   <span>Harnais, longes, antichutes certifiés</span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <span className="text-yellow-500 mt-1">✓</span>
+                  <span className="text-[#fbbf24] mt-1">✓</span>
                   <span>Traçabilité complète des équipements</span>
                 </li>
               </ul>
             </div>
           </div>
 
-          <div className="mt-12 bg-gradient-to-r from-yellow-600/20 to-amber-600/20 border-2 border-yellow-500/50 rounded-2xl p-12 text-center">
-            <h3 className="text-3xl font-bold text-white mb-4">Conformité totale</h3>
-            <p className="text-xl text-gray-300">
+          <div className="mt-12 bg-gradient-to-r from-[#fbbf24]/20 to-[#fbbf24]/20 border-2 border-[#fbbf24]/50 rounded-2xl p-12 text-center">
+            <h3 className="text-3xl font-bold text-blue-900 mb-4">Conformité totale</h3>
+            <p className="text-xl text-gray-700">
               Tous nos équipements sont conformes aux normes en vigueur et contrôlés régulièrement
             </p>
           </div>
@@ -202,10 +194,10 @@ export default function CertificationsPage() {
       </section>
 
       {/* Formations */}
-      <section className="py-32">
+      <section className="py-32 bg-gradient-to-b from-blue-50 to-white">
         <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-5xl font-bold mb-16 text-center" style={{ fontFamily: "'Playfair Display', serif" }}>
-            Formation <span className="text-yellow-500">continue</span>
+          <h2 className="text-5xl font-bold mb-16 text-center text-blue-900">
+            Formation <span className="text-[#fbbf24]">continue</span>
           </h2>
 
           <div className="max-w-4xl mx-auto space-y-6">
@@ -227,9 +219,9 @@ export default function CertificationsPage() {
                 desc: 'Partage des bonnes pratiques et analyse des situations à risque'
               }
             ].map((formation, idx) => (
-              <div key={idx} className="bg-gradient-to-r from-gray-900 to-black border border-yellow-600/20 rounded-xl p-6 hover:border-yellow-600 transition-all">
-                <h3 className="text-xl font-bold text-yellow-400 mb-2">{formation.title}</h3>
-                <p className="text-gray-400">{formation.desc}</p>
+              <div key={idx} className="bg-white border border-blue-200 rounded-xl p-6 hover:border-[#fbbf24] hover:shadow-lg transition-all">
+                <h3 className="text-xl font-bold text-blue-900 mb-2">{formation.title}</h3>
+                <p className="text-gray-600">{formation.desc}</p>
               </div>
             ))}
           </div>
@@ -237,27 +229,21 @@ export default function CertificationsPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-32 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-yellow-600/20 via-amber-600/20 to-yellow-600/20" />
-        
-        <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
-          <h2 className="text-5xl md:text-6xl font-bold mb-8" style={{ fontFamily: "'Playfair Display', serif" }}>
-            Des équipes <span className="text-yellow-500">certifiées</span> pour votre sécurité
+      <section className="py-32 bg-gradient-to-br from-blue-600 to-blue-400">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <h2 className="text-5xl md:text-6xl font-bold text-white mb-8">
+            Des équipes <span className="text-[#fbbf24]">certifiées</span> pour votre sécurité
           </h2>
           
-          <p className="text-xl text-gray-300 mb-12 leading-relaxed">
+          <p className="text-xl text-blue-100 mb-12 leading-relaxed">
             Toutes nos interventions respectent les normes de sécurité les plus strictes
           </p>
 
-          <Link href="/#contact" className="inline-block px-12 py-5 bg-gradient-to-r from-yellow-600 to-amber-600 text-black text-xl font-bold rounded-xl hover:shadow-2xl hover:shadow-yellow-500/50 transition-all duration-300 transform hover:scale-105">
+          <Link href="/#contact" className="inline-block px-12 py-5 bg-[#fbbf24] text-blue-900 text-xl font-bold rounded-xl hover:bg-[#fbbf24]/90 transition-all duration-300 transform hover:scale-105">
             Demander un devis
           </Link>
         </div>
       </section>
-
-      <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&display=swap');
-      `}</style>
     </div>
   )
 }
