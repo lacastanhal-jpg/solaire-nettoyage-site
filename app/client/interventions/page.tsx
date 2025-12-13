@@ -52,7 +52,7 @@ export default function ClientInterventionsPage() {
       const groupeClients = allClients.filter(c => c.groupeId === groupeId)
       const clientIds = groupeClients.map(c => c.id)
       
-      const groupeInterventions = allInterventions.filter(i => clientIds.includes(i.clientId))
+      const groupeInterventions = allInterventions.filter(i => i.clientId && clientIds.includes(i.clientId))
 
       console.log('Clients du groupe:', groupeClients.length)
       console.log('Interventions chargées:', groupeInterventions.length)

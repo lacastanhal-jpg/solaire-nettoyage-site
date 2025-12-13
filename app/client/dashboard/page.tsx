@@ -69,8 +69,8 @@ export default function ClientDashboard() {
       const groupeClients = allClients.filter(c => c.groupeId === groupeId)
       const clientIds = groupeClients.map(c => c.id)
       
-      const groupeSites = allSites.filter(s => clientIds.includes(s.clientId))
-      const groupeInterventions = allInterventions.filter(i => clientIds.includes(i.clientId))
+      const groupeSites = allSites.filter(s => s.clientId && clientIds.includes(s.clientId))
+      const groupeInterventions = allInterventions.filter(i => i.clientId && clientIds.includes(i.clientId))
 
       setClients(groupeClients)
       setSites(groupeSites)
