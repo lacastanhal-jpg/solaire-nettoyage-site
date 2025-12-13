@@ -4,12 +4,13 @@ export default function Stats() {
     { number: '3600+', label: 'Sites d\'intervention' },
     { number: '3', label: 'Équipes professionnelles' },
     { number: '1,5M€', label: 'Parc matériel' },
+    { number: '3,5M', label: 'm² nettoyés en 2025' },
   ]
 
   return (
     <section className="bg-blue-50 text-blue-900 py-12">
       <div className="max-w-[1400px] mx-auto px-12">
-        <div className="grid grid-cols-4 gap-16">
+        <div className="grid grid-cols-5 gap-16">
           {stats.map((stat, index) => (
             <div 
               key={index}
