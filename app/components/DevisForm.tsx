@@ -97,7 +97,7 @@ export default function DevisForm() {
                 </p>
                 <button
                   onClick={() => setStatus('idle')}
-                  className="inline-flex items-center gap-2 bg-[#C9A961] text-white px-8 py-3 rounded-lg hover:bg-[#B8984E] transition-colors font-semibold"
+                  className="inline-flex items-center gap-2 bg-[#fbbf24] text-blue-900 px-8 py-3 rounded-lg hover:bg-[#fbbf24]/90 transition-colors font-semibold"
                 >
                   Nouvelle demande
                 </button>
@@ -116,7 +116,7 @@ export default function DevisForm() {
                     required
                     value={formData.nom}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C9A961] focus:border-transparent transition-all"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fbbf24] focus:border-transparent transition-all"
                     placeholder="Jean Dupont"
                   />
                 </div>
@@ -133,7 +133,7 @@ export default function DevisForm() {
                     required
                     value={formData.entreprise}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C9A961] focus:border-transparent transition-all"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fbbf24] focus:border-transparent transition-all"
                     placeholder="Nom de votre entreprise"
                   />
                 </div>
@@ -151,7 +151,7 @@ export default function DevisForm() {
                       required
                       value={formData.email}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C9A961] focus:border-transparent transition-all"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fbbf24] focus:border-transparent transition-all"
                       placeholder="contact@entreprise.fr"
                     />
                   </div>
@@ -167,7 +167,7 @@ export default function DevisForm() {
                       required
                       value={formData.telephone}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C9A961] focus:border-transparent transition-all"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fbbf24] focus:border-transparent transition-all"
                       placeholder="06 12 34 56 78"
                     />
                   </div>
@@ -186,7 +186,7 @@ export default function DevisForm() {
                       min="1"
                       value={formData.surface}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C9A961] focus:border-transparent transition-all"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fbbf24] focus:border-transparent transition-all"
                       placeholder="5000"
                     />
                   </div>
@@ -203,7 +203,7 @@ export default function DevisForm() {
                       step="0.1"
                       value={formData.puissance}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C9A961] focus:border-transparent transition-all"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fbbf24] focus:border-transparent transition-all"
                       placeholder="500"
                     />
                   </div>
@@ -231,14 +231,14 @@ export default function DevisForm() {
                         step="0.1"
                         value={formData.pente}
                         onChange={handleChange}
-                        className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C9A961] focus:border-transparent transition-all"
+                        className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fbbf24] focus:border-transparent transition-all"
                         placeholder="15"
                       />
                       <select
                         name="unitePente"
                         value={formData.unitePente}
                         onChange={handleChange}
-                        className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C9A961] focus:border-transparent transition-all bg-white"
+                        className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fbbf24] focus:border-transparent transition-all bg-white"
                       >
                         <option value="degres">° (degrés)</option>
                         <option value="pourcent">% (pourcent)</option>
@@ -256,7 +256,7 @@ export default function DevisForm() {
                       required
                       value={formData.typeInstallation}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C9A961] focus:border-transparent transition-all bg-white"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fbbf24] focus:border-transparent transition-all bg-white"
                     >
                       <option value="">Sélectionnez...</option>
                       <option value="toiture">Toiture</option>
@@ -280,7 +280,7 @@ export default function DevisForm() {
                     rows={5}
                     value={formData.message}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C9A961] focus:border-transparent transition-all resize-none"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fbbf24] focus:border-transparent transition-all resize-none"
                     placeholder="Décrivez votre projet, localisation, fréquence souhaitée..."
                   />
                 </div>
@@ -297,11 +297,11 @@ export default function DevisForm() {
                 <button
                   type="submit"
                   disabled={status === 'loading'}
-                  className="w-full bg-[#C9A961] text-white py-4 px-8 rounded-lg hover:bg-[#B8984E] transition-all font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                  className="w-full bg-[#fbbf24] text-blue-900 py-4 px-8 rounded-lg hover:bg-[#fbbf24]/90 transition-all font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
                 >
                   {status === 'loading' ? (
                     <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="w-5 h-5 border-2 border-blue-900 border-t-transparent rounded-full animate-spin" />
                       Envoi en cours...
                     </>
                   ) : (
@@ -328,7 +328,7 @@ export default function DevisForm() {
             </p>
             <a 
               href="tel:+33632134766"
-              className="text-2xl font-bold text-[#C9A961] hover:text-[#B8984E] transition-colors"
+              className="text-2xl font-bold text-[#fbbf24] hover:text-[#fbbf24]/90 transition-colors"
             >
               06 32 13 47 66
             </a>
