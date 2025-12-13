@@ -24,11 +24,9 @@ export default function GestionClientsPage() {
   const [editingClient, setEditingClient] = useState<Client | null>(null)
   const [saving, setSaving] = useState(false)
 
-  // Formulaire
+  // Formulaire SANS email/password
   const [formData, setFormData] = useState({
     company: '',
-    email: '',
-    password: '',
     contactName: '',
     phone: '',
     groupeId: ''
@@ -67,28 +65,30 @@ export default function GestionClientsPage() {
     return sites.filter(s => s.clientId === clientId).length
   }
 
+  const getGroupeNom = (groupeId?: string) => {
+    if (!groupeId) return 'Aucun'
+    const groupe = groupes.find(g => g.id === groupeId)
+    return groupe ? groupe.nom : 'Inconnu'
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
     
     try {
       if (editingClient) {
-        // Modifier un client existant
+        // Modifier un client existant (SANS email/password)
         await updateClient(editingClient.id, {
           company: formData.company,
-          email: formData.email,
-          password: formData.password,
           contactName: formData.contactName,
           phone: formData.phone,
           groupeId: formData.groupeId || undefined
         })
         alert('✅ Client modifié avec succès !')
       } else {
-        // Créer un nouveau client
+        // Créer un nouveau client (SANS email/password)
         await createClient({
           company: formData.company,
-          email: formData.email,
-          password: formData.password,
           contactName: formData.contactName,
           phone: formData.phone,
           groupeId: formData.groupeId || undefined,
@@ -98,23 +98,13 @@ export default function GestionClientsPage() {
         alert('✅ Client créé avec succès !')
       }
 
-      // Recharger la liste
+      // Recharger et fermer
       await loadData()
-
-      // Reset
       setShowModal(false)
-      setEditingClient(null)
-      setFormData({
-        company: '',
-        email: '',
-        password: '',
-        contactName: '',
-        phone: '',
-        groupeId: ''
-      })
+      resetForm()
     } catch (error) {
-      console.error('Erreur sauvegarde client:', error)
-      alert('❌ Erreur lors de la sauvegarde')
+      console.error('Erreur:', error)
+      alert('❌ Erreur lors de l\'enregistrement')
     } finally {
       setSaving(false)
     }
@@ -124,53 +114,47 @@ export default function GestionClientsPage() {
     setEditingClient(client)
     setFormData({
       company: client.company,
-      email: client.email,
-      password: client.password,
-      contactName: client.contactName,
-      phone: client.phone,
+      contactName: client.contactName || '',
+      phone: client.phone || '',
       groupeId: client.groupeId || ''
     })
     setShowModal(true)
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Supprimer ce client ? Cette action est irréversible.')) {
+  const handleDelete = async (clientId: string) => {
+    if (!confirm('⚠️ Supprimer ce client ? Cette action est irréversible.')) {
       return
     }
 
     try {
-      await deleteClient(id)
+      await deleteClient(clientId)
       alert('✅ Client supprimé')
       await loadData()
     } catch (error) {
-      console.error('Erreur suppression client:', error)
+      console.error('Erreur suppression:', error)
       alert('❌ Erreur lors de la suppression')
     }
   }
 
   const openNewClientModal = () => {
     setEditingClient(null)
+    resetForm()
+    setShowModal(true)
+  }
+
+  const resetForm = () => {
     setFormData({
       company: '',
-      email: '',
-      password: '',
       contactName: '',
       phone: '',
       groupeId: ''
     })
-    setShowModal(true)
-  }
-
-  const getGroupeNom = (groupeId?: string) => {
-    if (!groupeId) return '-'
-    const groupe = groupes.find(g => g.id === groupeId)
-    return groupe ? groupe.nom : 'Groupe inconnu'
   }
 
   if (loading) {
     return (
       <div className="min-h-screen bg-blue-50 flex items-center justify-center">
-        <div className="text-blue-900 text-xl">Chargement des clients...</div>
+        <div className="text-blue-900 text-xl font-bold">⏳ Chargement...</div>
       </div>
     )
   }
@@ -187,21 +171,37 @@ export default function GestionClientsPage() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-blue-900">Gestion des Clients</h1>
-                <p className="text-sm text-blue-600">Espace Client Dataroom</p>
+                <p className="text-sm text-blue-600 font-bold">{clients.length} clients</p>
               </div>
             </div>
-            <a
-              href="/intranet/dashboard"
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
-            >
-              ← Retour Intranet
-            </a>
+            <div className="flex gap-2">
+              <a
+                href="/intranet/dashboard"
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm font-medium"
+              >
+                ← Dashboard
+              </a>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Contenu */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Info importante */}
+        <div className="mb-6 bg-blue-100 border-2 border-blue-400 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl">ℹ️</span>
+            <div>
+              <h3 className="font-bold text-blue-900 mb-1">Login par GROUPE</h3>
+              <p className="text-sm text-blue-800 font-medium">
+                Les clients n'ont plus d'email/password individuels. Le login se fait via les identifiants du GROUPE. 
+                Chaque groupe peut voir TOUS ses clients et sites depuis un seul compte.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-6 gap-6 mb-8">
           <div className="bg-white rounded-xl p-6 shadow-lg border border-blue-200">
@@ -266,8 +266,8 @@ export default function GestionClientsPage() {
                     <th className="px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase">Entreprise</th>
                     <th className="px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase">Groupe</th>
                     <th className="px-6 py-3 text-center text-xs font-bold text-blue-900 uppercase">Sites</th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase">Email</th>
                     <th className="px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase">Contact</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase">Téléphone</th>
                     <th className="px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase">Créé le</th>
                     <th className="px-6 py-3 text-right text-xs font-bold text-blue-900 uppercase">Actions</th>
                   </tr>
@@ -288,9 +288,11 @@ export default function GestionClientsPage() {
                           📍 {getSitesCount(client.id)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-blue-700">{client.email}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-blue-700">{client.contactName || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-blue-700">{client.createdAt}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-blue-700">{client.phone || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-blue-700">
+                        {new Date(client.createdAt).toLocaleDateString('fr-FR')}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
                         <button
                           onClick={() => handleEdit(client)}
@@ -325,6 +327,17 @@ export default function GestionClientsPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              {/* Info login par groupe */}
+              <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4 mb-4">
+                <div className="flex items-start gap-2">
+                  <span className="text-xl">🔐</span>
+                  <div className="text-sm text-yellow-900 font-medium">
+                    <strong>Login par GROUPE :</strong> Le client utilisera les identifiants du groupe pour se connecter. 
+                    Pas besoin de créer un email/password pour chaque client.
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-semibold text-blue-900 mb-2">
                   Groupe *
@@ -358,38 +371,7 @@ export default function GestionClientsPage() {
                   value={formData.company}
                   onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                   className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-blue-900 mb-2">
-                  Email de connexion *
-                </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900"
-                  placeholder="client@entreprise.fr"
-                  required
-                  disabled={!!editingClient}
-                />
-                {editingClient && (
-                  <p className="text-xs text-blue-600 mt-1">L'email ne peut pas être modifié</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-blue-900 mb-2">
-                  Mot de passe *
-                </label>
-                <input
-                  type="text"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900"
-                  placeholder="MotDePasse2024!"
+                  placeholder="Ex: ENGIE Green France"
                   required
                 />
               </div>
@@ -404,6 +386,7 @@ export default function GestionClientsPage() {
                     value={formData.contactName}
                     onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
                     className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900"
+                    placeholder="Jean Dupont"
                   />
                 </div>
 
@@ -416,6 +399,7 @@ export default function GestionClientsPage() {
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900"
+                    placeholder="06 12 34 56 78"
                   />
                 </div>
               </div>
@@ -426,7 +410,7 @@ export default function GestionClientsPage() {
                   disabled={saving}
                   className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-blue-900 font-bold py-3 px-4 rounded-lg transition-colors disabled:opacity-50"
                 >
-                  {saving ? '⏳ Enregistrement...' : (editingClient ? 'Modifier' : 'Créer')}
+                  {saving ? '⏳ Enregistrement...' : (editingClient ? '✅ Modifier' : '✅ Créer')}
                 </button>
                 <button
                   type="button"

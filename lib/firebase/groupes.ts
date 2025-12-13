@@ -17,6 +17,7 @@ export interface Groupe {
   nom: string
   contactPrincipal: string
   email: string
+  password: string  // MOT DE PASSE POUR LOGIN
   telephone: string
   adresse: string
   siret: string
@@ -99,6 +100,36 @@ export async function getGroupeByNom(nom: string): Promise<Groupe | null> {
     } as Groupe
   } catch (error) {
     console.error('Erreur recherche groupe:', error)
+    return null
+  }
+}
+
+// NOUVELLE FONCTION : Vérifier les credentials du groupe pour login
+export async function verifyGroupeCredentials(
+  email: string, 
+  password: string
+): Promise<Groupe | null> {
+  try {
+    const groupesRef = collection(db, GROUPES_COLLECTION)
+    const q = query(
+      groupesRef,
+      where('email', '==', email),
+      where('password', '==', password),
+      where('active', '==', true)
+    )
+    const snapshot = await getDocs(q)
+    
+    if (snapshot.empty) {
+      return null
+    }
+    
+    const doc = snapshot.docs[0]
+    return {
+      id: doc.id,
+      ...doc.data()
+    } as Groupe
+  } catch (error) {
+    console.error('Erreur vérification credentials groupe:', error)
     return null
   }
 }

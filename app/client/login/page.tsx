@@ -2,147 +2,133 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { verifyClientCredentials } from '@/lib/firebase'
+import { verifyGroupeCredentials } from '@/lib/firebase'
 
 export default function ClientLoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
 
     try {
-      // Vérifier les credentials avec Firebase
-      const client = await verifyClientCredentials(email, password)
+      // Vérifier les credentials du GROUPE
+      const groupe = await verifyGroupeCredentials(email, password)
 
-      if (!client) {
+      if (!groupe) {
         setError('❌ Email ou mot de passe incorrect')
         setLoading(false)
         return
       }
 
-      // Stocker les infos du client
+      // Stocker les infos du GROUPE dans localStorage
       localStorage.setItem('client_logged_in', 'true')
-      localStorage.setItem('client_id', client.id!)
-      localStorage.setItem('client_email', client.email)
-      localStorage.setItem('client_company', client.company)
-      localStorage.setItem('client_name', client.contactName || client.company)
+      localStorage.setItem('groupe_id', groupe.id)
+      localStorage.setItem('groupe_name', groupe.nom)
+      localStorage.setItem('groupe_email', groupe.email)
 
       // Rediriger vers le dashboard
       router.push('/client/dashboard')
     } catch (error) {
-      console.error('Erreur connexion:', error)
-      setError('❌ Erreur lors de la connexion. Réessayez.')
+      console.error('Erreur login:', error)
+      setError('❌ Erreur de connexion')
       setLoading(false)
     }
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8">
+      <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-full mx-auto mb-4 flex items-center justify-center">
+          <div className="w-20 h-20 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-full mx-auto mb-4 flex items-center justify-center shadow-2xl">
             <span className="text-4xl">☀️</span>
           </div>
-          <h1 className="text-2xl font-bold text-blue-900 mb-2">Espace Client</h1>
-          <p className="text-blue-600 font-medium">Solaire Nettoyage</p>
+          <h1 className="text-3xl font-bold text-white mb-2">Espace Groupe</h1>
+          <p className="text-blue-200">Accédez à vos sites et interventions</p>
         </div>
 
         {/* Formulaire */}
-        <form onSubmit={handleLogin} className="space-y-6">
-          {error && (
-            <div className="bg-red-50 border-2 border-red-300 text-red-900 px-4 py-3 rounded-lg text-sm font-medium">
-              {error}
-            </div>
-          )}
-
-          {/* Email */}
-          <div>
-            <label className="block text-sm font-bold text-blue-900 mb-2">
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900 font-medium"
-              placeholder="votre@email.fr"
-              required
-            />
-          </div>
-
-          {/* Mot de passe avec bouton œil */}
-          <div>
-            <label className="block text-sm font-bold text-blue-900 mb-2">
-              Mot de passe
-            </label>
-            <div className="relative">
+        <div className="bg-white/10 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-white/20">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-bold text-white mb-2">
+                Email du groupe
+              </label>
               <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 pr-12 border-2 border-blue-300 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900 font-medium"
-                placeholder="••••••••"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 bg-white/90 border-2 border-white/30 rounded-lg focus:border-yellow-500 focus:outline-none text-blue-900 font-medium"
+                placeholder="groupe@exemple.fr"
                 required
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-2xl hover:scale-110 transition-transform"
-                title={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
-              >
-                {showPassword ? '🙈' : '👁️'}
-              </button>
             </div>
-            <p className="text-xs text-blue-600 mt-1">
-              💡 Cliquez sur l'œil pour voir votre mot de passe
-            </p>
-          </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-3 px-6 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-          >
-            {loading ? '⏳ Connexion...' : '🔐 Se connecter'}
-          </button>
-        </form>
+            {/* Mot de passe */}
+            <div>
+              <label className="block text-sm font-bold text-white mb-2">
+                Mot de passe
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 bg-white/90 border-2 border-white/30 rounded-lg focus:border-yellow-500 focus:outline-none text-blue-900 font-medium pr-12"
+                  placeholder="••••••••"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-2xl hover:scale-110 transition-transform"
+                >
+                  {showPassword ? '🙈' : '👁️'}
+                </button>
+              </div>
+            </div>
 
-        {/* Lien Demande d'accès */}
-        <div className="mt-6 text-center">
-          <p className="text-sm text-blue-700 font-medium">
-            Pas encore de compte ?{' '}
-            <a
-              href="/client/demande-acces"
-              className="font-bold text-blue-800 hover:text-blue-900 underline"
+            {/* Erreur */}
+            {error && (
+              <div className="bg-red-100 border-2 border-red-300 text-red-900 px-4 py-3 rounded-lg font-bold">
+                {error}
+              </div>
+            )}
+
+            {/* Bouton */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-blue-900 font-bold py-4 px-6 rounded-lg transition-all disabled:opacity-50 shadow-lg"
             >
-              Demander un accès
-            </a>
-          </p>
+              {loading ? '⏳ Connexion...' : '🔐 Se connecter'}
+            </button>
+          </form>
+
+          {/* Info */}
+          <div className="mt-6 p-4 bg-blue-900/30 rounded-lg border border-blue-700/30">
+            <div className="text-sm text-blue-100 font-medium">
+              💡 <strong>Nouveau système :</strong> Connectez-vous avec les identifiants de votre GROUPE pour accéder à tous vos clients et sites.
+            </div>
+          </div>
         </div>
 
-        {/* Retour site */}
-        <div className="mt-8 text-center">
+        {/* Retour accueil */}
+        <div className="text-center mt-6">
           <a
             href="/"
-            className="text-sm text-blue-600 hover:text-blue-900 font-medium"
+            className="text-blue-200 hover:text-white font-medium transition-colors"
           >
-            ← Retour au site
+            ← Retour à l'accueil
           </a>
-        </div>
-
-        {/* Info aide */}
-        <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-xs text-blue-700 font-medium text-center">
-            ℹ️ En cas de problème de connexion, contactez-nous
-          </p>
         </div>
       </div>
     </div>

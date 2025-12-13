@@ -21,11 +21,12 @@ export default function GestionGroupesPage() {
   const [editingGroupe, setEditingGroupe] = useState<Groupe | null>(null)
   const [saving, setSaving] = useState(false)
 
-  // Formulaire
+  // Formulaire AVEC password
   const [formData, setFormData] = useState({
     nom: '',
     contactPrincipal: '',
     email: '',
+    password: '',  // AJOUTÉ
     telephone: '',
     adresse: '',
     siret: '',
@@ -75,6 +76,7 @@ export default function GestionGroupesPage() {
           nom: formData.nom,
           contactPrincipal: formData.contactPrincipal,
           email: formData.email,
+          password: formData.password,  // AJOUTÉ
           telephone: formData.telephone,
           adresse: formData.adresse,
           siret: formData.siret,
@@ -88,6 +90,7 @@ export default function GestionGroupesPage() {
           nom: formData.nom,
           contactPrincipal: formData.contactPrincipal,
           email: formData.email,
+          password: formData.password,  // AJOUTÉ
           telephone: formData.telephone,
           adresse: formData.adresse,
           siret: formData.siret,
@@ -108,6 +111,7 @@ export default function GestionGroupesPage() {
         nom: '',
         contactPrincipal: '',
         email: '',
+        password: '',  // AJOUTÉ
         telephone: '',
         adresse: '',
         siret: '',
@@ -128,6 +132,7 @@ export default function GestionGroupesPage() {
       nom: groupe.nom,
       contactPrincipal: groupe.contactPrincipal,
       email: groupe.email,
+      password: groupe.password || '',  // AJOUTÉ
       telephone: groupe.telephone,
       adresse: groupe.adresse,
       siret: groupe.siret,
@@ -158,6 +163,7 @@ export default function GestionGroupesPage() {
       nom: '',
       contactPrincipal: '',
       email: '',
+      password: '',  // AJOUTÉ
       telephone: '',
       adresse: '',
       siret: '',
@@ -170,7 +176,7 @@ export default function GestionGroupesPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-blue-50 flex items-center justify-center">
-        <div className="text-blue-900 text-xl">Chargement des groupes...</div>
+        <div className="text-blue-900 text-xl font-bold">⏳ Chargement...</div>
       </div>
     )
   }
@@ -182,51 +188,75 @@ export default function GestionGroupesPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center">
                 <span className="text-2xl">🏢</span>
               </div>
               <div>
                 <h1 className="text-xl font-bold text-blue-900">Gestion des Groupes</h1>
-                <p className="text-sm text-blue-600">Groupes de sociétés clients</p>
+                <p className="text-sm text-blue-600 font-bold">{groupes.length} groupes</p>
               </div>
             </div>
-            <a
-              href="/admin/gestion-clients"
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
-            >
-              ← Retour
-            </a>
+            <div className="flex gap-2">
+              <a
+                href="/intranet/dashboard"
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm font-medium"
+              >
+                ← Dashboard
+              </a>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Contenu */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Info importante */}
+        <div className="mb-6 bg-purple-100 border-2 border-purple-400 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl">🔐</span>
+            <div>
+              <h3 className="font-bold text-purple-900 mb-1">Identifiants de connexion</h3>
+              <p className="text-sm text-purple-800 font-medium">
+                Chaque groupe a un email et mot de passe pour se connecter à l'espace client. 
+                Tous les clients du groupe partagent ces mêmes identifiants.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-xl p-6 shadow-lg border border-blue-200">
-            <div className="text-4xl font-bold text-blue-500 mb-2">{groupes.length}</div>
-            <div className="text-blue-700 font-medium">Groupes totaux</div>
+            <div className="text-4xl font-bold text-purple-500 mb-2">{groupes.length}</div>
+            <div className="text-blue-700 font-medium">Groupes</div>
           </div>
           <div className="bg-white rounded-xl p-6 shadow-lg border border-blue-200">
             <div className="text-4xl font-bold text-green-500 mb-2">
               {groupes.filter(g => g.active).length}
             </div>
-            <div className="text-blue-700 font-medium">Groupes actifs</div>
+            <div className="text-blue-700 font-medium">Actifs</div>
           </div>
           <div className="bg-white rounded-xl p-6 shadow-lg border border-blue-200 flex items-center justify-center">
             <button
               onClick={openNewGroupeModal}
-              className="px-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-blue-900 font-bold rounded-lg transition-colors"
+              className="px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white font-bold rounded-lg transition-colors"
             >
               ➕ Nouveau Groupe
             </button>
+          </div>
+          <div className="bg-white rounded-xl p-6 shadow-lg border border-blue-200 flex items-center justify-center">
+            <a
+              href="/admin/gestion-clients"
+              className="px-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-blue-900 font-bold rounded-lg transition-colors"
+            >
+              👥 Voir Clients
+            </a>
           </div>
         </div>
 
         {/* Liste groupes */}
         <div className="bg-white rounded-xl shadow-lg border border-blue-200 overflow-hidden">
-          <div className="px-6 py-4 bg-blue-600 border-b border-blue-700">
+          <div className="px-6 py-4 bg-purple-600 border-b border-purple-700">
             <h3 className="text-lg font-bold text-white">Liste des Groupes</h3>
           </div>
 
@@ -237,26 +267,30 @@ export default function GestionGroupesPage() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-blue-50 border-b border-blue-200">
+                <thead className="bg-purple-50 border-b border-purple-200">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase">Nom</th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase">Contact</th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase">SIRET</th>
-                    <th className="px-6 py-3 text-center text-xs font-bold text-blue-900 uppercase">Clients</th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase">Statut</th>
-                    <th className="px-6 py-3 text-right text-xs font-bold text-blue-900 uppercase">Actions</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-purple-900 uppercase">Nom</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-purple-900 uppercase">Contact</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-purple-900 uppercase">Login</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-purple-900 uppercase">SIRET</th>
+                    <th className="px-6 py-3 text-center text-xs font-bold text-purple-900 uppercase">Clients</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-purple-900 uppercase">Statut</th>
+                    <th className="px-6 py-3 text-right text-xs font-bold text-purple-900 uppercase">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-blue-100">
                   {groupes.map((groupe) => (
-                    <tr key={groupe.id} className="hover:bg-blue-50">
+                    <tr key={groupe.id} className="hover:bg-purple-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="font-semibold text-blue-900">{groupe.nom}</div>
-                        <div className="text-xs text-blue-600">{groupe.email}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-blue-700">
                         <div>{groupe.contactPrincipal || '-'}</div>
                         <div className="text-xs">{groupe.telephone || '-'}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-blue-700">{groupe.email}</div>
+                        <div className="text-xs text-gray-500">🔐 {groupe.password ? '••••••••' : 'Pas de mot de passe'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-blue-700 font-mono text-sm">
                         {groupe.siret || '-'}
@@ -302,13 +336,24 @@ export default function GestionGroupesPage() {
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 bg-blue-600 border-b border-blue-700">
+            <div className="px-6 py-4 bg-purple-600 border-b border-purple-700">
               <h3 className="text-xl font-bold text-white">
                 {editingGroupe ? 'Modifier le Groupe' : 'Nouveau Groupe'}
               </h3>
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              {/* Info login */}
+              <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4 mb-4">
+                <div className="flex items-start gap-2">
+                  <span className="text-xl">🔐</span>
+                  <div className="text-sm text-purple-900 font-medium">
+                    <strong>Identifiants de connexion :</strong> L'email et le mot de passe permettent au groupe 
+                    de se connecter à l'espace client et de voir tous leurs clients et sites.
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-semibold text-blue-900 mb-2">
                   Nom du groupe *
@@ -317,10 +362,41 @@ export default function GestionGroupesPage() {
                   type="text"
                   value={formData.nom}
                   onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900"
-                  placeholder="MECOJIT"
+                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-purple-500 focus:outline-none text-blue-900"
+                  placeholder="Ex: ENGIE"
                   required
                 />
+              </div>
+
+              {/* EMAIL + PASSWORD (côte à côte) */}
+              <div className="grid md:grid-cols-2 gap-4 bg-purple-50 p-4 rounded-lg border-2 border-purple-200">
+                <div>
+                  <label className="block text-sm font-semibold text-purple-900 mb-2">
+                    Email de connexion *
+                  </label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-purple-300 rounded-lg focus:border-purple-500 focus:outline-none text-blue-900"
+                    placeholder="groupe@solairenettoyage.fr"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-purple-900 mb-2">
+                    Mot de passe *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-purple-300 rounded-lg focus:border-purple-500 focus:outline-none text-blue-900"
+                    placeholder="MotDePasseGroupe123"
+                    required
+                  />
+                </div>
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
@@ -339,21 +415,6 @@ export default function GestionGroupesPage() {
 
                 <div>
                   <label className="block text-sm font-semibold text-blue-900 mb-2">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900"
-                    placeholder="contact@mecojit.fr"
-                  />
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-blue-900 mb-2">
                     Téléphone
                   </label>
                   <input
@@ -364,7 +425,9 @@ export default function GestionGroupesPage() {
                     placeholder="01 23 45 67 89"
                   />
                 </div>
+              </div>
 
+              <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-blue-900 mb-2">
                     SIRET
@@ -377,19 +440,19 @@ export default function GestionGroupesPage() {
                     placeholder="820 504 421 00000"
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-blue-900 mb-2">
-                  Adresse
-                </label>
-                <input
-                  type="text"
-                  value={formData.adresse}
-                  onChange={(e) => setFormData({ ...formData, adresse: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900"
-                  placeholder="123 Rue de la Paix, 75000 Paris"
-                />
+                <div>
+                  <label className="block text-sm font-semibold text-blue-900 mb-2">
+                    Adresse
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.adresse}
+                    onChange={(e) => setFormData({ ...formData, adresse: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900"
+                    placeholder="123 rue de la Paix, 75000 Paris"
+                  />
+                </div>
               </div>
 
               <div>
@@ -399,22 +462,21 @@ export default function GestionGroupesPage() {
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900"
                   rows={3}
-                  placeholder="Groupe spécialisé dans..."
+                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900"
+                  placeholder="Description du groupe..."
                 />
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
-                  id="active"
                   checked={formData.active}
                   onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
-                  className="w-5 h-5"
+                  className="w-5 h-5 text-purple-600 rounded"
                 />
-                <label htmlFor="active" className="text-sm font-semibold text-blue-900">
-                  Groupe actif
+                <label className="text-sm font-semibold text-blue-900">
+                  Groupe actif (peut se connecter)
                 </label>
               </div>
 
@@ -422,9 +484,9 @@ export default function GestionGroupesPage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-blue-900 font-bold py-3 px-4 rounded-lg transition-colors disabled:opacity-50"
+                  className="flex-1 bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 px-4 rounded-lg transition-colors disabled:opacity-50"
                 >
-                  {saving ? '⏳ Enregistrement...' : (editingGroupe ? 'Modifier' : 'Créer')}
+                  {saving ? '⏳ Enregistrement...' : (editingGroupe ? '✅ Modifier' : '✅ Créer')}
                 </button>
                 <button
                   type="button"

@@ -2,7 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { getInterventionsByClientCalendar, demanderChangementDate, type InterventionCalendar } from '@/lib/firebase'
+import { 
+  getAllInterventionsCalendar, 
+  getAllClients,
+  demanderChangementDate, 
+  type InterventionCalendar,
+  type Client
+} from '@/lib/firebase'
 
 export default function ModifierInterventionPage() {
   const router = useRouter()
@@ -28,15 +34,27 @@ export default function ModifierInterventionPage() {
       return
     }
 
-    const clientId = localStorage.getItem('client_id') || ''
-    loadIntervention(clientId)
+    const groupeId = localStorage.getItem('groupe_id') || ''
+    loadIntervention(groupeId)
   }, [router, interventionId])
 
-  const loadIntervention = async (clientId: string) => {
+  const loadIntervention = async (groupeId: string) => {
     try {
       setLoading(true)
-      const interventions = await getInterventionsByClientCalendar(clientId)
-      const inter = interventions.find(i => i.id === interventionId)
+      
+      // Récupérer TOUTES les interventions et clients
+      const [allInterventions, allClients] = await Promise.all([
+        getAllInterventionsCalendar(),
+        getAllClients()
+      ])
+
+      // Filtrer par groupe
+      const groupeClients = allClients.filter(c => c.groupeId === groupeId)
+      const clientIds = groupeClients.map(c => c.id)
+      const groupeInterventions = allInterventions.filter(i => clientIds.includes(i.clientId))
+
+      // Trouver l'intervention demandée
+      const inter = groupeInterventions.find(i => i.id === interventionId)
 
       if (!inter) {
         alert('❌ Intervention introuvable')

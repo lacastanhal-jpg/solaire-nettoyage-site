@@ -113,6 +113,7 @@ export {
   getGroupeByNom,
   updateGroupe,
   deleteGroupe,
-  countGroupesActifs
+  countGroupesActifs,
+  verifyGroupeCredentials  // ✅ AJOUTÉ !
 } from './groupes'
 export type { Groupe } from './groupes'
