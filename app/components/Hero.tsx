@@ -18,12 +18,12 @@ export default function Hero({ onOpenDevis }: HeroProps) {
 
         {/* Titre Principal */}
         <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-semibold text-white leading-none tracking-tight mb-6 max-w-[900px]">
-          Nettoyage Professionnel de Panneaux Photovoltaïques
+          Nettoyage Professionnel de Centrales Photovoltaïques
         </h1>
 
         {/* Sous-titre */}
         <p className="text-xl text-blue-100 max-w-[700px] mb-12 leading-relaxed">
-          Expert en maintenance et nettoyage de centrales solaires. 3 équipes mobiles, 
+          Expert en nettoyage de centrales solaires. 3 équipes mobiles, 
           équipement de pointe, certifications tous sites dont Seveso. Partenaire des plus 
           grands énergéticiens français.
         </p>
