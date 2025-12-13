@@ -29,9 +29,10 @@ export default function NouvelleInterventionPage() {
   const [selectedEquipeId, setSelectedEquipeId] = useState<number>(1)
   
   const [formData, setFormData] = useState({
-    date: '',
-    heure: '09:00',
-    duree: 4,
+    dateDebut: '',
+    dateFin: '',
+    heureDebut: '08:00',
+    heureFin: '17:00',
     type: 'Standard' as 'Standard' | 'Urgence' | 'Maintenance',
     notes: ''
   })
@@ -66,8 +67,20 @@ export default function NouvelleInterventionPage() {
   }
 
   const handleSave = async () => {
-    if (!selectedSiteId || !formData.date) {
-      alert('⚠️ Le site et la date sont obligatoires')
+    if (!selectedSiteId || !formData.dateDebut || !formData.dateFin) {
+      alert('⚠️ Le site, la date de début et la date de fin sont obligatoires')
+      return
+    }
+
+    // Vérifier que dateFin >= dateDebut
+    if (new Date(formData.dateFin) < new Date(formData.dateDebut)) {
+      alert('⚠️ La date de fin doit être après ou égale à la date de début')
+      return
+    }
+
+    // Vérifier que heureFin > heureDebut
+    if (formData.heureFin <= formData.heureDebut) {
+      alert('⚠️ L\'heure de fin doit être après l\'heure de début')
       return
     }
 
@@ -83,8 +96,6 @@ export default function NouvelleInterventionPage() {
     try {
       setSaving(true)
 
-      const dateTime = `${formData.date}T${formData.heure}:00`
-
       await createInterventionCalendar({
         siteId: selectedSiteId,
         siteName: site.nomSite,
@@ -93,8 +104,10 @@ export default function NouvelleInterventionPage() {
         groupeId: site.groupeId || '',
         equipeId: selectedEquipeId as 1 | 2 | 3,
         equipeName: equipe.nom,
-        date: dateTime,
-        duree: formData.duree,
+        dateDebut: formData.dateDebut,
+        dateFin: formData.dateFin,
+        heureDebut: formData.heureDebut,
+        heureFin: formData.heureFin,
         surface: site.surface || 0,
         type: formData.type,
         statut: 'Planifiée',
@@ -147,18 +160,20 @@ export default function NouvelleInterventionPage() {
                 <p className="text-sm text-gray-900 font-medium">Planifier une intervention terrain</p>
               </div>
             </div>
-            <a
-              href="/admin/calendrier"
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
-            >
-              ← Retour Calendrier
-            </a>
-            <a
-              href="/intranet/dashboard"
-              className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm font-medium"
-            >
-              ← Dashboard
-            </a>
+            <div className="flex gap-2">
+              <a
+                href="/admin/calendrier"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
+              >
+                ← Retour Calendrier
+              </a>
+              <a
+                href="/intranet/dashboard"
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm font-medium"
+              >
+                ← Dashboard
+              </a>
+            </div>
           </div>
         </div>
       </header>
@@ -275,64 +290,87 @@ export default function NouvelleInterventionPage() {
               </div>
             </div>
 
-            {/* Date & Heure */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-base font-bold text-gray-900 mb-2">
-                  Date *
-                </label>
-                <input
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => setFormData({...formData, date: e.target.value})}
-                  className="w-full px-4 py-3 border-2 border-gray-400 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900"
-                  required
-                />
-              </div>
+            {/* Plage de dates */}
+            <div className="border-2 border-blue-300 rounded-xl p-6 bg-blue-50">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">📅 Plage de dates</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-base font-bold text-gray-900 mb-2">
+                    Date début *
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.dateDebut}
+                    onChange={(e) => setFormData({...formData, dateDebut: e.target.value})}
+                    className="w-full px-4 py-3 border-2 border-gray-400 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900 font-medium"
+                    required
+                  />
+                </div>
 
-              <div>
-                <label className="block text-base font-bold text-gray-900 mb-2">
-                  Heure
-                </label>
-                <input
-                  type="time"
-                  value={formData.heure}
-                  onChange={(e) => setFormData({...formData, heure: e.target.value})}
-                  className="w-full px-4 py-3 border-2 border-gray-400 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900"
-                />
+                <div>
+                  <label className="block text-base font-bold text-gray-900 mb-2">
+                    Date fin *
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.dateFin}
+                    onChange={(e) => setFormData({...formData, dateFin: e.target.value})}
+                    className="w-full px-4 py-3 border-2 border-gray-400 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900 font-medium"
+                    required
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Durée & Type */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-base font-bold text-gray-900 mb-2">
-                  Durée estimée (heures)
-                </label>
-                <input
-                  type="number"
-                  value={formData.duree}
-                  onChange={(e) => setFormData({...formData, duree: parseInt(e.target.value)})}
-                  min="1"
-                  max="24"
-                  className="w-full px-4 py-3 border-2 border-gray-400 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900"
-                />
-              </div>
+            {/* Plage d'horaires */}
+            <div className="border-2 border-orange-300 rounded-xl p-6 bg-orange-50">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">🕐 Horaires quotidiens</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-base font-bold text-gray-900 mb-2">
+                    Heure début *
+                  </label>
+                  <input
+                    type="time"
+                    value={formData.heureDebut}
+                    onChange={(e) => setFormData({...formData, heureDebut: e.target.value})}
+                    className="w-full px-4 py-3 border-2 border-gray-400 rounded-lg focus:border-orange-500 focus:outline-none text-blue-900 font-medium"
+                    required
+                  />
+                </div>
 
-              <div>
-                <label className="block text-base font-bold text-gray-900 mb-2">
-                  Type d'intervention
-                </label>
-                <select
-                  value={formData.type}
-                  onChange={(e) => setFormData({...formData, type: e.target.value as any})}
-                  className="w-full px-4 py-3 border-2 border-gray-400 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900"
-                >
-                  <option value="Standard">Standard</option>
-                  <option value="Urgence">Urgence</option>
-                  <option value="Maintenance">Maintenance</option>
-                </select>
+                <div>
+                  <label className="block text-base font-bold text-gray-900 mb-2">
+                    Heure fin *
+                  </label>
+                  <input
+                    type="time"
+                    value={formData.heureFin}
+                    onChange={(e) => setFormData({...formData, heureFin: e.target.value})}
+                    className="w-full px-4 py-3 border-2 border-gray-400 rounded-lg focus:border-orange-500 focus:outline-none text-blue-900 font-medium"
+                    required
+                  />
+                </div>
               </div>
+              <p className="text-sm text-gray-700 font-medium mt-3">
+                💡 Ces horaires s'appliquent chaque jour de l'intervention
+              </p>
+            </div>
+
+            {/* Type */}
+            <div>
+              <label className="block text-base font-bold text-gray-900 mb-2">
+                Type d'intervention
+              </label>
+              <select
+                value={formData.type}
+                onChange={(e) => setFormData({...formData, type: e.target.value as any})}
+                className="w-full px-4 py-3 border-2 border-gray-400 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900"
+              >
+                <option value="Standard">Standard</option>
+                <option value="Urgence">Urgence</option>
+                <option value="Maintenance">Maintenance</option>
+              </select>
             </div>
 
             {/* Notes */}

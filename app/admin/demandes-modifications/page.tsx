@@ -38,13 +38,21 @@ export default function DemandesModificationsPage() {
     }
   }
 
-  const handleAccepter = async (interventionId: string, nouvelleDate: string) => {
+  const handleAccepter = async (inter: InterventionCalendar & { id: string }) => {
     if (!confirm('Accepter cette demande de changement ?')) return
 
+    if (!inter.demandeChangement) return
+
     try {
-      setProcessing(interventionId)
-      await accepterChangementDate(interventionId, nouvelleDate)
-      alert('✅ Demande acceptée ! La nouvelle date a été enregistrée.')
+      setProcessing(inter.id!)
+      await accepterChangementDate(
+        inter.id!,
+        inter.demandeChangement.nouvelleDateDebut,
+        inter.demandeChangement.nouvelleDateFin,
+        inter.demandeChangement.nouvelleHeureDebut,
+        inter.demandeChangement.nouvelleHeureFin
+      )
+      alert('✅ Demande acceptée ! Les nouvelles dates et horaires ont été enregistrés.')
       loadDemandes()
     } catch (error) {
       console.error('Erreur:', error)
@@ -55,12 +63,12 @@ export default function DemandesModificationsPage() {
   }
 
   const handleRefuser = async (interventionId: string) => {
-    if (!confirm('Refuser cette demande de changement ?\n\nL\'intervention restera à la date initiale.')) return
+    if (!confirm('Refuser cette demande de changement ?\n\nL\'intervention restera aux dates et horaires initiaux.')) return
 
     try {
       setProcessing(interventionId)
       await refuserChangementDate(interventionId)
-      alert('❌ Demande refusée. L\'intervention garde sa date initiale.')
+      alert('❌ Demande refusée. L\'intervention garde ses dates et horaires initiaux.')
       loadDemandes()
     } catch (error) {
       console.error('Erreur:', error)
@@ -140,7 +148,7 @@ export default function DemandesModificationsPage() {
         <div className="bg-white rounded-xl shadow-lg border border-blue-200 overflow-hidden">
           <div className="px-6 py-4 bg-orange-600 border-b border-orange-700">
             <h3 className="text-lg font-bold text-white">
-              🔔 Demandes ({interventions.length})
+              📢 Demandes ({interventions.length})
             </h3>
           </div>
 
@@ -185,47 +193,78 @@ export default function DemandesModificationsPage() {
 
                       {/* Comparaison dates */}
                       <div className="grid grid-cols-2 gap-6 mb-4">
-                        {/* Date actuelle */}
+                        {/* Dates/Horaires actuels */}
                         <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
-                          <div className="text-xs font-bold text-blue-900 mb-2">📅 DATE ACTUELLE</div>
-                          <div className="text-lg font-bold text-gray-900">
-                            {new Date(inter.date).toLocaleDateString('fr-FR', {
-                              weekday: 'long',
-                              day: 'numeric',
-                              month: 'long',
-                              year: 'numeric'
-                            })}
+                          <div className="text-xs font-bold text-blue-900 mb-2">📅 PÉRIODE ACTUELLE</div>
+                          <div className="text-base font-bold text-gray-900 mb-1">
+                            {inter.dateDebut === inter.dateFin ? (
+                              // Une seule journée
+                              <span>
+                                {new Date(inter.dateDebut).toLocaleDateString('fr-FR', {
+                                  day: 'numeric',
+                                  month: 'long',
+                                  year: 'numeric'
+                                })}
+                              </span>
+                            ) : (
+                              // Plusieurs jours
+                              <span>
+                                Du {new Date(inter.dateDebut).toLocaleDateString('fr-FR', {
+                                  day: 'numeric',
+                                  month: 'short'
+                                })} au {new Date(inter.dateFin).toLocaleDateString('fr-FR', {
+                                  day: 'numeric',
+                                  month: 'long',
+                                  year: 'numeric'
+                                })}
+                              </span>
+                            )}
                           </div>
-                          <div className="text-sm text-gray-700 mt-1">
-                            🕐 {new Date(inter.date).toLocaleTimeString('fr-FR', {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
+                          <div className="text-sm text-gray-700">
+                            🕐 {inter.heureDebut} - {inter.heureFin}
                           </div>
                         </div>
 
-                        {/* Nouvelle date demandée */}
-                        <div className="bg-orange-50 border-2 border-orange-400 rounded-lg p-4">
-                          <div className="text-xs font-bold text-orange-900 mb-2">🔄 NOUVELLE DATE DEMANDÉE</div>
-                          <div className="text-lg font-bold text-gray-900">
-                            {new Date(inter.demandeChangement!.nouvelleDateSouhaitee).toLocaleDateString('fr-FR', {
-                              weekday: 'long',
-                              day: 'numeric',
-                              month: 'long',
-                              year: 'numeric'
-                            })}
+                        {/* Nouvelles dates/horaires demandées */}
+                        {inter.demandeChangement && (
+                          <div className="bg-orange-50 border-2 border-orange-400 rounded-lg p-4">
+                            <div className="text-xs font-bold text-orange-900 mb-2">🔄 NOUVELLE PÉRIODE DEMANDÉE</div>
+                            <div className="text-base font-bold text-gray-900 mb-1">
+                              {inter.demandeChangement.nouvelleDateDebut === inter.demandeChangement.nouvelleDateFin ? (
+                                // Une seule journée
+                                <span>
+                                  {new Date(inter.demandeChangement.nouvelleDateDebut).toLocaleDateString('fr-FR', {
+                                    day: 'numeric',
+                                    month: 'long',
+                                    year: 'numeric'
+                                  })}
+                                </span>
+                              ) : (
+                                // Plusieurs jours
+                                <span>
+                                  Du {new Date(inter.demandeChangement.nouvelleDateDebut).toLocaleDateString('fr-FR', {
+                                    day: 'numeric',
+                                    month: 'short'
+                                  })} au {new Date(inter.demandeChangement.nouvelleDateFin).toLocaleDateString('fr-FR', {
+                                    day: 'numeric',
+                                    month: 'long',
+                                    year: 'numeric'
+                                  })}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-700">
+                              🕐 {inter.demandeChangement.nouvelleHeureDebut} - {inter.demandeChangement.nouvelleHeureFin}
+                            </div>
                           </div>
-                          <div className="text-sm text-gray-700 mt-1">
-                            🕐 09:00 (heure par défaut)
-                          </div>
-                        </div>
+                        )}
                       </div>
 
                       {/* Raison */}
                       {inter.demandeChangement?.raison && (
                         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
                           <div className="text-sm font-bold text-gray-900 mb-2">
-                            💬 Raison du client:
+                            💬 Raison du client :
                           </div>
                           <div className="text-sm text-gray-700 font-medium">
                             {inter.demandeChangement.raison}
@@ -236,14 +275,14 @@ export default function DemandesModificationsPage() {
                       {/* Infos complémentaires */}
                       <div className="grid grid-cols-3 gap-4 text-sm text-gray-700 font-medium">
                         <div>
-                          <span className="font-bold">⏱️ Durée:</span> {inter.duree}h
+                          <span className="font-bold">📏 Surface :</span> {inter.surface}m²
                         </div>
                         <div>
-                          <span className="font-bold">📐 Surface:</span> {inter.surface}m²
+                          <span className="font-bold">🏷️ Type :</span> {inter.type}
                         </div>
                         <div>
-                          <span className="font-bold">📅 Demandé le:</span>{' '}
-                          {new Date(inter.demandeChangement!.demandeLe).toLocaleDateString('fr-FR')}
+                          <span className="font-bold">📅 Demandé le :</span>{' '}
+                          {inter.demandeChangement && new Date(inter.demandeChangement.demandeLe).toLocaleDateString('fr-FR')}
                         </div>
                       </div>
                     </div>
@@ -252,18 +291,18 @@ export default function DemandesModificationsPage() {
                   {/* Boutons actions */}
                   <div className="flex gap-3">
                     <button
-                      onClick={() => handleAccepter(inter.id!, inter.demandeChangement!.nouvelleDateSouhaitee)}
+                      onClick={() => handleAccepter(inter)}
                       disabled={processing === inter.id}
                       className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-3 px-6 rounded-lg transition-all disabled:opacity-50"
                     >
-                      {processing === inter.id ? '⏳ Traitement...' : '✅ Accepter la nouvelle date'}
+                      {processing === inter.id ? '⏳ Traitement...' : '✅ Accepter la nouvelle période'}
                     </button>
                     <button
                       onClick={() => handleRefuser(inter.id!)}
                       disabled={processing === inter.id}
                       className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold py-3 px-6 rounded-lg transition-all disabled:opacity-50"
                     >
-                      {processing === inter.id ? '⏳ Traitement...' : '❌ Refuser (garder date actuelle)'}
+                      {processing === inter.id ? '⏳ Traitement...' : '❌ Refuser (garder période actuelle)'}
                     </button>
                   </div>
                 </div>

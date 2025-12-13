@@ -2,24 +2,22 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { 
-  getInterventionsByClientCalendar,
-  demanderChangementDate,
-  type InterventionCalendar 
-} from '@/lib/firebase'
+import { getInterventionsByClientCalendar, demanderChangementDate, type InterventionCalendar } from '@/lib/firebase'
 
 export default function ModifierInterventionPage() {
   const router = useRouter()
   const params = useParams()
   const interventionId = params.id as string
 
-  const [clientId, setClientId] = useState('')
   const [intervention, setIntervention] = useState<(InterventionCalendar & { id: string }) | null>(null)
   const [loading, setLoading] = useState(true)
-  const [sending, setSending] = useState(false)
-  
+  const [submitting, setSubmitting] = useState(false)
+
   const [formData, setFormData] = useState({
-    nouvelleDate: '',
+    nouvelleDateDebut: '',
+    nouvelleDateFin: '',
+    nouvelleHeureDebut: '08:00',
+    nouvelleHeureFin: '17:00',
     raison: ''
   })
 
@@ -30,9 +28,8 @@ export default function ModifierInterventionPage() {
       return
     }
 
-    const id = localStorage.getItem('client_id') || ''
-    setClientId(id)
-    loadIntervention(id)
+    const clientId = localStorage.getItem('client_id') || ''
+    loadIntervention(clientId)
   }, [router, interventionId])
 
   const loadIntervention = async (clientId: string) => {
@@ -40,17 +37,45 @@ export default function ModifierInterventionPage() {
       setLoading(true)
       const interventions = await getInterventionsByClientCalendar(clientId)
       const inter = interventions.find(i => i.id === interventionId)
-      
+
       if (!inter) {
-        alert('❌ Intervention non trouvée')
+        alert('❌ Intervention introuvable')
+        router.push('/client/interventions')
+        return
+      }
+
+      // Vérifier que l'intervention est future et planifiée
+      if (new Date(inter.dateDebut) < new Date()) {
+        alert('⚠️ Cette intervention est passée, vous ne pouvez plus la modifier')
+        router.push('/client/interventions')
+        return
+      }
+
+      if (inter.statut !== 'Planifiée') {
+        alert('⚠️ Cette intervention ne peut plus être modifiée')
+        router.push('/client/interventions')
+        return
+      }
+
+      if (inter.demandeChangement) {
+        alert('⚠️ Une demande de modification est déjà en cours pour cette intervention')
         router.push('/client/interventions')
         return
       }
 
       setIntervention(inter)
+
+      // Pré-remplir avec les dates actuelles
+      setFormData({
+        nouvelleDateDebut: inter.dateDebut,
+        nouvelleDateFin: inter.dateFin,
+        nouvelleHeureDebut: inter.heureDebut,
+        nouvelleHeureFin: inter.heureFin,
+        raison: ''
+      })
     } catch (error) {
       console.error('Erreur:', error)
-      alert('❌ Erreur chargement intervention')
+      alert('❌ Erreur lors du chargement')
       router.push('/client/interventions')
     } finally {
       setLoading(false)
@@ -60,36 +85,53 @@ export default function ModifierInterventionPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.nouvelleDate) {
-      alert('⚠️ Veuillez sélectionner une nouvelle date')
+    if (!formData.nouvelleDateDebut || !formData.nouvelleDateFin) {
+      alert('⚠️ Les dates de début et de fin sont obligatoires')
+      return
+    }
+
+    // Vérifier que nouvelle dateFin >= nouvelle dateDebut
+    if (new Date(formData.nouvelleDateFin) < new Date(formData.nouvelleDateDebut)) {
+      alert('⚠️ La date de fin doit être après ou égale à la date de début')
+      return
+    }
+
+    // Vérifier que nouvelle date est future
+    if (new Date(formData.nouvelleDateDebut) < new Date()) {
+      alert('⚠️ La nouvelle date doit être dans le futur')
+      return
+    }
+
+    // Vérifier que nouvelle heureFin > nouvelle heureDebut
+    if (formData.nouvelleHeureFin <= formData.nouvelleHeureDebut) {
+      alert('⚠️ L\'heure de fin doit être après l\'heure de début')
       return
     }
 
     if (!formData.raison.trim()) {
-      alert('⚠️ Veuillez indiquer la raison du changement')
-      return
-    }
-
-    if (!confirm('Envoyer la demande de changement de date ?')) {
+      alert('⚠️ Veuillez indiquer la raison de votre demande')
       return
     }
 
     try {
-      setSending(true)
+      setSubmitting(true)
 
       await demanderChangementDate(
         interventionId,
-        `${formData.nouvelleDate}T09:00:00`,
+        formData.nouvelleDateDebut,
+        formData.nouvelleDateFin,
+        formData.nouvelleHeureDebut,
+        formData.nouvelleHeureFin,
         formData.raison
       )
 
-      alert('✅ Demande de changement envoyée !\n\nNotre équipe vous répondra dans les plus brefs délais.')
+      alert('✅ Demande de modification envoyée !\n\nNous traiterons votre demande dans les plus brefs délais.')
       router.push('/client/interventions')
     } catch (error) {
       console.error('Erreur:', error)
       alert('❌ Erreur lors de l\'envoi de la demande')
     } finally {
-      setSending(false)
+      setSubmitting(false)
     }
   }
 
@@ -105,77 +147,6 @@ export default function ModifierInterventionPage() {
     return null
   }
 
-  // Vérifications
-  const now = new Date()
-  const dateInter = new Date(intervention.date)
-  const isPast = dateInter < now
-  const hasDemandeEnCours = !!intervention.demandeChangement
-  const isNotPlanifiee = intervention.statut !== 'Planifiée'
-
-  // Bloquer si intervention passée
-  if (isPast) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-12 text-center">
-          <div className="text-6xl mb-4">⏰</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Intervention passée
-          </h2>
-          <p className="text-gray-700 mb-8">
-            Cette intervention a déjà eu lieu. Vous ne pouvez plus demander de changement.
-          </p>
-          <a
-            href="/client/interventions"
-            className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors"
-          >
-            ← Retour aux interventions
-          </a>
-        </div>
-      </div>
-    )
-  }
-
-  // Bloquer si demande déjà en cours
-  if (hasDemandeEnCours) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-12 text-center">
-          <div className="text-6xl mb-4">⏳</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Demande en cours de traitement
-          </h2>
-          <p className="text-gray-700 mb-4">
-            Vous avez déjà une demande de changement en cours pour cette intervention.
-          </p>
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-8">
-            <div className="text-sm font-bold text-orange-900 mb-2">
-              Nouvelle date souhaitée:
-            </div>
-            <div className="text-lg font-bold text-gray-900">
-              {new Date(intervention.demandeChangement!.nouvelleDateSouhaitee).toLocaleDateString('fr-FR', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
-              })}
-            </div>
-            {intervention.demandeChangement!.raison && (
-              <div className="mt-3 text-sm text-gray-700">
-                <span className="font-bold">Raison:</span> {intervention.demandeChangement!.raison}
-              </div>
-            )}
-          </div>
-          <a
-            href="/client/interventions"
-            className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors"
-          >
-            ← Retour aux interventions
-          </a>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700">
       {/* Header */}
@@ -188,7 +159,7 @@ export default function ModifierInterventionPage() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">Demander un changement</h1>
-                <p className="text-sm text-blue-200">Modification de date d'intervention</p>
+                <p className="text-sm text-blue-200">{intervention.siteName}</p>
               </div>
             </div>
             <a
@@ -202,103 +173,150 @@ export default function ModifierInterventionPage() {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Infos intervention actuelle */}
+        {/* Intervention actuelle */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">📋 Intervention actuelle</h3>
+          <h2 className="text-lg font-bold text-gray-900 mb-4">📅 Intervention actuelle</h2>
           
-          <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
-            <div className="text-xl font-bold text-gray-900 mb-3">
-              {intervention.siteName}
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <div className="text-sm font-bold text-gray-900 mb-1">Période :</div>
+              <div className="text-base text-gray-700">
+                {intervention.dateDebut === intervention.dateFin ? (
+                  <span>
+                    {new Date(intervention.dateDebut).toLocaleDateString('fr-FR', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    })}
+                  </span>
+                ) : (
+                  <span>
+                    Du {new Date(intervention.dateDebut).toLocaleDateString('fr-FR', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    })} au {new Date(intervention.dateFin).toLocaleDateString('fr-FR', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    })}
+                  </span>
+                )}
+              </div>
             </div>
-            
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="font-bold text-gray-700">📅 Date prévue:</span>
-                <div className="text-lg font-bold text-blue-900">
-                  {new Date(intervention.date).toLocaleDateString('fr-FR', {
-                    weekday: 'long',
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric'
-                  })}
-                </div>
-              </div>
-              <div>
-                <span className="font-bold text-gray-700">🕐 Heure:</span>
-                <div className="text-lg font-bold text-blue-900">
-                  {new Date(intervention.date).toLocaleTimeString('fr-FR', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </div>
-              </div>
-              <div>
-                <span className="font-bold text-gray-700">⏱️ Durée:</span>
-                <div className="text-gray-900">{intervention.duree}h</div>
-              </div>
-              <div>
-                <span className="font-bold text-gray-700">📐 Surface:</span>
-                <div className="text-gray-900">{intervention.surface}m²</div>
+
+            <div>
+              <div className="text-sm font-bold text-gray-900 mb-1">Horaires quotidiens :</div>
+              <div className="text-base text-gray-700">
+                {intervention.heureDebut} - {intervention.heureFin}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Formulaire demande changement */}
-        <div className="bg-white rounded-xl shadow-lg p-8">
-          <h3 className="text-lg font-bold text-gray-900 mb-6">🔄 Nouvelle date souhaitée</h3>
+        {/* Formulaire nouvelle période */}
+        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg p-8">
+          <h2 className="text-lg font-bold text-gray-900 mb-6">🔄 Nouvelle période souhaitée</h2>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Nouvelle date */}
-            <div>
-              <label className="block text-base font-bold text-gray-900 mb-2">
-                Date souhaitée *
-              </label>
-              <input
-                type="date"
-                value={formData.nouvelleDate}
-                onChange={(e) => setFormData({...formData, nouvelleDate: e.target.value})}
-                min={new Date().toISOString().split('T')[0]}
-                className="w-full px-4 py-3 border-2 border-gray-400 rounded-lg focus:border-orange-500 focus:outline-none text-gray-900 font-medium"
-                required
-              />
-              <p className="text-xs text-gray-600 mt-1">
-                ℹ️ La nouvelle date doit être dans le futur
+          <div className="space-y-6">
+            {/* Nouvelles dates */}
+            <div className="border-2 border-blue-300 rounded-xl p-6 bg-blue-50">
+              <h3 className="text-base font-bold text-gray-900 mb-4">📅 Nouvelles dates</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-900 mb-2">
+                    Date début *
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.nouvelleDateDebut}
+                    onChange={(e) => setFormData({ ...formData, nouvelleDateDebut: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-400 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900 font-medium"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-900 mb-2">
+                    Date fin *
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.nouvelleDateFin}
+                    onChange={(e) => setFormData({ ...formData, nouvelleDateFin: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-400 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900 font-medium"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Nouveaux horaires */}
+            <div className="border-2 border-orange-300 rounded-xl p-6 bg-orange-50">
+              <h3 className="text-base font-bold text-gray-900 mb-4">🕐 Nouveaux horaires</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-900 mb-2">
+                    Heure début *
+                  </label>
+                  <input
+                    type="time"
+                    value={formData.nouvelleHeureDebut}
+                    onChange={(e) => setFormData({ ...formData, nouvelleHeureDebut: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-400 rounded-lg focus:border-orange-500 focus:outline-none text-blue-900 font-medium"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-900 mb-2">
+                    Heure fin *
+                  </label>
+                  <input
+                    type="time"
+                    value={formData.nouvelleHeureFin}
+                    onChange={(e) => setFormData({ ...formData, nouvelleHeureFin: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-400 rounded-lg focus:border-orange-500 focus:outline-none text-blue-900 font-medium"
+                    required
+                  />
+                </div>
+              </div>
+              <p className="text-sm text-gray-700 font-medium mt-3">
+                💡 Ces horaires s'appliqueront chaque jour
               </p>
             </div>
 
             {/* Raison */}
             <div>
-              <label className="block text-base font-bold text-gray-900 mb-2">
-                Raison du changement *
+              <label className="block text-sm font-bold text-gray-900 mb-2">
+                Raison de votre demande *
               </label>
               <textarea
                 value={formData.raison}
-                onChange={(e) => setFormData({...formData, raison: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, raison: e.target.value })}
                 rows={4}
-                className="w-full px-4 py-3 border-2 border-gray-400 rounded-lg focus:border-orange-500 focus:outline-none text-gray-900 font-medium"
-                placeholder="Expliquez pourquoi vous souhaitez changer la date..."
+                className="w-full px-4 py-3 border-2 border-gray-400 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900 font-medium"
+                placeholder="Expliquez pourquoi vous souhaitez modifier les dates et horaires de cette intervention..."
                 required
               />
             </div>
 
             {/* Info */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm text-gray-700">
-                <strong>ℹ️ À savoir :</strong> Votre demande sera étudiée par notre équipe. 
-                Nous vous confirmerons la nouvelle date dans les meilleurs délais. 
-                En attendant, l'intervention reste planifiée à la date initiale.
-              </p>
+              <div className="text-sm text-blue-900 font-medium">
+                ℹ️ <strong>Information :</strong> Votre demande sera traitée par notre équipe dans les plus brefs délais.
+                Vous serez informé de la décision par email.
+              </div>
             </div>
 
             {/* Boutons */}
-            <div className="flex gap-3 pt-4">
+            <div className="flex gap-3">
               <button
                 type="submit"
-                disabled={sending}
+                disabled={submitting}
                 className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-4 px-6 rounded-lg transition-all disabled:opacity-50"
               >
-                {sending ? '⏳ Envoi en cours...' : '✅ Envoyer la demande'}
+                {submitting ? '⏳ Envoi...' : '✅ Envoyer la demande'}
               </button>
               <a
                 href="/client/interventions"
@@ -307,8 +325,8 @@ export default function ModifierInterventionPage() {
                 Annuler
               </a>
             </div>
-          </form>
-        </div>
+          </div>
+        </form>
       </main>
     </div>
   )

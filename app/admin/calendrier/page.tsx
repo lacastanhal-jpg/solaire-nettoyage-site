@@ -86,9 +86,9 @@ export default function CalendrierPage() {
     return true
   })
 
-  // Trier par date
+  // Trier par date de début
   const sortedInterventions = [...filteredInterventions].sort((a, b) => 
-    new Date(a.date).getTime() - new Date(b.date).getTime()
+    new Date(a.dateDebut).getTime() - new Date(b.dateDebut).getTime()
   )
 
   // Stats
@@ -100,33 +100,10 @@ export default function CalendrierPage() {
     demandes: interventions.filter(i => i.statut === 'Demande modification').length
   }
 
-  // Vérifier si équipes existent
-  if (!loading && equipes.length === 0) {
-    return (
-      <div className="min-h-screen bg-blue-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl shadow-lg border border-blue-200 p-12 max-w-2xl text-center">
-          <div className="text-6xl mb-4">⚠️</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Équipes non configurées
-          </h2>
-          <p className="text-gray-900 font-medium mb-8">
-            Tu dois d'abord initialiser les 3 équipes avant de créer des interventions
-          </p>
-          <a
-            href="/admin/init-equipes"
-            className="inline-block px-8 py-4 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-bold rounded-lg text-lg transition-all"
-          >
-            → Initialiser les Équipes
-          </a>
-        </div>
-      </div>
-    )
-  }
-
   if (loading) {
     return (
       <div className="min-h-screen bg-blue-50 flex items-center justify-center">
-        <div className="text-gray-900 text-xl font-bold">Chargement...</div>
+        <div className="text-gray-900 text-xl font-bold">⏳ Chargement...</div>
       </div>
     )
   }
@@ -142,22 +119,10 @@ export default function CalendrierPage() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">Calendrier Interventions</h1>
-                <p className="text-sm text-gray-900 font-medium">Planning des interventions terrain</p>
+                <p className="text-sm text-gray-900 font-medium">Planning global terrain</p>
               </div>
             </div>
             <div className="flex gap-2">
-              <a
-                href="/admin/nouvelle-intervention"
-                className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium"
-              >
-                ➕ Nouvelle Intervention
-              </a>
-              <a
-                href="/admin/gestion-operateurs"
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium"
-              >
-                👥 Opérateurs
-              </a>
               <a
                 href="/admin/gestion-equipes"
                 className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium"
@@ -166,7 +131,7 @@ export default function CalendrierPage() {
               </a>
               <a
                 href="/admin/demandes-modifications"
-                className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition-colors"
+                className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium"
               >
                 🔄 Demandes
               </a>
@@ -182,8 +147,18 @@ export default function CalendrierPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Bouton nouvelle intervention */}
+        <div className="mb-8">
+          <a
+            href="/admin/nouvelle-intervention"
+            className="inline-block px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold rounded-lg transition-all shadow-lg"
+          >
+            ➕ Nouvelle Intervention
+          </a>
+        </div>
+
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-5 gap-6 mb-8">
           <div className="bg-white rounded-xl p-6 shadow-lg border border-blue-200">
             <div className="text-4xl font-bold text-purple-500 mb-2">{stats.total}</div>
             <div className="text-gray-900 font-bold">Total</div>
@@ -292,37 +267,72 @@ export default function CalendrierPage() {
                       </h4>
 
                       <div className="grid grid-cols-2 gap-4 text-sm text-gray-900 font-medium">
-                        <div>
-                          <span className="font-bold">📅 Date:</span> {new Date(inter.date).toLocaleDateString('fr-FR')} à {new Date(inter.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                        {/* Période */}
+                        <div className="col-span-2">
+                          <span className="font-bold">📅 Période :</span>{' '}
+                          {inter.dateDebut === inter.dateFin ? (
+                            // Une seule journée
+                            <span>
+                              {new Date(inter.dateDebut).toLocaleDateString('fr-FR', {
+                                weekday: 'long',
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric'
+                              })}
+                            </span>
+                          ) : (
+                            // Plusieurs jours
+                            <span>
+                              Du {new Date(inter.dateDebut).toLocaleDateString('fr-FR', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric'
+                              })} au {new Date(inter.dateFin).toLocaleDateString('fr-FR', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric'
+                              })}
+                            </span>
+                          )}
                         </div>
+                        
+                        {/* Horaires */}
                         <div>
-                          <span className="font-bold">⏱️ Durée:</span> {inter.duree}h
+                          <span className="font-bold">🕐 Horaires :</span> {inter.heureDebut} - {inter.heureFin}
                         </div>
+                        
                         <div>
-                          <span className="font-bold">📐 Surface:</span> {inter.surface}m²
+                          <span className="font-bold">📐 Surface :</span> {inter.surface}m²
                         </div>
+                        
                         <div>
-                          <span className="font-bold">🏷️ Type:</span> {inter.type}
+                          <span className="font-bold">🏷️ Type :</span> {inter.type}
                         </div>
                       </div>
 
                       {inter.notes && (
                         <div className="mt-3 text-sm text-gray-900 font-medium">
-                          <span className="font-bold">📝 Notes:</span> {inter.notes}
+                          <span className="font-bold">📝 Notes :</span> {inter.notes}
                         </div>
                       )}
 
                       {inter.demandeChangement && (
                         <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
                           <div className="text-sm font-bold text-orange-900 mb-1">
-                            🔄 Demande de changement de date
+                            🔄 Demande de changement
                           </div>
                           <div className="text-sm text-gray-900 font-medium">
-                            <span className="font-bold">Nouvelle date souhaitée:</span> {new Date(inter.demandeChangement.nouvelleDateSouhaitee).toLocaleDateString('fr-FR')}
+                            <span className="font-bold">Nouvelle période :</span>{' '}
+                            Du {new Date(inter.demandeChangement.nouvelleDateDebut).toLocaleDateString('fr-FR')} 
+                            {' '}au {new Date(inter.demandeChangement.nouvelleDateFin).toLocaleDateString('fr-FR')}
+                          </div>
+                          <div className="text-sm text-gray-900 font-medium">
+                            <span className="font-bold">Horaires :</span>{' '}
+                            {inter.demandeChangement.nouvelleHeureDebut} - {inter.demandeChangement.nouvelleHeureFin}
                           </div>
                           {inter.demandeChangement.raison && (
                             <div className="text-sm text-gray-900 font-medium">
-                              <span className="font-bold">Raison:</span> {inter.demandeChangement.raison}
+                              <span className="font-bold">Raison :</span> {inter.demandeChangement.raison}
                             </div>
                           )}
                         </div>
@@ -330,15 +340,15 @@ export default function CalendrierPage() {
                     </div>
 
                     <div className="flex gap-2 ml-4">
-                      <button
-                        onClick={() => alert('Édition à venir')}
-                        className="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-900 rounded text-sm font-medium"
+                      <a
+                        href={`/admin/interventions/${inter.id}/modifier`}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold transition-colors"
                       >
-                        ✏️ Éditer
-                      </button>
+                        ✏️ Modifier
+                      </a>
                       <button
-                        onClick={() => handleDelete(inter.id)}
-                        className="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-900 rounded text-sm font-medium"
+                        onClick={() => handleDelete(inter.id!)}
+                        className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold transition-colors"
                       >
                         🗑️
                       </button>

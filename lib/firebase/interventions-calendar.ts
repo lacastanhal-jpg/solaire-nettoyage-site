@@ -26,8 +26,13 @@ export interface InterventionCalendar {
   groupeId: string
   equipeId: 1 | 2 | 3
   equipeName: string
-  date: string // ISO format "2025-01-15T09:00:00"
-  duree: number // heures
+  
+  // NOUVELLE STRUCTURE : Plage de dates et horaires
+  dateDebut: string // ISO format "2025-01-15"
+  dateFin: string   // ISO format "2025-01-18"
+  heureDebut: string // Format "08:00"
+  heureFin: string   // Format "17:00"
+  
   surface: number // m²
   type: 'Standard' | 'Urgence' | 'Maintenance'
   statut: 'Planifiée' | 'En cours' | 'Terminée' | 'Annulée' | 'Demande modification'
@@ -38,7 +43,10 @@ export interface InterventionCalendar {
     prochaine: string // ISO date
   } | null
   demandeChangement?: {
-    nouvelleDateSouhaitee: string
+    nouvelleDateDebut: string
+    nouvelleDateFin: string
+    nouvelleHeureDebut: string
+    nouvelleHeureFin: string
     raison: string
     demandeLe: string
   } | null
@@ -88,7 +96,7 @@ export async function createInterventionCalendar(intervention: Omit<Intervention
 export async function getAllInterventionsCalendar(): Promise<(InterventionCalendar & { id: string })[]> {
   try {
     const snapshot = await getDocs(
-      query(collection(db, 'interventions_calendar'), orderBy('date', 'asc'))
+      query(collection(db, 'interventions_calendar'), orderBy('dateDebut', 'asc'))
     )
     return snapshot.docs.map(doc => ({
       id: doc.id,
@@ -109,7 +117,7 @@ export async function getInterventionsByEquipe(equipeId: number): Promise<(Inter
       query(
         collection(db, 'interventions_calendar'),
         where('equipeId', '==', equipeId),
-        orderBy('date', 'asc')
+        orderBy('dateDebut', 'asc')
       )
     )
     return snapshot.docs.map(doc => ({
@@ -131,7 +139,7 @@ export async function getInterventionsByClientCalendar(clientId: string): Promis
       query(
         collection(db, 'interventions_calendar'),
         where('clientId', '==', clientId),
-        orderBy('date', 'desc')
+        orderBy('dateDebut', 'desc')
       )
     )
     return snapshot.docs.map(doc => ({
@@ -153,7 +161,7 @@ export async function getInterventionsBySiteCalendar(siteId: string): Promise<(I
       query(
         collection(db, 'interventions_calendar'),
         where('siteId', '==', siteId),
-        orderBy('date', 'desc')
+        orderBy('dateDebut', 'desc')
       )
     )
     return snapshot.docs.map(doc => ({
@@ -174,9 +182,9 @@ export async function getInterventionsByPeriode(debut: string, fin: string): Pro
     const snapshot = await getDocs(
       query(
         collection(db, 'interventions_calendar'),
-        where('date', '>=', debut),
-        where('date', '<=', fin),
-        orderBy('date', 'asc')
+        where('dateDebut', '>=', debut),
+        where('dateDebut', '<=', fin),
+        orderBy('dateDebut', 'asc')
       )
     )
     return snapshot.docs.map(doc => ({
@@ -217,18 +225,24 @@ export async function deleteInterventionCalendar(id: string) {
 }
 
 /**
- * Demander changement de date (client)
+ * Demander changement de dates/horaires (client)
  */
 export async function demanderChangementDate(
   interventionId: string,
-  nouvelleDateSouhaitee: string,
+  nouvelleDateDebut: string,
+  nouvelleDateFin: string,
+  nouvelleHeureDebut: string,
+  nouvelleHeureFin: string,
   raison: string
 ) {
   try {
     await updateDoc(doc(db, 'interventions_calendar', interventionId), {
       statut: 'Demande modification',
       demandeChangement: {
-        nouvelleDateSouhaitee,
+        nouvelleDateDebut,
+        nouvelleDateFin,
+        nouvelleHeureDebut,
+        nouvelleHeureFin,
         raison,
         demandeLe: new Date().toISOString()
       },
@@ -243,10 +257,19 @@ export async function demanderChangementDate(
 /**
  * Accepter demande changement (admin)
  */
-export async function accepterChangementDate(interventionId: string, nouvelleDate: string) {
+export async function accepterChangementDate(
+  interventionId: string,
+  nouvelleDateDebut: string,
+  nouvelleDateFin: string,
+  nouvelleHeureDebut: string,
+  nouvelleHeureFin: string
+) {
   try {
     await updateDoc(doc(db, 'interventions_calendar', interventionId), {
-      date: nouvelleDate,
+      dateDebut: nouvelleDateDebut,
+      dateFin: nouvelleDateFin,
+      heureDebut: nouvelleHeureDebut,
+      heureFin: nouvelleHeureFin,
       statut: 'Planifiée',
       demandeChangement: null,
       updatedAt: new Date().toISOString()

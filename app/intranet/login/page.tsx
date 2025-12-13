@@ -7,6 +7,7 @@ export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
 
   const handleLogin = (e: React.FormEvent) => {
@@ -51,12 +52,12 @@ export default function LoginPage() {
 
     // Vérifier si l'utilisateur existe et si le mot de passe est correct
     if (!user) {
-      setError('Email incorrect')
+      setError('❌ Email incorrect')
       return
     }
 
     if (user.password !== password) {
-      setError('Mot de passe incorrect')
+      setError('❌ Mot de passe incorrect')
       return
     }
 
@@ -81,14 +82,14 @@ export default function LoginPage() {
               <span className="text-4xl">🔐</span>
             </div>
             <h1 className="text-3xl font-bold text-blue-900 mb-2">Intranet</h1>
-            <p className="text-blue-700">Solaire Nettoyage</p>
+            <p className="text-blue-700 font-semibold">Solaire Nettoyage</p>
           </div>
 
           {/* Formulaire */}
           <form onSubmit={handleLogin} className="space-y-6">
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-blue-900 mb-2">
+              <label htmlFor="email" className="block text-sm font-bold text-blue-900 mb-2">
                 Email
               </label>
               <input
@@ -96,33 +97,46 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900"
+                className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900 font-medium"
                 placeholder="prenom@solairenettoyage.fr"
                 required
                 autoComplete="email"
               />
             </div>
 
-            {/* Mot de passe - UNE SEULE FOIS */}
+            {/* Mot de passe avec bouton œil */}
             <div>
-              <label htmlFor="password" className="block text-sm font-semibold text-blue-900 mb-2">
+              <label htmlFor="password" className="block text-sm font-bold text-blue-900 mb-2">
                 Mot de passe
               </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900"
-                placeholder="••••••••"
-                required
-                autoComplete="current-password"
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 pr-12 border-2 border-blue-300 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900 font-medium"
+                  placeholder="••••••••"
+                  required
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-2xl hover:scale-110 transition-transform"
+                  title={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                >
+                  {showPassword ? '🙈' : '👁️'}
+                </button>
+              </div>
+              <p className="text-xs text-blue-600 mt-1">
+                💡 Cliquez sur l'œil pour voir votre mot de passe
+              </p>
             </div>
 
             {/* Message d'erreur */}
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              <div className="bg-red-50 border-2 border-red-300 text-red-900 px-4 py-3 rounded-lg text-sm font-bold">
                 {error}
               </div>
             )}
@@ -130,23 +144,35 @@ export default function LoginPage() {
             {/* Bouton connexion */}
             <button
               type="submit"
-              className="w-full bg-yellow-500 hover:bg-yellow-600 text-blue-900 font-bold py-3 px-4 rounded-lg transition-colors"
+              className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-blue-900 font-bold py-3 px-4 rounded-lg transition-all shadow-lg"
             >
-              Se connecter
+              🔓 Se connecter
             </button>
           </form>
 
           {/* Aide */}
           <div className="mt-6 text-center">
-            <p className="text-sm text-blue-600">
-              Problème de connexion ? Contactez Jérôme ou Axel
+            <p className="text-sm text-blue-700 font-medium">
+              💬 Problème de connexion ? Contactez Jérôme ou Axel
             </p>
+          </div>
+
+          {/* Info identifiants */}
+          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-xs text-blue-700 font-semibold mb-2 text-center">
+              📋 Identifiants équipe
+            </p>
+            <div className="space-y-1 text-xs text-blue-600">
+              <p>👨‍💼 <strong>Admins:</strong> jerome@ / axel@</p>
+              <p>👷 <strong>Équipe:</strong> sebastien@ / joffrey@ / fabien@ / angelo@</p>
+              <p className="text-blue-500 mt-2">@solairenettoyage.fr</p>
+            </div>
           </div>
         </div>
 
         {/* Lien retour */}
         <div className="mt-6 text-center">
-          <a href="/" className="text-white hover:text-blue-100 text-sm font-medium">
+          <a href="/" className="text-white hover:text-blue-100 text-sm font-semibold">
             ← Retour au site
           </a>
         </div>

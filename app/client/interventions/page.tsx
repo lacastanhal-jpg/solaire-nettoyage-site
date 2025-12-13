@@ -21,6 +21,11 @@ export default function ClientInterventionsPage() {
 
     const id = localStorage.getItem('client_id') || ''
     const name = localStorage.getItem('client_name') || ''
+    
+    console.log('Client ID:', id)
+    console.log('Client Email:', localStorage.getItem('client_email'))
+    console.log('Client Company:', localStorage.getItem('client_company'))
+    
     setClientId(id)
     setClientName(name)
     
@@ -31,9 +36,10 @@ export default function ClientInterventionsPage() {
     try {
       setLoading(true)
       const data = await getInterventionsByClientCalendar(clientId)
+      console.log('Interventions chargées:', data)
       setInterventions(data)
     } catch (error) {
-      console.error('Erreur:', error)
+      console.error('Erreur récupération interventions Client:', error)
     } finally {
       setLoading(false)
     }
@@ -70,16 +76,16 @@ export default function ClientInterventionsPage() {
   // Filtrer interventions
   const now = new Date()
   const filteredInterventions = interventions.filter(inter => {
-    const dateInter = new Date(inter.date)
-    if (filter === 'futures') return dateInter >= now
-    if (filter === 'passees') return dateInter < now
+    const dateDebut = new Date(inter.dateDebut)
+    if (filter === 'futures') return dateDebut >= now
+    if (filter === 'passees') return dateDebut < now
     return true
-  }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  }).sort((a, b) => new Date(a.dateDebut).getTime() - new Date(b.dateDebut).getTime())
 
   const stats = {
     total: interventions.length,
-    futures: interventions.filter(i => new Date(i.date) >= now).length,
-    passees: interventions.filter(i => new Date(i.date) < now).length,
+    futures: interventions.filter(i => new Date(i.dateDebut) >= now).length,
+    passees: interventions.filter(i => new Date(i.dateDebut) < now).length,
     demandes: interventions.filter(i => i.statut === 'Demande modification').length
   }
 
@@ -225,33 +231,49 @@ export default function ClientInterventionsPage() {
                       </h4>
 
                       <div className="grid grid-cols-2 gap-4 text-sm text-gray-700 font-medium">
-                        <div>
-                          <span className="font-bold">📅 Date:</span>{' '}
-                          {new Date(inter.date).toLocaleDateString('fr-FR', {
-                            weekday: 'long',
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric'
-                          })}
+                        {/* Plage de dates */}
+                        <div className="col-span-2">
+                          <span className="font-bold">📅 Période :</span>{' '}
+                          {inter.dateDebut === inter.dateFin ? (
+                            // Une seule journée
+                            <span>
+                              {new Date(inter.dateDebut).toLocaleDateString('fr-FR', {
+                                weekday: 'long',
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric'
+                              })}
+                            </span>
+                          ) : (
+                            // Plusieurs jours
+                            <span>
+                              Du {new Date(inter.dateDebut).toLocaleDateString('fr-FR', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric'
+                              })} au {new Date(inter.dateFin).toLocaleDateString('fr-FR', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric'
+                              })}
+                            </span>
+                          )}
                         </div>
+
+                        {/* Horaires */}
                         <div>
-                          <span className="font-bold">🕐 Heure:</span>{' '}
-                          {new Date(inter.date).toLocaleTimeString('fr-FR', {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
+                          <span className="font-bold">🕐 Horaires :</span>{' '}
+                          {inter.heureDebut} - {inter.heureFin}
                         </div>
+
                         <div>
-                          <span className="font-bold">⏱️ Durée:</span> {inter.duree}h
-                        </div>
-                        <div>
-                          <span className="font-bold">📐 Surface:</span> {inter.surface}m²
+                          <span className="font-bold">📏 Surface :</span> {inter.surface}m²
                         </div>
                       </div>
 
                       {inter.notes && (
                         <div className="mt-3 text-sm text-gray-700 font-medium">
-                          <span className="font-bold">📝 Notes:</span> {inter.notes}
+                          <span className="font-bold">📝 Notes :</span> {inter.notes}
                         </div>
                       )}
 
@@ -261,12 +283,17 @@ export default function ClientInterventionsPage() {
                             🔄 Demande de changement en cours
                           </div>
                           <div className="text-sm text-gray-700">
-                            <span className="font-bold">Nouvelle date souhaitée:</span>{' '}
-                            {new Date(inter.demandeChangement.nouvelleDateSouhaitee).toLocaleDateString('fr-FR')}
+                            <span className="font-bold">Nouvelle période :</span>{' '}
+                            Du {new Date(inter.demandeChangement.nouvelleDateDebut).toLocaleDateString('fr-FR')} 
+                            {' '}au {new Date(inter.demandeChangement.nouvelleDateFin).toLocaleDateString('fr-FR')}
+                          </div>
+                          <div className="text-sm text-gray-700">
+                            <span className="font-bold">Horaires :</span>{' '}
+                            {inter.demandeChangement.nouvelleHeureDebut} - {inter.demandeChangement.nouvelleHeureFin}
                           </div>
                           {inter.demandeChangement.raison && (
                             <div className="text-sm text-gray-700">
-                              <span className="font-bold">Raison:</span> {inter.demandeChangement.raison}
+                              <span className="font-bold">Raison :</span> {inter.demandeChangement.raison}
                             </div>
                           )}
                         </div>
@@ -274,7 +301,7 @@ export default function ClientInterventionsPage() {
                     </div>
 
                     {/* Bouton demander changement (uniquement futures + planifiées) */}
-                    {new Date(inter.date) >= now && 
+                    {new Date(inter.dateDebut) >= now && 
                      inter.statut === 'Planifiée' && 
                      !inter.demandeChangement && (
                       <a
