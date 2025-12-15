@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import IntranetHeader from '../components/IntranetHeader'
 import WeatherWidget from '../components/WeatherWidget'
+import { getAllInterventionsCalendar } from '@/lib/firebase'
 
 export default function DashboardPage() {
   const router = useRouter()
   const [isAdmin, setIsAdmin] = useState(false)
+  const [nbDemandes, setNbDemandes] = useState(0)
 
   useEffect(() => {
     // Vérifier authentification
@@ -20,8 +22,24 @@ export default function DashboardPage() {
 
     // Vérifier si admin (Jérôme ou Axel)
     const userRole = localStorage.getItem('user_role')
-    setIsAdmin(userRole === 'admin')
+    const admin = userRole === 'admin'
+    setIsAdmin(admin)
+
+    // Charger le nombre de demandes si admin
+    if (admin) {
+      loadNbDemandes()
+    }
   }, [router])
+
+  const loadNbDemandes = async () => {
+    try {
+      const interventions = await getAllInterventionsCalendar()
+      const demandes = interventions.filter(i => i.statut === 'Demande modification')
+      setNbDemandes(demandes.length)
+    } catch (error) {
+      console.error('Erreur chargement demandes:', error)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -223,14 +241,27 @@ export default function DashboardPage() {
                 <span className="absolute top-4 right-4 bg-orange-500 text-white px-3 py-1 rounded text-xs font-semibold uppercase">
                   Actif
                 </span>
+                {nbDemandes > 0 && (
+                  <span className="absolute top-4 left-4 bg-red-600 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold animate-pulse">
+                    {nbDemandes}
+                  </span>
+                )}
                 <div className="text-4xl mb-4">🔄</div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Demandes Modifications</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  Demandes Modifications
+                  {nbDemandes > 0 && (
+                    <span className="ml-2 text-red-600 font-bold">({nbDemandes})</span>
+                  )}
+                </h3>
                 <p className="text-sm text-gray-600 mb-4">
                   Traiter les demandes de changement de date clients
                 </p>
                 <div className="pt-4 border-t border-gray-200 flex items-center gap-4 text-xs text-gray-500">
                   <span>🔐 Admins uniquement</span>
                   <span>📅 Clients</span>
+                  {nbDemandes > 0 && (
+                    <span className="text-red-600 font-bold">⚠️ {nbDemandes} en attente</span>
+                  )}
                 </div>
               </Link>
             )}

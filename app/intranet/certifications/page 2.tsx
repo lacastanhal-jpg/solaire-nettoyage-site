@@ -35,11 +35,16 @@ interface VGPItem {
 export default function CertificationsPage() {
   const router = useRouter()
   const [selectedTab, setSelectedTab] = useState<'personnel' | 'materiel'>('personnel')
+  const [userRole, setUserRole] = useState<string>('')
+  const [userName, setUserName] = useState<string>('')
 
   useEffect(() => {
     const isLoggedIn = localStorage.getItem('intranet_logged_in')
     if (!isLoggedIn) {
       router.push('/intranet/login')
+    } else {
+      setUserRole(localStorage.getItem('user_role') || '')
+      setUserName(localStorage.getItem('user_name') || '')
     }
   }, [router])
 
@@ -333,7 +338,14 @@ export default function CertificationsPage() {
         {/* Contenu Personnel */}
         {selectedTab === 'personnel' && (
           <div className="space-y-6">
-            {collaborateurs.map((collab) => (
+            {collaborateurs
+              .filter(collab => {
+                // Admins voient TOUT
+                if (userRole === 'admin') return true
+                // Employés voient UNIQUEMENT leurs propres certifications
+                return collab.nom === userName
+              })
+              .map((collab) => (
               <div key={collab.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                 {/* En-tête collaborateur */}
                 <div className="bg-gradient-to-r from-blue-50 to-white p-6 border-b border-gray-200">
