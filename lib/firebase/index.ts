@@ -68,7 +68,7 @@ export {
   updateEquipeComposition,
   getEquipeById
 } from './interventions-calendar'
-export type { InterventionCalendar, Equipe } from './interventions-calendar'
+export type { InterventionCalendar, Equipe, Indisponibilite } from './interventions-calendar'
 
 // Export Operateur functions
 export {
