@@ -7,7 +7,8 @@ import {
   getAllClients,
   demanderChangementDate, 
   type InterventionCalendar,
-  type Client
+  type Client,
+  type Indisponibilite
 } from '@/lib/firebase'
 
 export default function ModifierInterventionPage() {
@@ -19,11 +20,11 @@ export default function ModifierInterventionPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
+  const [indisponibilites, setIndisponibilites] = useState<Indisponibilite[]>([])
+  const [showCreneauModal, setShowCreneauModal] = useState(false)
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+
   const [formData, setFormData] = useState({
-    nouvelleDateDebut: '',
-    nouvelleDateFin: '',
-    nouvelleHeureDebut: '08:00',
-    nouvelleHeureFin: '17:00',
     raison: ''
   })
 
@@ -42,18 +43,14 @@ export default function ModifierInterventionPage() {
     try {
       setLoading(true)
       
-      // Récupérer TOUTES les interventions et clients
       const [allInterventions, allClients] = await Promise.all([
         getAllInterventionsCalendar(),
         getAllClients()
       ])
 
-      // Filtrer par groupe
       const groupeClients = allClients.filter(c => c.groupeId === groupeId)
       const clientIds = groupeClients.map(c => c.id)
       const groupeInterventions = allInterventions.filter(i => clientIds.includes(i.clientId))
-
-      // Trouver l'intervention demandée
       const inter = groupeInterventions.find(i => i.id === interventionId)
 
       if (!inter) {
@@ -62,9 +59,8 @@ export default function ModifierInterventionPage() {
         return
       }
 
-      // Vérifier que l'intervention est future et planifiée
       if (new Date(inter.dateDebut) < new Date()) {
-        alert('⚠️ Cette intervention est passée, vous ne pouvez plus la modifier')
+        alert('⚠️ Cette intervention est passée')
         router.push('/client/interventions')
         return
       }
@@ -76,21 +72,12 @@ export default function ModifierInterventionPage() {
       }
 
       if (inter.demandeChangement) {
-        alert('⚠️ Une demande de modification est déjà en cours pour cette intervention')
+        alert('⚠️ Une demande est déjà en cours')
         router.push('/client/interventions')
         return
       }
 
       setIntervention(inter)
-
-      // Pré-remplir avec les dates actuelles
-      setFormData({
-        nouvelleDateDebut: inter.dateDebut,
-        nouvelleDateFin: inter.dateFin,
-        nouvelleHeureDebut: inter.heureDebut,
-        nouvelleHeureFin: inter.heureFin,
-        raison: ''
-      })
     } catch (error) {
       console.error('Erreur:', error)
       alert('❌ Erreur lors du chargement')
@@ -100,31 +87,46 @@ export default function ModifierInterventionPage() {
     }
   }
 
+  const getAllDays = (): string[] => {
+    if (!intervention) return []
+    
+    const days: string[] = []
+    const start = new Date(intervention.dateDebut)
+    const end = new Date(intervention.dateFin)
+    
+    const current = new Date(start)
+    while (current <= end) {
+      days.push(current.toISOString().split('T')[0])
+      current.setDate(current.getDate() + 1)
+    }
+    
+    return days
+  }
+
+  const getIndisponibilite = (date: string): Indisponibilite | undefined => {
+    return indisponibilites.find(i => i.date === date)
+  }
+
+  const handleDayClick = (date: string) => {
+    setSelectedDate(date)
+    setShowCreneauModal(true)
+  }
+
+  const addIndisponibilite = (creneau: 'AM' | 'PM' | 'jour-entier') => {
+    if (!selectedDate) return
+    
+    const filtered = indisponibilites.filter(i => i.date !== selectedDate)
+    setIndisponibilites([...filtered, { date: selectedDate, creneau }])
+    setShowCreneauModal(false)
+    setSelectedDate(null)
+  }
+
+  const removeIndisponibilite = (date: string) => {
+    setIndisponibilites(indisponibilites.filter(i => i.date !== date))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (!formData.nouvelleDateDebut || !formData.nouvelleDateFin) {
-      alert('⚠️ Les dates de début et de fin sont obligatoires')
-      return
-    }
-
-    // Vérifier que nouvelle dateFin >= nouvelle dateDebut
-    if (new Date(formData.nouvelleDateFin) < new Date(formData.nouvelleDateDebut)) {
-      alert('⚠️ La date de fin doit être après ou égale à la date de début')
-      return
-    }
-
-    // Vérifier que nouvelle date est future
-    if (new Date(formData.nouvelleDateDebut) < new Date()) {
-      alert('⚠️ La nouvelle date doit être dans le futur')
-      return
-    }
-
-    // Vérifier que nouvelle heureFin > nouvelle heureDebut
-    if (formData.nouvelleHeureFin <= formData.nouvelleHeureDebut) {
-      alert('⚠️ L\'heure de fin doit être après l\'heure de début')
-      return
-    }
 
     if (!formData.raison.trim()) {
       alert('⚠️ Veuillez indiquer la raison de votre demande')
@@ -136,11 +138,12 @@ export default function ModifierInterventionPage() {
 
       await demanderChangementDate(
         interventionId,
-        formData.nouvelleDateDebut,
-        formData.nouvelleDateFin,
-        formData.nouvelleHeureDebut,
-        formData.nouvelleHeureFin,
-        formData.raison
+        intervention!.dateDebut,
+        intervention!.dateFin,
+        intervention!.heureDebut,
+        intervention!.heureFin,
+        formData.raison,
+        indisponibilites
       )
 
       alert('✅ Demande de modification envoyée !\n\nNous traiterons votre demande dans les plus brefs délais.')
@@ -165,18 +168,20 @@ export default function ModifierInterventionPage() {
     return null
   }
 
+  const allDays = getAllDays()
+  const totalJours = allDays.length
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700">
-      {/* Header */}
       <header className="bg-white/10 backdrop-blur-sm border-b border-white/20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center">
                 <span className="text-2xl">🔄</span>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">Demander un changement</h1>
+                <h1 className="text-xl font-bold text-white">Indiquer vos indisponibilités</h1>
                 <p className="text-sm text-blue-200">{intervention.siteName}</p>
               </div>
             </div>
@@ -190,15 +195,14 @@ export default function ModifierInterventionPage() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Intervention actuelle */}
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">📅 Intervention actuelle</h2>
+          <h2 className="text-lg font-bold text-gray-900 mb-4">📅 Plage d'intervention proposée</h2>
           
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-3 gap-6">
             <div>
               <div className="text-sm font-bold text-gray-900 mb-1">Période :</div>
-              <div className="text-base text-gray-700">
+              <div className="text-base text-blue-900 font-bold">
                 {intervention.dateDebut === intervention.dateFin ? (
                   <span>
                     {new Date(intervention.dateDebut).toLocaleDateString('fr-FR', {
@@ -211,8 +215,7 @@ export default function ModifierInterventionPage() {
                   <span>
                     Du {new Date(intervention.dateDebut).toLocaleDateString('fr-FR', {
                       day: 'numeric',
-                      month: 'long',
-                      year: 'numeric'
+                      month: 'long'
                     })} au {new Date(intervention.dateFin).toLocaleDateString('fr-FR', {
                       day: 'numeric',
                       month: 'long',
@@ -224,128 +227,279 @@ export default function ModifierInterventionPage() {
             </div>
 
             <div>
+              <div className="text-sm font-bold text-gray-900 mb-1">Durée :</div>
+              <div className="text-base text-blue-900 font-bold">
+                {totalJours} jour{totalJours > 1 ? 's' : ''}
+              </div>
+            </div>
+
+            <div>
               <div className="text-sm font-bold text-gray-900 mb-1">Horaires quotidiens :</div>
-              <div className="text-base text-gray-700">
+              <div className="text-base text-blue-900 font-bold">
                 {intervention.heureDebut} - {intervention.heureFin}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Formulaire nouvelle période */}
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg p-8">
-          <h2 className="text-lg font-bold text-gray-900 mb-6">🔄 Nouvelle période souhaitée</h2>
-
-          <div className="space-y-6">
-            {/* Nouvelles dates */}
-            <div className="border-2 border-blue-300 rounded-xl p-6 bg-blue-50">
-              <h3 className="text-base font-bold text-gray-900 mb-4">📅 Nouvelles dates</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-bold text-gray-900 mb-2">
-                    Date début *
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.nouvelleDateDebut}
-                    onChange={(e) => setFormData({ ...formData, nouvelleDateDebut: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-gray-400 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900 font-medium"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-gray-900 mb-2">
-                    Date fin *
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.nouvelleDateFin}
-                    onChange={(e) => setFormData({ ...formData, nouvelleDateFin: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-gray-400 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900 font-medium"
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Nouveaux horaires */}
-            <div className="border-2 border-orange-300 rounded-xl p-6 bg-orange-50">
-              <h3 className="text-base font-bold text-gray-900 mb-4">🕐 Nouveaux horaires</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-bold text-gray-900 mb-2">
-                    Heure début *
-                  </label>
-                  <input
-                    type="time"
-                    value={formData.nouvelleHeureDebut}
-                    onChange={(e) => setFormData({ ...formData, nouvelleHeureDebut: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-gray-400 rounded-lg focus:border-orange-500 focus:outline-none text-blue-900 font-medium"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-gray-900 mb-2">
-                    Heure fin *
-                  </label>
-                  <input
-                    type="time"
-                    value={formData.nouvelleHeureFin}
-                    onChange={(e) => setFormData({ ...formData, nouvelleHeureFin: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-gray-400 rounded-lg focus:border-orange-500 focus:outline-none text-blue-900 font-medium"
-                    required
-                  />
-                </div>
-              </div>
-              <p className="text-sm text-gray-700 font-medium mt-3">
-                💡 Ces horaires s'appliqueront chaque jour
-              </p>
-            </div>
-
-            {/* Raison */}
+        <div className="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-6 mb-8">
+          <div className="flex items-start gap-3">
+            <span className="text-3xl">💡</span>
             <div>
-              <label className="block text-sm font-bold text-gray-900 mb-2">
-                Raison de votre demande *
-              </label>
-              <textarea
-                value={formData.raison}
-                onChange={(e) => setFormData({ ...formData, raison: e.target.value })}
-                rows={4}
-                className="w-full px-4 py-3 border-2 border-gray-400 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900 font-medium"
-                placeholder="Expliquez pourquoi vous souhaitez modifier les dates et horaires de cette intervention..."
-                required
-              />
+              <h3 className="text-lg font-bold text-yellow-900 mb-2">Comment ça marche ?</h3>
+              <ol className="text-sm text-yellow-900 font-medium space-y-1 list-decimal list-inside">
+                <li>Cliquez sur les jours où vous N'ÊTES PAS disponible</li>
+                <li>Choisissez si c'est le matin, l'après-midi ou toute la journée</li>
+                <li>Nous planifierons l'intervention dans les créneaux disponibles</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-bold text-gray-900">
+                📅 Marquez vos indisponibilités ({indisponibilites.length} jour{indisponibilites.length > 1 ? 's' : ''})
+              </h2>
+              {indisponibilites.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setIndisponibilites([])}
+                  className="text-sm text-red-600 hover:text-red-700 font-bold"
+                >
+                  ❌ Tout effacer
+                </button>
+              )}
             </div>
 
-            {/* Info */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="text-sm text-blue-900 font-medium">
-                ℹ️ <strong>Information :</strong> Votre demande sera traitée par notre équipe dans les plus brefs délais.
-                Vous serez informé de la décision par email.
+            <div className="grid grid-cols-7 gap-2">
+              {allDays.map((day) => {
+                const date = new Date(day)
+                const indispo = getIndisponibilite(day)
+                const isToday = day === new Date().toISOString().split('T')[0]
+                
+                return (
+                  <div key={day} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => handleDayClick(day)}
+                      className={`
+                        w-full aspect-square rounded-lg border-2 flex flex-col items-center justify-center
+                        transition-all font-bold
+                        ${indispo 
+                          ? 'bg-red-100 border-red-400 hover:bg-red-200' 
+                          : 'bg-white border-gray-300 hover:bg-blue-50 hover:border-blue-400'
+                        }
+                        ${isToday ? 'ring-2 ring-blue-500' : ''}
+                      `}
+                    >
+                      <div className="text-xs text-gray-600 font-medium">
+                        {date.toLocaleDateString('fr-FR', { weekday: 'short' })}
+                      </div>
+                      <div className="text-lg font-bold text-gray-900">
+                        {date.getDate()}
+                      </div>
+                      {date.getDate() === 1 && (
+                        <div className="text-xs text-gray-600 font-medium">
+                          {date.toLocaleDateString('fr-FR', { month: 'short' })}
+                        </div>
+                      )}
+                    </button>
+                    
+                    {indispo && (
+                      <div className="absolute -top-1 -right-1 flex gap-1">
+                        {indispo.creneau === 'jour-entier' && (
+                          <span className="bg-red-600 text-white text-xs px-1.5 py-0.5 rounded font-bold">
+                            Jour
+                          </span>
+                        )}
+                        {indispo.creneau === 'AM' && (
+                          <span className="bg-orange-600 text-white text-xs px-1.5 py-0.5 rounded font-bold">
+                            AM
+                          </span>
+                        )}
+                        {indispo.creneau === 'PM' && (
+                          <span className="bg-purple-600 text-white text-xs px-1.5 py-0.5 rounded font-bold">
+                            PM
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="mt-6 flex gap-6 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 bg-white border-2 border-gray-300 rounded"></div>
+                <span className="text-gray-700 font-medium">Disponible</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 bg-red-100 border-2 border-red-400 rounded"></div>
+                <span className="text-gray-700 font-medium">Non disponible</span>
               </div>
             </div>
+          </div>
 
-            {/* Boutons */}
-            <div className="flex gap-3">
-              <button
-                type="submit"
-                disabled={submitting}
-                className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-4 px-6 rounded-lg transition-all disabled:opacity-50"
-              >
-                {submitting ? '⏳ Envoi...' : '✅ Envoyer la demande'}
-              </button>
-              <a
-                href="/client/interventions"
-                className="px-6 py-4 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg transition-colors"
-              >
-                Annuler
-              </a>
+          {indisponibilites.length > 0 && (
+            <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+              <h3 className="text-base font-bold text-gray-900 mb-4">
+                📋 Récapitulatif de vos indisponibilités
+              </h3>
+              <div className="space-y-2">
+                {indisponibilites
+                  .sort((a, b) => a.date.localeCompare(b.date))
+                  .map((indispo) => (
+                    <div
+                      key={indispo.date}
+                      className="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">❌</span>
+                        <div>
+                          <div className="font-bold text-gray-900">
+                            {new Date(indispo.date).toLocaleDateString('fr-FR', {
+                              weekday: 'long',
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric'
+                            })}
+                          </div>
+                          <div className="text-sm text-gray-600 font-medium">
+                            {indispo.creneau === 'jour-entier' && 'Toute la journée'}
+                            {indispo.creneau === 'AM' && 'Matin uniquement'}
+                            {indispo.creneau === 'PM' && 'Après-midi uniquement'}
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeIndisponibilite(indispo.date)}
+                        className="text-red-600 hover:text-red-700 font-bold text-sm"
+                      >
+                        🗑️ Retirer
+                      </button>
+                    </div>
+                  ))}
+              </div>
             </div>
+          )}
+
+          <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
+            <label className="block text-base font-bold text-gray-900 mb-3">
+              💬 Raison de votre demande *
+            </label>
+            <textarea
+              value={formData.raison}
+              onChange={(e) => setFormData({ ...formData, raison: e.target.value })}
+              rows={4}
+              className="w-full px-4 py-3 border-2 border-gray-400 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900 font-medium"
+              placeholder="Expliquez pourquoi vous avez ces indisponibilités..."
+              required
+            />
+          </div>
+
+          <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 mb-8">
+            <div className="text-sm text-blue-900 font-medium">
+              ℹ️ <strong>Information :</strong> Votre demande sera traitée par notre équipe dans les plus brefs délais.
+              Nous planifierons l'intervention en tenant compte de vos disponibilités.
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              type="submit"
+              disabled={submitting}
+              className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-4 px-6 rounded-lg transition-all disabled:opacity-50 text-lg"
+            >
+              {submitting ? '⏳ Envoi...' : '✅ Envoyer la demande'}
+            </button>
+            <a
+              href="/client/interventions"
+              className="px-8 py-4 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-lg transition-colors"
+            >
+              Annuler
+            </a>
           </div>
         </form>
       </main>
+
+      {showCreneauModal && selectedDate && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
+              {new Date(selectedDate).toLocaleDateString('fr-FR', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+              })}
+            </h3>
+            <p className="text-sm text-gray-600 font-medium mb-6">
+              Quand n'êtes-vous PAS disponible ?
+            </p>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => addIndisponibilite('AM')}
+                className="w-full px-6 py-4 bg-orange-100 hover:bg-orange-200 border-2 border-orange-300 text-orange-900 font-bold rounded-lg transition-colors text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">☀️</span>
+                  <div>
+                    <div className="font-bold">Matin seulement</div>
+                    <div className="text-sm font-medium">
+                      {intervention.heureDebut} - 12:00
+                    </div>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => addIndisponibilite('PM')}
+                className="w-full px-6 py-4 bg-purple-100 hover:bg-purple-200 border-2 border-purple-300 text-purple-900 font-bold rounded-lg transition-colors text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">🌅</span>
+                  <div>
+                    <div className="font-bold">Après-midi seulement</div>
+                    <div className="text-sm font-medium">
+                      13:00 - {intervention.heureFin}
+                    </div>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => addIndisponibilite('jour-entier')}
+                className="w-full px-6 py-4 bg-red-100 hover:bg-red-200 border-2 border-red-300 text-red-900 font-bold rounded-lg transition-colors text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">❌</span>
+                  <div>
+                    <div className="font-bold">Toute la journée</div>
+                    <div className="text-sm font-medium">
+                      {intervention.heureDebut} - {intervention.heureFin}
+                    </div>
+                  </div>
+                </div>
+              </button>
+            </div>
+
+            <button
+              onClick={() => {
+                setShowCreneauModal(false)
+                setSelectedDate(null)
+              }}
+              className="w-full mt-6 px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-lg transition-colors"
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

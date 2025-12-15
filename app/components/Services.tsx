@@ -2,7 +2,7 @@ export default function Services() {
   const services = [
     {
       title: 'Équipements Professionnels',
-      description: '3 équipes mobiles autonomes avec camions (Semi 44T, Porteurs 26T), nacelles jusqu\'à 20m, robots Solar Cleano 3m30, cuves eau osmosée 8000-10000L.',
+      description: '3 équipes mobiles autonomes avec camions (Semi 44T, Porteurs 32T et 26T), nacelles jusqu\'à 20m, robots Solar Cleano, cuves eau osmosée 8000-10000L.',
       highlight: '1,5M€ de matériel',
     },
     {

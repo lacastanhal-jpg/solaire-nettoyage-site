@@ -322,7 +322,7 @@ export default function CalendrierPage() {
                             🔄 Demande de changement
                           </div>
                           <div className="text-sm text-gray-900 font-medium">
-                            <span className="font-bold">Période proposée :</span>{' '}
+                            <span className="font-bold">Nouvelle période :</span>{' '}
                             Du {new Date(inter.demandeChangement.nouvelleDateDebut).toLocaleDateString('fr-FR')} 
                             {' '}au {new Date(inter.demandeChangement.nouvelleDateFin).toLocaleDateString('fr-FR')}
                           </div>
@@ -330,73 +330,11 @@ export default function CalendrierPage() {
                             <span className="font-bold">Horaires :</span>{' '}
                             {inter.demandeChangement.nouvelleHeureDebut} - {inter.demandeChangement.nouvelleHeureFin}
                           </div>
-                          {inter.demandeChangement.indisponibilites && inter.demandeChangement.indisponibilites.length > 0 && (
-                            <div className="text-sm text-gray-900 font-medium mt-2">
-                              <span className="font-bold">❌ Indisponibilités :</span>
-                              <div className="mt-1 space-y-1">
-                                {inter.demandeChangement.indisponibilites.map((indispo, idx) => (
-                                  <div key={idx} className="flex items-center gap-2 text-xs">
-                                    <span className={`px-2 py-0.5 rounded font-bold ${
-                                      indispo.creneau === 'jour-entier' 
-                                        ? 'bg-red-600 text-white' 
-                                        : indispo.creneau === 'AM' 
-                                        ? 'bg-orange-600 text-white' 
-                                        : 'bg-purple-600 text-white'
-                                    }`}>
-                                      {indispo.creneau === 'jour-entier' && 'Jour'}
-                                      {indispo.creneau === 'AM' && 'AM'}
-                                      {indispo.creneau === 'PM' && 'PM'}
-                                    </span>
-                                    <span>
-                                      {new Date(indispo.date).toLocaleDateString('fr-FR', {
-                                        weekday: 'short',
-                                        day: 'numeric',
-                                        month: 'short'
-                                      })}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
                           {inter.demandeChangement.raison && (
-                            <div className="text-sm text-gray-900 font-medium mt-2">
+                            <div className="text-sm text-gray-900 font-medium">
                               <span className="font-bold">Raison :</span> {inter.demandeChangement.raison}
                             </div>
                           )}
-                        </div>
-                      )}
-
-                      {/* Indisponibilités conservées (après acceptation demande) */}
-                      {!inter.demandeChangement && inter.indisponibilites && inter.indisponibilites.length > 0 && (
-                        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                          <div className="text-sm font-bold text-blue-900 mb-2">
-                            ⚠️ Indisponibilités client à respecter
-                          </div>
-                          <div className="space-y-1">
-                            {inter.indisponibilites.map((indispo, idx) => (
-                              <div key={idx} className="flex items-center gap-2 text-xs">
-                                <span className={`px-2 py-0.5 rounded font-bold ${
-                                  indispo.creneau === 'jour-entier' 
-                                    ? 'bg-red-600 text-white' 
-                                    : indispo.creneau === 'AM' 
-                                    ? 'bg-orange-600 text-white' 
-                                    : 'bg-purple-600 text-white'
-                                }`}>
-                                  {indispo.creneau === 'jour-entier' && 'Jour'}
-                                  {indispo.creneau === 'AM' && 'AM'}
-                                  {indispo.creneau === 'PM' && 'PM'}
-                                </span>
-                                <span className="text-gray-900 font-bold">
-                                  {new Date(indispo.date).toLocaleDateString('fr-FR', {
-                                    weekday: 'long',
-                                    day: 'numeric',
-                                    month: 'long'
-                                  })}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
                         </div>
                       )}
                     </div>

@@ -50,8 +50,7 @@ export default function DemandesModificationsPage() {
         inter.demandeChangement.nouvelleDateDebut,
         inter.demandeChangement.nouvelleDateFin,
         inter.demandeChangement.nouvelleHeureDebut,
-        inter.demandeChangement.nouvelleHeureFin,
-        inter.demandeChangement.indisponibilites // Passer les indisponibilités
+        inter.demandeChangement.nouvelleHeureFin
       )
       alert('✅ Demande acceptée ! Les nouvelles dates et horaires ont été enregistrés.')
       loadDemandes()
@@ -254,38 +253,9 @@ export default function DemandesModificationsPage() {
                                 </span>
                               )}
                             </div>
-                            <div className="text-sm text-gray-700 mb-2">
+                            <div className="text-sm text-gray-700">
                               🕐 {inter.demandeChangement.nouvelleHeureDebut} - {inter.demandeChangement.nouvelleHeureFin}
                             </div>
-                            {inter.demandeChangement.indisponibilites && inter.demandeChangement.indisponibilites.length > 0 && (
-                              <div className="mt-3 pt-3 border-t border-orange-300">
-                                <div className="text-xs font-bold text-orange-900 mb-2">❌ INDISPONIBILITÉS CLIENT :</div>
-                                <div className="space-y-1">
-                                  {inter.demandeChangement.indisponibilites.map((indispo, idx) => (
-                                    <div key={idx} className="flex items-center gap-2 text-xs">
-                                      <span className={`px-2 py-0.5 rounded font-bold ${
-                                        indispo.creneau === 'jour-entier' 
-                                          ? 'bg-red-600 text-white' 
-                                          : indispo.creneau === 'AM' 
-                                          ? 'bg-orange-600 text-white' 
-                                          : 'bg-purple-600 text-white'
-                                      }`}>
-                                        {indispo.creneau === 'jour-entier' && 'Jour'}
-                                        {indispo.creneau === 'AM' && 'AM'}
-                                        {indispo.creneau === 'PM' && 'PM'}
-                                      </span>
-                                      <span className="text-gray-900 font-bold">
-                                        {new Date(indispo.date).toLocaleDateString('fr-FR', {
-                                          weekday: 'long',
-                                          day: 'numeric',
-                                          month: 'long'
-                                        })}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
                           </div>
                         )}
                       </div>

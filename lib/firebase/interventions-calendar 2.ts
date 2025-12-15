@@ -17,11 +17,6 @@ import {
 // TYPES
 // ============================================================================
 
-export type Indisponibilite = {
-  date: string
-  creneau: 'AM' | 'PM' | 'jour-entier'
-}
-
 export interface InterventionCalendar {
   id?: string
   siteId: string
@@ -43,7 +38,6 @@ export interface InterventionCalendar {
   statut: 'Planifiée' | 'En cours' | 'Terminée' | 'Annulée' | 'Demande modification'
   rapportUrl?: string
   notes?: string
-  indisponibilites?: Indisponibilite[] // Indisponibilités du client (conservées après acceptation)
   recurrence?: {
     frequence: '1mois' | '3mois' | '6mois' | '1an'
     prochaine: string // ISO date
@@ -54,7 +48,6 @@ export interface InterventionCalendar {
     nouvelleHeureDebut: string
     nouvelleHeureFin: string
     raison: string
-    indisponibilites: Indisponibilite[]
     demandeLe: string
   } | null
   createdAt: string
@@ -240,8 +233,7 @@ export async function demanderChangementDate(
   nouvelleDateFin: string,
   nouvelleHeureDebut: string,
   nouvelleHeureFin: string,
-  raison: string,
-  indisponibilites?: Indisponibilite[]
+  raison: string
 ) {
   try {
     await updateDoc(doc(db, 'interventions_calendar', interventionId), {
@@ -252,7 +244,6 @@ export async function demanderChangementDate(
         nouvelleHeureDebut,
         nouvelleHeureFin,
         raison,
-        indisponibilites: indisponibilites || [],
         demandeLe: new Date().toISOString()
       },
       updatedAt: new Date().toISOString()
@@ -271,8 +262,7 @@ export async function accepterChangementDate(
   nouvelleDateDebut: string,
   nouvelleDateFin: string,
   nouvelleHeureDebut: string,
-  nouvelleHeureFin: string,
-  indisponibilites?: Indisponibilite[]
+  nouvelleHeureFin: string
 ) {
   try {
     await updateDoc(doc(db, 'interventions_calendar', interventionId), {
@@ -280,7 +270,6 @@ export async function accepterChangementDate(
       dateFin: nouvelleDateFin,
       heureDebut: nouvelleHeureDebut,
       heureFin: nouvelleHeureFin,
-      indisponibilites: indisponibilites || [], // Sauvegarder les indisponibilités
       statut: 'Planifiée',
       demandeChangement: null,
       updatedAt: new Date().toISOString()
