@@ -151,6 +151,90 @@ export default function DashboardPage() {
               </Link>
             )}
 
+            {/* NOUVEAU : Calendrier Interventions - ACTIF (Seulement pour admins) */}
+            {isAdmin && (
+              <Link
+                href="/admin/init-equipes"
+                className="bg-white border-2 border-green-500 rounded-xl p-8 hover:shadow-lg transition-all relative overflow-hidden bg-gradient-to-br from-purple-50/50 to-white"
+              >
+                <span className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded text-xs font-semibold uppercase">
+                  Actif
+                </span>
+                <div className="text-4xl mb-4">📅</div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Calendrier Interventions</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Planifier et gérer les interventions terrain par équipe
+                </p>
+                <div className="pt-4 border-t border-gray-200 flex items-center gap-4 text-xs text-gray-500">
+                  <span>🔐 Admins uniquement</span>
+                  <span>👷 3 Équipes</span>
+                </div>
+              </Link>
+            )}
+
+            {/* NOUVEAU : Gestion Opérateurs - ACTIF (Seulement pour admins) */}
+            {isAdmin && (
+              <Link
+                href="/admin/init-operateurs"
+                className="bg-white border-2 border-green-500 rounded-xl p-8 hover:shadow-lg transition-all relative overflow-hidden bg-gradient-to-br from-indigo-50/50 to-white"
+              >
+                <span className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded text-xs font-semibold uppercase">
+                  Actif
+                </span>
+                <div className="text-4xl mb-4">👷</div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Gestion Opérateurs</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Gérer les 6 opérateurs terrain et leur composition d'équipes
+                </p>
+                <div className="pt-4 border-t border-gray-200 flex items-center gap-4 text-xs text-gray-500">
+                  <span>🔐 Admins uniquement</span>
+                  <span>👥 6 Opérateurs</span>
+                </div>
+              </Link>
+            )}
+
+            {/* NOUVEAU : Gestion Équipes - ACTIF (Seulement pour admins) */}
+            {isAdmin && (
+              <Link
+                href="/admin/gestion-equipes"
+                className="bg-white border-2 border-green-500 rounded-xl p-8 hover:shadow-lg transition-all relative overflow-hidden bg-gradient-to-br from-purple-50/50 to-white"
+              >
+                <span className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded text-xs font-semibold uppercase">
+                  Actif
+                </span>
+                <div className="text-4xl mb-4">👥</div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Gestion Équipes</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Composer les 3 équipes terrain avec les opérateurs disponibles
+                </p>
+                <div className="pt-4 border-t border-gray-200 flex items-center gap-4 text-xs text-gray-500">
+                  <span>🔐 Admins uniquement</span>
+                  <span>🔴🔵🟢 3 Équipes</span>
+                </div>
+              </Link>
+            )}
+
+            {/* NOUVEAU : Demandes Modifications - ACTIF (Seulement pour admins) */}
+            {isAdmin && (
+              <Link
+                href="/admin/demandes-modifications"
+                className="bg-white border-2 border-orange-500 rounded-xl p-8 hover:shadow-lg transition-all relative overflow-hidden bg-gradient-to-br from-orange-50/50 to-white"
+              >
+                <span className="absolute top-4 right-4 bg-orange-500 text-white px-3 py-1 rounded text-xs font-semibold uppercase">
+                  Actif
+                </span>
+                <div className="text-4xl mb-4">🔄</div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Demandes Modifications</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Traiter les demandes de changement de date clients
+                </p>
+                <div className="pt-4 border-t border-gray-200 flex items-center gap-4 text-xs text-gray-500">
+                  <span>🔐 Admins uniquement</span>
+                  <span>📅 Clients</span>
+                </div>
+              </Link>
+            )}
+
             {/* Documents - BIENTÔT */}
             <div className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-8 opacity-60 cursor-not-allowed relative">
               <span className="absolute top-4 right-4 bg-gray-200 text-gray-600 px-3 py-1 rounded text-xs font-semibold uppercase">
@@ -297,6 +381,26 @@ export default function DashboardPage() {
               >
                 <div className="text-2xl mb-2">👥</div>
                 <div className="font-semibold text-gray-900 text-sm">Gestion Clients</div>
+              </Link>
+            )}
+
+            {isAdmin && (
+              <Link
+                href="/admin/init-equipes"
+                className="bg-white border border-gray-200 rounded-lg p-4 hover:border-purple-500 hover:shadow-md transition-all text-left block"
+              >
+                <div className="text-2xl mb-2">📅</div>
+                <div className="font-semibold text-gray-900 text-sm">Calendrier</div>
+              </Link>
+            )}
+
+            {isAdmin && (
+              <Link
+                href="/admin/init-operateurs"
+                className="bg-white border border-gray-200 rounded-lg p-4 hover:border-indigo-500 hover:shadow-md transition-all text-left block"
+              >
+                <div className="text-2xl mb-2">👷</div>
+                <div className="font-semibold text-gray-900 text-sm">Opérateurs</div>
               </Link>
             )}
           </div>
