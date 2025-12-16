@@ -143,3 +143,24 @@ export {
   getAlertes
 } from './certifications'
 export type { CacesOperateur, VisiteMedicale, VGPMateriel, Materiel } from './certifications'
+
+// Export Extincteur functions
+export {
+  createExtincteur,
+  getAllExtincteurs,
+  getExtincteurById,
+  getExtincteursByStatut,
+  updateExtincteur,
+  deleteExtincteur,
+  createVerification,
+  getAllVerifications,
+  getHistoriqueExtincteur,
+  deleteVerification,
+  createTechnicien,
+  getAllTechniciens,
+  verifyTechnicienCredentials,
+  updateTechnicien,
+  deleteTechnicien,
+  getAlertesExtincteurs
+} from './extincteurs'
+export type { Extincteur, VerificationExtincteur, TechnicienExtincteur } from './extincteurs'

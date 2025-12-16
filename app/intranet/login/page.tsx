@@ -157,6 +157,21 @@ export default function LoginPage() {
             </p>
           </div>
 
+          {/* Lien technicien extincteurs */}
+          <div className="mt-6 p-4 bg-orange-50 border-2 border-orange-300 rounded-lg">
+            <div className="text-center">
+              <p className="text-sm font-bold text-orange-900 mb-2">
+                🧯 Vous êtes technicien extincteurs ?
+              </p>
+              <a 
+                href="/technicien/login"
+                className="inline-block bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-6 rounded-lg transition-all"
+              >
+                🔧 Connectez-vous ici
+              </a>
+            </div>
+          </div>
+
           {/* Info identifiants */}
           <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-xs text-blue-700 font-semibold mb-2 text-center">

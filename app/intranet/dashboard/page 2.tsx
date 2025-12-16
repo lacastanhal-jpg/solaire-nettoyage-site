@@ -6,11 +6,21 @@ import Link from 'next/link'
 import IntranetHeader from '../components/IntranetHeader'
 import WeatherWidget from '../components/WeatherWidget'
 import { getAllInterventionsCalendar } from '@/lib/firebase'
+import { getAlertesFromData } from '@/lib/certifications-data'
 
 export default function DashboardPage() {
   const router = useRouter()
   const [isAdmin, setIsAdmin] = useState(false)
   const [nbDemandes, setNbDemandes] = useState(0)
+  const [alertes, setAlertes] = useState<{
+    critiques: { type: string; message: string; jours: number }[]
+    importantes: { type: string; message: string; jours: number }[]
+    info: { type: string; message: string }[]
+  }>({
+    critiques: [],
+    importantes: [],
+    info: []
+  })
 
   useEffect(() => {
     // Vérifier authentification
@@ -34,8 +44,13 @@ export default function DashboardPage() {
   const loadNbDemandes = async () => {
     try {
       const interventions = await getAllInterventionsCalendar()
+      
       const demandes = interventions.filter(i => i.statut === 'Demande modification')
       setNbDemandes(demandes.length)
+      
+      // Charger les alertes depuis les données hardcodées
+      const alertesData = getAlertesFromData()
+      setAlertes(alertesData)
     } catch (error) {
       console.error('Erreur chargement demandes:', error)
     }
@@ -70,15 +85,66 @@ export default function DashboardPage() {
           </div>
 
           {/* Alertes */}
-          <div className="bg-white p-6 rounded-xl border border-gray-200 hover:border-blue-500 transition-all">
+          <div className="bg-white p-6 rounded-xl border border-gray-200 hover:border-blue-500 transition-all cursor-pointer group">
             <div className="flex justify-between items-start mb-4">
               <span className="text-sm font-medium text-gray-600">Alertes en cours</span>
-              <div className="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center text-xl">
-                ⚠️
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl ${
+                alertes.critiques.length > 0 
+                  ? 'bg-red-50' 
+                  : alertes.importantes.length > 0 
+                    ? 'bg-orange-50' 
+                    : 'bg-green-50'
+              }`}>
+                {alertes.critiques.length > 0 ? '🔴' : alertes.importantes.length > 0 ? '⚠️' : '✅'}
               </div>
             </div>
-            <div className="text-3xl font-bold text-gray-900 mb-1">3</div>
-            <div className="text-xs text-orange-600">2 CACES à renouveler sous 30j</div>
+            <div className={`text-3xl font-bold mb-1 ${
+              alertes.critiques.length > 0 
+                ? 'text-red-600' 
+                : alertes.importantes.length > 0 
+                  ? 'text-orange-600' 
+                  : 'text-green-600'
+            }`}>
+              {alertes.critiques.length + alertes.importantes.length}
+            </div>
+            <div className="space-y-1">
+              {alertes.critiques.length > 0 && (
+                <div className="text-xs text-red-600 font-medium">
+                  🔴 {alertes.critiques.length} critique{alertes.critiques.length > 1 ? 's' : ''}
+                </div>
+              )}
+              {alertes.importantes.length > 0 && (
+                <div className="text-xs text-orange-600 font-medium">
+                  ⚠️ {alertes.importantes.length} importante{alertes.importantes.length > 1 ? 's' : ''}
+                </div>
+              )}
+              {alertes.critiques.length === 0 && alertes.importantes.length === 0 && (
+                <div className="text-xs text-green-600 font-medium">
+                  Tout est à jour
+                </div>
+              )}
+            </div>
+            
+            {/* Détail au survol */}
+            <div className="mt-4 pt-4 border-t border-gray-100 hidden group-hover:block">
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {alertes.critiques.slice(0, 3).map((alerte, i) => (
+                  <div key={i} className="text-xs text-red-700 bg-red-50 rounded px-2 py-1">
+                    {alerte.message}
+                  </div>
+                ))}
+                {alertes.importantes.slice(0, 2).map((alerte, i) => (
+                  <div key={i} className="text-xs text-orange-700 bg-orange-50 rounded px-2 py-1">
+                    {alerte.message}
+                  </div>
+                ))}
+                {(alertes.critiques.length + alertes.importantes.length) > 5 && (
+                  <div className="text-xs text-gray-500 text-center">
+                    + {(alertes.critiques.length + alertes.importantes.length) - 5} autre(s)
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 

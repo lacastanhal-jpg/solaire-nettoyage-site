@@ -117,3 +117,29 @@ export {
   verifyGroupeCredentials  // ✅ AJOUTÉ !
 } from './groupes'
 export type { Groupe } from './groupes'
+
+// Export Certification functions
+export {
+  createCaces,
+  getAllCaces,
+  getCacesByOperateur,
+  updateCaces,
+  deleteCaces,
+  createVisiteMedicale,
+  getAllVisitesMedicales,
+  getVisitesMedicalesByOperateur,
+  updateVisiteMedicale,
+  deleteVisiteMedicale,
+  createVGP,
+  getAllVGP,
+  getVGPByMateriel,
+  updateVGP,
+  deleteVGP,
+  createMateriel,
+  getAllMateriels,
+  getMaterielsByEquipe,
+  updateMateriel,
+  deleteMateriel,
+  getAlertes
+} from './certifications'
+export type { CacesOperateur, VisiteMedicale, VGPMateriel, Materiel } from './certifications'
