@@ -9,6 +9,7 @@ import {
   type InterventionCalendar,
   type Equipe
 } from '@/lib/firebase'
+import ImportInterventionsModal from '@/components/ImportInterventionsModal'
 
 export default function CalendrierPage() {
   const router = useRouter()
@@ -17,6 +18,7 @@ export default function CalendrierPage() {
   const [loading, setLoading] = useState(true)
   const [selectedEquipe, setSelectedEquipe] = useState<string>('all')
   const [selectedStatut, setSelectedStatut] = useState<string>('all')
+  const [showImportModal, setShowImportModal] = useState(false)
 
   useEffect(() => {
     const userRole = localStorage.getItem('user_role')
@@ -147,14 +149,25 @@ export default function CalendrierPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Bouton nouvelle intervention */}
-        <div className="mb-8">
+        {/* Boutons actions */}
+        <div className="mb-8 flex gap-4">
           <a
             href="/admin/nouvelle-intervention"
-            className="inline-block px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold rounded-lg transition-all shadow-lg"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold rounded-lg transition-all shadow-lg"
           >
-            ➕ Nouvelle Intervention
+            <span className="text-xl">➕</span>
+            Nouvelle Intervention
           </a>
+          
+          <button
+            onClick={() => setShowImportModal(true)}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold rounded-lg transition-all shadow-lg"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            Importer interventions
+          </button>
         </div>
 
         {/* Stats */}
@@ -234,12 +247,23 @@ export default function CalendrierPage() {
                 }
               </div>
               {interventions.length === 0 && (
-                <a
-                  href="/admin/nouvelle-intervention"
-                  className="inline-block px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg"
-                >
-                  ➕ Nouvelle Intervention
-                </a>
+                <div className="flex gap-4 justify-center">
+                  <a
+                    href="/admin/nouvelle-intervention"
+                    className="inline-block px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg"
+                  >
+                    ➕ Nouvelle Intervention
+                  </a>
+                  <button
+                    onClick={() => setShowImportModal(true)}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    Importer interventions
+                  </button>
+                </div>
               )}
             </div>
           ) : (
@@ -422,6 +446,16 @@ export default function CalendrierPage() {
           )}
         </div>
       </main>
+
+      {/* Modal Import */}
+      <ImportInterventionsModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onSuccess={() => {
+          setShowImportModal(false)
+          loadData()
+        }}
+      />
     </div>
   )
 }
