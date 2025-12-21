@@ -69,7 +69,7 @@ export default function GelyManagementPage() {
       case 'solaireNettoyage':
         return <PageSolaireNettoyage />
       default:
-        return <Dashboard />
+        return <Dashboard setCurrentPage={setCurrentPage} />
     }
   }
 
