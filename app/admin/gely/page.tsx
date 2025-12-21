@@ -47,7 +47,7 @@ export default function GelyManagementPage() {
 
     switch (currentPage) {
       case 'dashboard':
-        return <Dashboard />
+        return <Dashboard setCurrentPage={setCurrentPage} />
       case 'projets':
         return <PageProjets onSelectProjet={setSelectedProjet} />
       case 'dashboardGroupe':
