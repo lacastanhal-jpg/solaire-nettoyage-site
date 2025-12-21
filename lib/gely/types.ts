@@ -32,6 +32,7 @@ export interface Partenaire {
   contact?: string
   telephone?: string
   email?: string
+  notes?: string
 }
 
 // Échéance critique
