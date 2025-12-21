@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Building2, Users, FileText, Home } from 'lucide-react'
+import { Building2, Users, Home } from 'lucide-react'
 
 // Import des composants
 import Dashboard from '@/components/gely/Dashboard'
@@ -10,9 +10,8 @@ import PageSciGely from '@/components/gely/PageSciGely'
 import PageLexa from '@/components/gely/PageLexa'
 import PageLexa2 from '@/components/gely/PageLexa2'
 import PageSolaireNettoyage from '@/components/gely/PageSolaireNettoyage'
-import DocumentsList from '@/components/gely/DocumentsList'
 
-type PageType = 'dashboard' | 'actionnaires' | 'sciGely' | 'lexa' | 'lexa2' | 'solaireNettoyage' | 'documents'
+type PageType = 'dashboard' | 'actionnaires' | 'sciGely' | 'lexa' | 'lexa2' | 'solaireNettoyage'
 
 const NAVIGATION = [
   { id: 'dashboard', label: 'Dashboard', icon: Home },
@@ -21,7 +20,8 @@ const NAVIGATION = [
   { id: 'lexa', label: 'LEXA', icon: Building2 },
   { id: 'lexa2', label: 'LEXA 2', icon: Building2 },
   { id: 'solaireNettoyage', label: 'SOLAIRE NETTOYAGE', icon: Building2 },
-  { id: 'documents', label: 'Documents', icon: FileText },
+  // Documents temporairement désactivé
+  // { id: 'documents', label: 'Documents', icon: FileText },
 ]
 
 export default function GelyManagementPage() {
@@ -41,8 +41,6 @@ export default function GelyManagementPage() {
         return <PageLexa2 />
       case 'solaireNettoyage':
         return <PageSolaireNettoyage />
-      case 'documents':
-        return <DocumentsList />
       default:
         return <Dashboard setCurrentPage={setCurrentPage} />
     }
