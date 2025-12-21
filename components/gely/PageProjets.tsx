@@ -6,7 +6,6 @@ import { Projet } from '@/lib/gely/types'
 import { PROJETS_MOCK } from '@/lib/gely/mockData'
 import ModalCreationProjet from './ModalCreationProjet'
 import ModalModificationProjet from './ModalModificationProjet'
-import ToggleHTTC from './ToggleHTTC'
 
 const SOCIETES_LABELS: Record<string, string> = {
   sciGely: 'SCI GELY',
