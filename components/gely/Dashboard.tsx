@@ -36,8 +36,10 @@ const SOCIETES_DATA = {
   }
 }
 
+type PageType = 'dashboard' | 'actionnaires' | 'sciGely' | 'lexa' | 'lexa2' | 'solaireNettoyage' | 'documents'
+
 interface DashboardProps {
-  setCurrentPage: (page: string) => void
+  setCurrentPage: (page: PageType) => void
 }
 
 export default function Dashboard({ setCurrentPage }: DashboardProps) {
