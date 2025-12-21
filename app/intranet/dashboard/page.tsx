@@ -357,6 +357,27 @@ export default function DashboardPage() {
               </Link>
             )}
 
+            {/* NOUVEAU : Groupe GELY - ACTIF (Seulement pour admins) */}
+            {isAdmin && (
+              <Link
+                href="/admin/gely"
+                className="bg-white border-2 border-green-500 rounded-xl p-8 hover:shadow-lg transition-all relative overflow-hidden bg-gradient-to-br from-blue-50/50 to-white"
+              >
+                <span className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded text-xs font-semibold uppercase">
+                  Actif
+                </span>
+                <div className="text-4xl mb-4">🏢</div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Groupe GELY</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Gestion holdings, sociétés, projets, documents, suivi financier
+                </p>
+                <div className="pt-4 border-t border-gray-200 flex items-center gap-4 text-xs text-gray-500">
+                  <span>🔐 Admins uniquement</span>
+                  <span>🏢 5 Sociétés</span>
+                </div>
+              </Link>
+            )}
+
             {/* Documents - BIENTÔT */}
             <div className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-8 opacity-60 cursor-not-allowed relative">
               <span className="absolute top-4 right-4 bg-gray-200 text-gray-600 px-3 py-1 rounded text-xs font-semibold uppercase">
@@ -523,6 +544,16 @@ export default function DashboardPage() {
               >
                 <div className="text-2xl mb-2">👷</div>
                 <div className="font-semibold text-gray-900 text-sm">Opérateurs</div>
+              </Link>
+            )}
+
+            {isAdmin && (
+              <Link
+                href="/admin/gely"
+                className="bg-white border border-gray-200 rounded-lg p-4 hover:border-blue-500 hover:shadow-md transition-all text-left block"
+              >
+                <div className="text-2xl mb-2">🏢</div>
+                <div className="font-semibold text-gray-900 text-sm">Groupe GELY</div>
               </Link>
             )}
           </div>

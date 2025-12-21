@@ -7,11 +7,13 @@ import IntranetHeader from '../components/IntranetHeader'
 import WeatherWidget from '../components/WeatherWidget'
 import { getAllInterventionsCalendar } from '@/lib/firebase'
 import { getAlertesFromData } from '@/lib/certifications-data'
+import { getAllExtincteurs } from '@/lib/firebase/extincteurs'
 
 export default function DashboardPage() {
   const router = useRouter()
   const [isAdmin, setIsAdmin] = useState(false)
   const [nbDemandes, setNbDemandes] = useState(0)
+  const [nbExtincteurs, setNbExtincteurs] = useState(0)
   const [alertes, setAlertes] = useState<{
     critiques: { type: string; message: string; jours: number }[]
     importantes: { type: string; message: string; jours: number }[]
@@ -51,6 +53,10 @@ export default function DashboardPage() {
       // Charger les alertes depuis les données hardcodées
       const alertesData = getAlertesFromData()
       setAlertes(alertesData)
+      
+      // Charger les extincteurs
+      const extincteurs = await getAllExtincteurs()
+      setNbExtincteurs(extincteurs.length)
     } catch (error) {
       console.error('Erreur chargement demandes:', error)
     }
@@ -211,6 +217,25 @@ export default function DashboardPage() {
               <div className="pt-4 border-t border-gray-200 flex items-center gap-4 text-xs text-gray-500">
                 <span>👥 6 collaborateurs</span>
                 <span>🔧 5 VGP</span>
+              </div>
+            </Link>
+
+            {/* NOUVEAU : Extincteurs - ACTIF */}
+            <Link
+              href="/intranet/extincteurs"
+              className="bg-white border-2 border-green-500 rounded-xl p-8 hover:shadow-lg transition-all relative overflow-hidden bg-gradient-to-br from-orange-50/50 to-white"
+            >
+              <span className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded text-xs font-semibold uppercase">
+                Actif
+              </span>
+              <div className="text-4xl mb-4">🧯</div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Extincteurs</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Registre de sécurité incendie, vérifications, alertes, accès technicien
+              </p>
+              <div className="pt-4 border-t border-gray-200 flex items-center gap-4 text-xs text-gray-500">
+                <span>🧯 {nbExtincteurs} extincteur{nbExtincteurs > 1 ? 's' : ''}</span>
+                <span>🔧 Technicien</span>
               </div>
             </Link>
 
