@@ -20,8 +20,6 @@ const NAVIGATION = [
   { id: 'lexa', label: 'LEXA', icon: Building2 },
   { id: 'lexa2', label: 'LEXA 2', icon: Building2 },
   { id: 'solaireNettoyage', label: 'SOLAIRE NETTOYAGE', icon: Building2 },
-  // Documents temporairement désactivé
-  // { id: 'documents', label: 'Documents', icon: FileText },
 ]
 
 export default function GelyManagementPage() {

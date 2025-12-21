@@ -1,10 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Factory, FileText, Euro, Upload } from 'lucide-react'
-import UploadDocument from '@/components/gely/UploadDocument'
-import DocumentsList from '@/components/gely/DocumentsList'
-import PDFViewer from '@/components/gely/PDFViewer'
+import { Factory, FileText, Euro } from 'lucide-react'
 
 const FACTURES = [
   { date: "08/12/2021", fournisseur: "MECOJIT", numero: "6442", description: "Lauréat AO", ht: "3 333 €", ttc: "4 000 €", statut: "Payé" },
@@ -14,8 +11,6 @@ const FACTURES = [
 
 export default function PageLexa2() {
   const [activeTab, setActiveTab] = useState('projets')
-  const [showUpload, setShowUpload] = useState(false)
-  const [selectedDocument, setSelectedDocument] = useState(null)
 
   return (
     <div className="space-y-6">
@@ -41,7 +36,6 @@ export default function PageLexa2() {
         <div className="flex space-x-1">
           {[
             { id: 'projets', label: 'Projets', icon: Factory },
-            { id: 'documents', label: 'Documents', icon: FileText },
             { id: 'finances', label: 'Finances', icon: Euro }
           ].map(tab => {
             const Icon = tab.icon
@@ -160,38 +154,6 @@ export default function PageLexa2() {
               </tbody>
             </table>
           </div>
-        </div>
-      )}
-
-      {activeTab === 'documents' && (
-        <div>
-          <div className="mb-6 flex justify-between items-center">
-            <h3 className="text-2xl font-bold text-blue-900">Documents du projet</h3>
-            <button
-              onClick={() => setShowUpload(true)}
-              className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg flex items-center space-x-2"
-            >
-              <Upload className="w-5 h-5" />
-              <span>Ajouter un document</span>
-            </button>
-          </div>
-          <DocumentsList societe="lexa2" onDocumentClick={setSelectedDocument} />
-          {showUpload && (
-            <UploadDocument
-              onClose={() => setShowUpload(false)}
-              onSuccess={() => {
-                setShowUpload(false)
-                // Refresh documents list
-                window.location.reload()
-              }}
-            />
-          )}
-          {selectedDocument && (
-            <PDFViewer
-              document={selectedDocument}
-              onClose={() => setSelectedDocument(null)}
-            />
-          )}
         </div>
       )}
     </div>
