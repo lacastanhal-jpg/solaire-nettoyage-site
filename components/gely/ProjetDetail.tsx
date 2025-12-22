@@ -30,7 +30,8 @@ interface ProjetDetailProps {
 
 export default function ProjetDetail({ projetId, onBack }: ProjetDetailProps) {
   const { projet, loading: loadingProjet } = useProjet(projetId)
-  const { lignes, loading: loadingLignes } = useLignesFinancieres(projetId)
+  const { lignes: lignesData, loading: loadingLignes } = useLignesFinancieres(projetId)
+  const lignes = lignesData as LigneFinanciere[]
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editedLigne, setEditedLigne] = useState<LigneFinanciere | null>(null)
   const [activeTab, setActiveTab] = useState<'vue' | 'finances' | 'documents'>('finances')
@@ -66,7 +67,7 @@ export default function ProjetDetail({ projetId, onBack }: ProjetDetailProps) {
   }
 
   // Calculer totaux depuis lignes Firebase
-  const calculerTotaux = (lignes: any[]) => {
+  const calculerTotaux = (lignes: LigneFinanciere[]) => {
     let totalDevis = 0, totalDevisHT = 0
     let totalFactures = 0, totalFacturesHT = 0  
     let totalPaye = 0, totalPayeHT = 0
