@@ -17,7 +17,8 @@ import SimulateurImpact from '@/components/gely/SimulateurImpact'
 import CalendrierFinancier from '@/components/gely/CalendrierFinancier'
 import DashboardGroupe from '@/components/gely/DashboardGroupe'
 import ExportDonnees from '@/components/gely/ExportDonnees'
-import { PROJETS_MOCK, LIGNES_FINANCIERES_MOCK } from '@/lib/gely/mockData'
+import { useProjets, useLignesFinancieres } from '@/lib/gely/useFirestore'
+import { LIGNES_FINANCIERES_MOCK } from '@/lib/gely/mockData'
 
 type PageType = 'dashboard' | 'actionnaires' | 'sciGely' | 'lexa' | 'lexa2' | 'solaireNettoyage' | 'projets' | 'simulateur' | 'calendrier' | 'dashboardGroupe' | 'export'
 
@@ -38,11 +39,42 @@ const NAVIGATION = [
 export default function GelyManagementPage() {
   const [currentPage, setCurrentPage] = useState<PageType>('dashboard')
   const [selectedProjet, setSelectedProjet] = useState<string | null>(null)
+  
+  // Charger projets depuis Firebase
+  const { projets, loading, error } = useProjets()
 
   const renderPage = () => {
     // Si on a sélectionné un projet, afficher le détail
     if (currentPage === 'projets' && selectedProjet) {
       return <ProjetDetail projetId={selectedProjet} onBack={() => setSelectedProjet(null)} />
+    }
+
+    // Afficher loading pour les pages qui utilisent Firebase
+    if (loading && ['projets', 'dashboardGroupe', 'calendrier', 'simulateur', 'export'].includes(currentPage)) {
+      return (
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-xl text-gray-600 font-semibold">Chargement des données...</p>
+            <p className="text-sm text-gray-500 mt-2">🔥 Firebase</p>
+          </div>
+        </div>
+      )
+    }
+
+    // Afficher erreur si Firebase échoue
+    if (error && ['projets', 'dashboardGroupe', 'calendrier', 'simulateur', 'export'].includes(currentPage)) {
+      return (
+        <div className="bg-red-50 border-2 border-red-200 rounded-xl p-8">
+          <div className="flex items-center space-x-4">
+            <div>
+              <h3 className="text-xl font-bold text-red-800 mb-2">❌ Erreur de chargement</h3>
+              <p className="text-red-700">{error.message}</p>
+              <p className="text-sm text-red-600 mt-2">Vérifiez votre connexion Firebase</p>
+            </div>
+          </div>
+        </div>
+      )
     }
 
     switch (currentPage) {
@@ -51,13 +83,13 @@ export default function GelyManagementPage() {
       case 'projets':
         return <PageProjets onSelectProjet={setSelectedProjet} />
       case 'dashboardGroupe':
-        return <DashboardGroupe projets={PROJETS_MOCK} />
+        return <DashboardGroupe projets={projets} />
       case 'calendrier':
-        return <CalendrierFinancier projets={PROJETS_MOCK} />
+        return <CalendrierFinancier projets={projets} />
       case 'simulateur':
-        return <SimulateurImpact projets={PROJETS_MOCK} />
+        return <SimulateurImpact projets={projets} />
       case 'export':
-        return <ExportDonnees projets={PROJETS_MOCK} lignesFinancieres={LIGNES_FINANCIERES_MOCK} />
+        return <ExportDonnees projets={projets} lignesFinancieres={LIGNES_FINANCIERES_MOCK} />
       case 'actionnaires':
         return <PageActionnaires />
       case 'sciGely':
@@ -81,7 +113,7 @@ export default function GelyManagementPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-4xl font-bold mb-2">GROUPE GELY</h1>
-              <p className="text-blue-100 text-lg">Gestion et Suivi des Participations</p>
+              <p className="text-blue-100 text-lg">Gestion et Suivi des Participations - 🔥 Firebase</p>
             </div>
             <Link
               href="/intranet/dashboard"

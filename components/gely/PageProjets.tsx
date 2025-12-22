@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { FolderKanban, Plus, Building2, TrendingUp, AlertCircle, Edit2, Eye, Trash2 } from 'lucide-react'
 import { Projet } from '@/lib/gely/types'
-import { PROJETS_MOCK } from '@/lib/gely/mockData'
+import { useProjets, ajouterProjet, modifierProjet, supprimerProjet } from '@/lib/gely/useFirestore'
 import ModalCreationProjet from './ModalCreationProjet'
 import ModalModificationProjet from './ModalModificationProjet'
 
@@ -26,42 +26,82 @@ interface PageProjetsProps {
 }
 
 export default function PageProjets({ onSelectProjet }: PageProjetsProps) {
-  const [projets, setProjets] = useState<Projet[]>(PROJETS_MOCK)
+  const { projets, loading, error } = useProjets()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [projetEnModification, setProjetEnModification] = useState<Projet | null>(null)
   const [selectedSociete, setSelectedSociete] = useState<string>('all')
+
+  // Afficher loading
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-xl text-gray-600 font-semibold">Chargement des projets...</p>
+          <p className="text-sm text-gray-500 mt-2">Connexion à Firebase</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Afficher erreur
+  if (error) {
+    return (
+      <div className="bg-red-50 border-2 border-red-200 rounded-xl p-8 shadow-lg">
+        <div className="flex items-center space-x-4">
+          <AlertCircle className="w-12 h-12 text-red-600" />
+          <div>
+            <h3 className="text-xl font-bold text-red-800 mb-2">❌ Erreur de chargement</h3>
+            <p className="text-red-700">{error.message}</p>
+            <p className="text-sm text-red-600 mt-2">Vérifiez votre connexion Firebase</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const projetsFiltres = selectedSociete === 'all' 
     ? projets 
     : projets.filter(p => p.societe === selectedSociete)
 
-  // Totaux TTC
-  const getTotalBudget = () => projets.reduce((sum, p) => sum + p.budgetTotal, 0)
-  const getTotalDepense = () => projets.reduce((sum, p) => sum + p.totalPaye, 0)
-  const getTotalReste = () => projets.reduce((sum, p) => sum + p.reste, 0)
-  const getTotalAPayer = () => projets.reduce((sum, p) => sum + p.totalAPayer, 0)
-  const getTotalAFinancer = () => projets.reduce((sum, p) => sum + (p.budgetTotal - p.totalPaye), 0)
+  // Totaux TTC avec protection
+  const getTotalBudget = () => projets.reduce((sum, p) => sum + (p.budgetTotal || 0), 0)
+  const getTotalDepense = () => projets.reduce((sum, p) => sum + (p.totalPaye || 0), 0)
+  const getTotalReste = () => projets.reduce((sum, p) => sum + (p.reste || 0), 0)
+  const getTotalAPayer = () => projets.reduce((sum, p) => sum + (p.totalAPayer || 0), 0)
+  const getTotalAFinancer = () => projets.reduce((sum, p) => sum + ((p.budgetTotal || 0) - (p.totalPaye || 0)), 0)
 
-  // Totaux HT
-  const getTotalBudgetHT = () => projets.reduce((sum, p) => sum + p.budgetTotalHT, 0)
-  const getTotalDepenseHT = () => projets.reduce((sum, p) => sum + p.totalPayeHT, 0)
-  const getTotalResteHT = () => projets.reduce((sum, p) => sum + p.resteHT, 0)
-  const getTotalAPayerHT = () => projets.reduce((sum, p) => sum + p.totalAPayerHT, 0)
-  const getTotalAFinancerHT = () => projets.reduce((sum, p) => sum + (p.budgetTotalHT - p.totalPayeHT), 0)
+  // Totaux HT avec protection
+  const getTotalBudgetHT = () => projets.reduce((sum, p) => sum + (p.budgetTotalHT || 0), 0)
+  const getTotalDepenseHT = () => projets.reduce((sum, p) => sum + (p.totalPayeHT || 0), 0)
+  const getTotalResteHT = () => projets.reduce((sum, p) => sum + (p.resteHT || 0), 0)
+  const getTotalAPayerHT = () => projets.reduce((sum, p) => sum + (p.totalAPayerHT || 0), 0)
+  const getTotalAFinancerHT = () => projets.reduce((sum, p) => sum + ((p.budgetTotalHT || 0) - (p.totalPayeHT || 0)), 0)
 
-  const handleCreateProjet = (nouveauProjet: Projet) => {
-    setProjets([...projets, nouveauProjet])
-    setShowCreateModal(false)
+  const handleCreateProjet = async (nouveauProjet: Projet) => {
+    const result = await ajouterProjet(nouveauProjet)
+    if (result.success) {
+      setShowCreateModal(false)
+    } else {
+      alert('Erreur lors de la création du projet')
+    }
   }
 
-  const handleModifyProjet = (projetModifie: Projet) => {
-    setProjets(projets.map(p => p.id === projetModifie.id ? projetModifie : p))
-    setProjetEnModification(null)
+  const handleModifyProjet = async (projetModifie: Projet) => {
+    const result = await modifierProjet(projetModifie.id, projetModifie)
+    if (result.success) {
+      setProjetEnModification(null)
+    } else {
+      alert('Erreur lors de la modification du projet')
+    }
   }
 
-  const handleDeleteProjet = (projetId: string, projetNom: string) => {
+  const handleDeleteProjet = async (projetId: string, projetNom: string) => {
     if (confirm(`SUPPRIMER LE PROJET "${projetNom}" ?\n\nCette action est irréversible !`)) {
-      setProjets(projets.filter(p => p.id !== projetId))
+      const result = await supprimerProjet(projetId)
+      if (!result.success) {
+        alert('Erreur lors de la suppression du projet')
+      }
     }
   }
 
@@ -76,7 +116,7 @@ export default function PageProjets({ onSelectProjet }: PageProjetsProps) {
             </div>
             <div>
               <h2 className="text-4xl font-bold">Gestion des Projets</h2>
-              <p className="text-blue-100 text-lg">Suivi financier et opérationnel en temps réel</p>
+              <p className="text-blue-100 text-lg">Suivi financier et opérationnel en temps réel - 🔥 Firebase</p>
             </div>
           </div>
           <button
@@ -157,8 +197,10 @@ export default function PageProjets({ onSelectProjet }: PageProjetsProps) {
       {/* Liste des projets */}
       <div className="grid grid-cols-1 gap-4">
         {projetsFiltres.map((projet) => {
-          const pourcentageRealisation = ((projet.totalPaye / projet.budgetTotal) * 100).toFixed(1)
-          const isEnRetard = projet.totalAPayer > 0 // Simplifié pour l'instant
+          const budgetTotal = projet.budgetTotal || 1 // Éviter division par 0
+          const totalPaye = projet.totalPaye || 0
+          const pourcentageRealisation = ((totalPaye / budgetTotal) * 100).toFixed(1)
+          const isEnRetard = (projet.totalAPayer || 0) > 0 // Simplifié pour l'instant
           
           return (
             <div
@@ -209,28 +251,28 @@ export default function PageProjets({ onSelectProjet }: PageProjetsProps) {
                   <div className="grid grid-cols-5 gap-3 mb-4">
                     <div className="bg-gray-50 p-2 rounded-lg border-2 border-gray-300">
                       <p className="text-xs text-gray-900 font-bold">Budget total</p>
-                      <p className="text-xl font-bold text-gray-900">{projet.budgetTotalHT.toLocaleString('fr-FR')} € HT</p>
-                      <p className="text-xs text-gray-600">{projet.budgetTotal.toLocaleString('fr-FR')} € TTC</p>
+                      <p className="text-xl font-bold text-gray-900">{(projet.budgetTotalHT || 0).toLocaleString('fr-FR')} € HT</p>
+                      <p className="text-xs text-gray-600">{(projet.budgetTotal || 0).toLocaleString('fr-FR')} € TTC</p>
                     </div>
                     <div className="bg-green-50 p-2 rounded-lg border-2 border-green-500">
                       <p className="text-xs text-gray-900 font-bold">Payé</p>
-                      <p className="text-xl font-bold text-green-700">{projet.totalPayeHT.toLocaleString('fr-FR')} € HT</p>
-                      <p className="text-xs text-gray-600">{projet.totalPaye.toLocaleString('fr-FR')} € TTC</p>
+                      <p className="text-xl font-bold text-green-700">{(projet.totalPayeHT || 0).toLocaleString('fr-FR')} € HT</p>
+                      <p className="text-xs text-gray-600">{(projet.totalPaye || 0).toLocaleString('fr-FR')} € TTC</p>
                     </div>
                     <div className="bg-orange-50 p-2 rounded-lg border-2 border-orange-500">
                       <p className="text-xs text-gray-900 font-bold">À payer</p>
-                      <p className="text-xl font-bold text-orange-700">{projet.totalAPayerHT.toLocaleString('fr-FR')} € HT</p>
-                      <p className="text-xs text-gray-600">{projet.totalAPayer.toLocaleString('fr-FR')} € TTC</p>
+                      <p className="text-xl font-bold text-orange-700">{(projet.totalAPayerHT || 0).toLocaleString('fr-FR')} € HT</p>
+                      <p className="text-xs text-gray-600">{(projet.totalAPayer || 0).toLocaleString('fr-FR')} € TTC</p>
                     </div>
                     <div className="bg-blue-50 p-2 rounded-lg border-2 border-blue-500">
                       <p className="text-xs text-gray-900 font-bold">Reste budget</p>
-                      <p className="text-xl font-bold text-blue-700">{projet.resteHT.toLocaleString('fr-FR')} € HT</p>
-                      <p className="text-xs text-gray-600">{projet.reste.toLocaleString('fr-FR')} € TTC</p>
+                      <p className="text-xl font-bold text-blue-700">{(projet.resteHT || 0).toLocaleString('fr-FR')} € HT</p>
+                      <p className="text-xs text-gray-600">{(projet.reste || 0).toLocaleString('fr-FR')} € TTC</p>
                     </div>
                     <div className="bg-red-50 p-2 rounded-lg border-2 border-red-600">
                       <p className="text-xs text-red-900 font-bold">💰 Reste à financer</p>
-                      <p className="text-xl font-bold text-red-700">{(projet.budgetTotalHT - projet.totalPayeHT).toLocaleString('fr-FR')} € HT</p>
-                      <p className="text-xs text-gray-600">{(projet.budgetTotal - projet.totalPaye).toLocaleString('fr-FR')} € TTC</p>
+                      <p className="text-xl font-bold text-red-700">{((projet.budgetTotalHT || 0) - (projet.totalPayeHT || 0)).toLocaleString('fr-FR')} € HT</p>
+                      <p className="text-xs text-gray-600">{((projet.budgetTotal || 0) - (projet.totalPaye || 0)).toLocaleString('fr-FR')} € TTC</p>
                     </div>
                   </div>
 

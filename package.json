@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "dotenv": "^17.2.3",
     "firebase": "^12.6.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.562.0",
