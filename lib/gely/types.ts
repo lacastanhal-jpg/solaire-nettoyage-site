@@ -7,6 +7,39 @@ export type TypeLigneFinanciereType = 'devis' | 'facture' | 'revenu' | 'autre'
 export type StatutLigneType = 'paye' | 'a_payer' | 'en_cours' | 'signe' | 'annule'
 export type TypeAutorisationType = 'PC' | 'DP' | 'DCR' | 'autre'
 
+// Flux inter-sociétés
+export interface FluxInterSociete {
+  id: string
+  nom: string
+  montantAnnuel: number
+  societeSource: string
+  societeCible: string
+  avecInflation: boolean
+}
+
+// Charge prévisionnelle
+export interface Charge {
+  id: string
+  nom: string
+  type: 'fixe' | 'pourcentage'
+  montantAnnuel: number
+  valeurPourcentage?: number
+  avecInflation: boolean
+}
+
+// Paramètres financiers
+export interface ParamsFinanciers {
+  tauxEmprunt: number
+  dureeEmprunt: number
+  differePremierAn: boolean
+  dureeAmortissement: number
+  inflationGenerale: number
+  baisseProductionAnnuelle: number
+  charges: Charge[]
+  lignesFinancieresParams?: Record<string, any>
+  utiliserAmortissementGlobal?: boolean
+}
+
 // Contrat EDF OA
 export interface ContratEDF {
   numero: string
@@ -83,6 +116,10 @@ export interface Projet {
   autorisations?: Autorisation[]
   partenaires?: Partenaire[]
   echeancesCritiques?: Echeance[]
+  
+  // Paramètres financiers et flux
+  paramsFinanciers?: ParamsFinanciers
+  fluxInterSocietes?: FluxInterSociete[]
   
   // Calculés automatiquement (TTC)
   totalDevis: number
