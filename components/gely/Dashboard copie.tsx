@@ -23,7 +23,7 @@ const SOCIETES_DATA = {
   lexa2: {
     nom: "LEXA 2",
     icon: Factory,
-    color: "bg-blue-1000",
+    color: "bg-blue-500",
     capital: "1 000 €",
     investissement: "426 347 €"
   },
@@ -45,7 +45,7 @@ export default function Dashboard({ setCurrentPage }: DashboardProps) {
     <div className="space-y-8">
       <div>
         <h2 className="text-3xl font-bold text-blue-900 mb-2">Indicateurs Groupe</h2>
-        <p className="text-gray-900">Vue d'ensemble de la performance consolidée</p>
+        <p className="text-gray-600">Vue d'ensemble de la performance consolidée</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

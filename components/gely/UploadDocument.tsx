@@ -140,14 +140,14 @@ export default function UploadDocument({ onClose, onSuccess }: UploadDocumentPro
                 <FileText className="w-8 h-8 text-blue-600" />
                 <div className="text-left">
                   <p className="font-semibold text-gray-900">{file.name}</p>
-                  <p className="text-sm text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                  <p className="text-sm text-gray-800">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
                 </div>
               </div>
             ) : (
               <div>
                 <Upload className="w-12 h-12 text-blue-600 mx-auto mb-3" />
                 <p className="text-gray-700 font-medium">Cliquez ou glissez un fichier ici</p>
-                <p className="text-sm text-gray-500 mt-1">PDF, JPG, PNG (max 10MB)</p>
+                <p className="text-sm text-gray-800 mt-1">PDF, JPG, PNG (max 10MB)</p>
               </div>
             )}
             <input
@@ -167,7 +167,7 @@ export default function UploadDocument({ onClose, onSuccess }: UploadDocumentPro
                 required
                 value={formData.nom}
                 onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Ex: Facture MECOJIT 12343"
               />
             </div>
@@ -178,7 +178,7 @@ export default function UploadDocument({ onClose, onSuccess }: UploadDocumentPro
                 required
                 value={formData.societe}
                 onChange={(e) => setFormData({ ...formData, societe: e.target.value as SocieteType })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
                 {SOCIETES.map(s => (
                   <option key={s.id} value={s.id}>{s.nom}</option>
@@ -192,7 +192,7 @@ export default function UploadDocument({ onClose, onSuccess }: UploadDocumentPro
                 required
                 value={formData.type}
                 onChange={(e) => setFormData({ ...formData, type: e.target.value as DocumentType })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
                 {TYPES.map(t => (
                   <option key={t.id} value={t.id}>{t.nom}</option>
@@ -206,7 +206,7 @@ export default function UploadDocument({ onClose, onSuccess }: UploadDocumentPro
                 required
                 value={formData.statut}
                 onChange={(e) => setFormData({ ...formData, statut: e.target.value as StatutType })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
                 {STATUTS.map(s => (
                   <option key={s.id} value={s.id}>{s.nom}</option>
@@ -220,7 +220,7 @@ export default function UploadDocument({ onClose, onSuccess }: UploadDocumentPro
                 type="text"
                 value={formData.projet}
                 onChange={(e) => setFormData({ ...formData, projet: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500"
                 placeholder="Ex: Projet 500 kWc"
               />
             </div>
@@ -231,7 +231,7 @@ export default function UploadDocument({ onClose, onSuccess }: UploadDocumentPro
                 type="text"
                 value={formData.fournisseur}
                 onChange={(e) => setFormData({ ...formData, fournisseur: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500"
                 placeholder="Ex: MECOJIT"
               />
             </div>
@@ -242,7 +242,7 @@ export default function UploadDocument({ onClose, onSuccess }: UploadDocumentPro
                 type="text"
                 value={formData.numero}
                 onChange={(e) => setFormData({ ...formData, numero: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500"
                 placeholder="Ex: 12343"
               />
             </div>
@@ -254,7 +254,7 @@ export default function UploadDocument({ onClose, onSuccess }: UploadDocumentPro
                 step="0.01"
                 value={formData.montantHT}
                 onChange={(e) => setFormData({ ...formData, montantHT: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500"
                 placeholder="0.00"
               />
             </div>
@@ -266,7 +266,7 @@ export default function UploadDocument({ onClose, onSuccess }: UploadDocumentPro
                 step="0.01"
                 value={formData.montantTTC}
                 onChange={(e) => setFormData({ ...formData, montantTTC: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500"
                 placeholder="0.00"
               />
             </div>
@@ -277,7 +277,7 @@ export default function UploadDocument({ onClose, onSuccess }: UploadDocumentPro
                 type="date"
                 value={formData.date}
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
@@ -287,7 +287,7 @@ export default function UploadDocument({ onClose, onSuccess }: UploadDocumentPro
                 type="date"
                 value={formData.echeance}
                 onChange={(e) => setFormData({ ...formData, echeance: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
@@ -297,7 +297,7 @@ export default function UploadDocument({ onClose, onSuccess }: UploadDocumentPro
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 rows={3}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500"
                 placeholder="Remarques, détails supplémentaires..."
               />
             </div>
@@ -307,7 +307,7 @@ export default function UploadDocument({ onClose, onSuccess }: UploadDocumentPro
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
+              className="flex-1 px-6 py-3 border border-gray-500 text-gray-700 rounded-lg hover:bg-gray-100 transition font-medium"
             >
               Annuler
             </button>

@@ -75,19 +75,19 @@ export default function PageSolaireNettoyage() {
       {/* KPIs rapides */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl shadow-lg p-6 border-t-4 border-yellow-600">
-          <p className="text-sm text-gray-600 mb-1">CA 2024-2025</p>
+          <p className="text-sm text-gray-900 mb-1">CA 2024-2025</p>
           <p className="text-3xl font-bold text-yellow-700">{SOLAIRE_NETTOYAGE_DATA.finances.ca2024}</p>
         </div>
         <div className="bg-white rounded-xl shadow-lg p-6 border-t-4 border-green-500">
-          <p className="text-sm text-gray-600 mb-1">Résultat net</p>
+          <p className="text-sm text-gray-900 mb-1">Résultat net</p>
           <p className="text-3xl font-bold text-green-600">{SOLAIRE_NETTOYAGE_DATA.finances.resultatNet2024}</p>
         </div>
         <div className="bg-white rounded-xl shadow-lg p-6 border-t-4 border-blue-600">
-          <p className="text-sm text-gray-600 mb-1">Marge nette</p>
+          <p className="text-sm text-gray-900 mb-1">Marge nette</p>
           <p className="text-3xl font-bold text-blue-900">{SOLAIRE_NETTOYAGE_DATA.finances.margeNette}</p>
         </div>
         <div className="bg-white rounded-xl shadow-lg p-6 border-t-4 border-yellow-500">
-          <p className="text-sm text-gray-600 mb-1">Trésorerie</p>
+          <p className="text-sm text-gray-900 mb-1">Trésorerie</p>
           <p className="text-3xl font-bold text-yellow-600">{SOLAIRE_NETTOYAGE_DATA.finances.tresorerie}</p>
         </div>
       </div>
@@ -109,7 +109,7 @@ export default function PageSolaireNettoyage() {
                 className={`px-6 py-3 font-semibold flex items-center space-x-2 transition-all ${
                   activeTab === tab.id
                     ? 'bg-white border-b-4 border-yellow-600 text-yellow-700'
-                    : 'text-gray-600 hover:bg-yellow-50 hover:text-yellow-700'
+                    : 'text-gray-900 hover:bg-yellow-50 hover:text-yellow-700'
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -141,14 +141,14 @@ export default function PageSolaireNettoyage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-blue-50 rounded-lg p-4">
+              <div className="bg-blue-100 rounded-lg p-4">
                 <h5 className="font-bold text-blue-900 mb-2 flex items-center">
                   <Users className="w-4 h-4 mr-2" />
                   Clients
                 </h5>
                 <p className="text-gray-700">{SOLAIRE_NETTOYAGE_DATA.activite.clients}</p>
               </div>
-              <div className="bg-blue-50 rounded-lg p-4">
+              <div className="bg-blue-100 rounded-lg p-4">
                 <h5 className="font-bold text-blue-900 mb-2">Zone d'intervention</h5>
                 <p className="text-gray-700">{SOLAIRE_NETTOYAGE_DATA.activite.zone}</p>
               </div>
@@ -165,15 +165,15 @@ export default function PageSolaireNettoyage() {
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-6 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Chiffre d'affaires 2024-2025</p>
+                <p className="text-sm text-gray-900 mb-1">Chiffre d'affaires 2024-2025</p>
                 <p className="text-3xl font-bold text-yellow-700">{SOLAIRE_NETTOYAGE_DATA.finances.ca2024}</p>
               </div>
               <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Résultat net 2024-2025</p>
+                <p className="text-sm text-gray-900 mb-1">Résultat net 2024-2025</p>
                 <p className="text-3xl font-bold text-green-700">{SOLAIRE_NETTOYAGE_DATA.finances.resultatNet2024}</p>
               </div>
               <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Trésorerie disponible</p>
+                <p className="text-sm text-gray-900 mb-1">Trésorerie disponible</p>
                 <p className="text-3xl font-bold text-blue-900">{SOLAIRE_NETTOYAGE_DATA.finances.tresorerie}</p>
               </div>
             </div>
@@ -216,35 +216,35 @@ export default function PageSolaireNettoyage() {
           <h3 className="text-2xl font-bold text-blue-900 mb-6">Informations légales</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Raison sociale</p>
+              <p className="text-sm text-gray-900 mb-1">Raison sociale</p>
               <p className="font-bold text-gray-900">{SOLAIRE_NETTOYAGE_DATA.informations.raisonSociale}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600 mb-1">Forme juridique</p>
+              <p className="text-sm text-gray-900 mb-1">Forme juridique</p>
               <p className="font-bold text-gray-900">{SOLAIRE_NETTOYAGE_DATA.informations.forme}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600 mb-1">Capital social</p>
+              <p className="text-sm text-gray-900 mb-1">Capital social</p>
               <p className="font-bold text-gray-900">{SOLAIRE_NETTOYAGE_DATA.informations.capital}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600 mb-1">RCS</p>
+              <p className="text-sm text-gray-900 mb-1">RCS</p>
               <p className="font-bold text-gray-900">{SOLAIRE_NETTOYAGE_DATA.informations.rcs}</p>
             </div>
             <div className="md:col-span-2">
-              <p className="text-sm text-gray-600 mb-1">Siège social</p>
+              <p className="text-sm text-gray-900 mb-1">Siège social</p>
               <p className="font-bold text-gray-900">{SOLAIRE_NETTOYAGE_DATA.informations.siege}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600 mb-1">Président</p>
+              <p className="text-sm text-gray-900 mb-1">Président</p>
               <p className="font-bold text-gray-900">{SOLAIRE_NETTOYAGE_DATA.informations.president}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600 mb-1">Objet social</p>
+              <p className="text-sm text-gray-900 mb-1">Objet social</p>
               <p className="font-bold text-gray-900">{SOLAIRE_NETTOYAGE_DATA.informations.objet}</p>
             </div>
             <div className="md:col-span-2">
-              <p className="text-sm text-gray-600 mb-1">Détention</p>
+              <p className="text-sm text-gray-900 mb-1">Détention</p>
               <p className="font-bold text-gray-900">{SOLAIRE_NETTOYAGE_DATA.informations.detention}</p>
             </div>
           </div>
@@ -257,7 +257,7 @@ export default function PageSolaireNettoyage() {
           <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-yellow-600">
             <h3 className="text-2xl font-bold text-blue-900 mb-6">Projets futurs</h3>
             
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 border-2 border-blue-200">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 border-2 border-blue-400">
               <div className="flex items-start justify-between mb-4">
                 <h4 className="text-xl font-bold text-blue-900">{SOLAIRE_NETTOYAGE_DATA.projetsFuturs.batiment.nom}</h4>
                 <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">
@@ -267,11 +267,11 @@ export default function PageSolaireNettoyage() {
 
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm text-gray-600">Localisation</p>
+                  <p className="text-sm text-gray-900">Localisation</p>
                   <p className="font-semibold text-gray-900">{SOLAIRE_NETTOYAGE_DATA.projetsFuturs.batiment.localisation}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Type</p>
+                  <p className="text-sm text-gray-900">Type</p>
                   <p className="font-semibold text-gray-900">{SOLAIRE_NETTOYAGE_DATA.projetsFuturs.batiment.type}</p>
                 </div>
               </div>

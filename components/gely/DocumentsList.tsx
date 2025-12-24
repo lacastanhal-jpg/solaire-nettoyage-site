@@ -73,7 +73,7 @@ export default function DocumentsList({ societe, onDocumentClick }: DocumentsLis
     return (
       <div className="text-center py-12">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-        <p className="text-gray-600 mt-4">Chargement des documents...</p>
+        <p className="text-gray-900 mt-4">Chargement des documents...</p>
       </div>
     )
   }
@@ -82,11 +82,11 @@ export default function DocumentsList({ societe, onDocumentClick }: DocumentsLis
     <div className="space-y-4">
       {/* Filtres */}
       <div className="bg-white rounded-lg shadow p-4 flex items-center space-x-4">
-        <Filter className="w-5 h-5 text-gray-600" />
+        <Filter className="w-5 h-5 text-gray-900" />
         <select
           value={filterType}
           onChange={(e) => setFilterType(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          className="px-4 py-2 border border-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500"
         >
           <option value="all">Tous les types</option>
           {Object.entries(TYPES_LABELS).map(([key, label]) => (
@@ -96,7 +96,7 @@ export default function DocumentsList({ societe, onDocumentClick }: DocumentsLis
         <select
           value={filterStatut}
           onChange={(e) => setFilterStatut(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          className="px-4 py-2 border border-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500"
         >
           <option value="all">Tous les statuts</option>
           {Object.entries(STATUTS_LABELS).map(([key, data]) => (
@@ -104,7 +104,7 @@ export default function DocumentsList({ societe, onDocumentClick }: DocumentsLis
           ))}
         </select>
         <div className="ml-auto text-right">
-          <p className="text-sm text-gray-600">Total HT</p>
+          <p className="text-sm text-gray-900">Total HT</p>
           <p className="text-xl font-bold text-blue-900">{totalHT.toLocaleString('fr-FR')} €</p>
         </div>
       </div>
@@ -113,7 +113,7 @@ export default function DocumentsList({ societe, onDocumentClick }: DocumentsLis
       {filteredDocuments.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-12 text-center">
           <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-600">Aucun document trouvé</p>
+          <p className="text-gray-900">Aucun document trouvé</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4">
@@ -129,17 +129,17 @@ export default function DocumentsList({ societe, onDocumentClick }: DocumentsLis
                       <div>
                         <h3 className="font-bold text-gray-900 text-lg">{doc.nom}</h3>
                         <div className="flex items-center space-x-3 mt-1">
-                          <span className="text-sm text-gray-600">{TYPES_LABELS[doc.type]}</span>
+                          <span className="text-sm text-gray-900">{TYPES_LABELS[doc.type]}</span>
                           {doc.fournisseur && (
                             <>
-                              <span className="text-gray-400">•</span>
-                              <span className="text-sm text-gray-600">{doc.fournisseur}</span>
+                              <span className="text-gray-700">•</span>
+                              <span className="text-sm text-gray-900">{doc.fournisseur}</span>
                             </>
                           )}
                           {doc.numero && (
                             <>
-                              <span className="text-gray-400">•</span>
-                              <span className="text-sm text-gray-600">N° {doc.numero}</span>
+                              <span className="text-gray-700">•</span>
+                              <span className="text-sm text-gray-900">N° {doc.numero}</span>
                             </>
                           )}
                         </div>
@@ -152,25 +152,25 @@ export default function DocumentsList({ societe, onDocumentClick }: DocumentsLis
                     <div className="grid grid-cols-4 gap-4 mt-3">
                       {doc.montantHT && doc.montantHT > 0 && (
                         <div>
-                          <p className="text-xs text-gray-500">Montant HT</p>
+                          <p className="text-xs text-gray-800">Montant HT</p>
                           <p className="font-semibold text-gray-900">{doc.montantHT.toLocaleString('fr-FR')} €</p>
                         </div>
                       )}
                       {doc.montantTTC && doc.montantTTC > 0 && (
                         <div>
-                          <p className="text-xs text-gray-500">Montant TTC</p>
+                          <p className="text-xs text-gray-800">Montant TTC</p>
                           <p className="font-semibold text-gray-900">{doc.montantTTC.toLocaleString('fr-FR')} €</p>
                         </div>
                       )}
                       {doc.date && (
                         <div>
-                          <p className="text-xs text-gray-500">Date</p>
+                          <p className="text-xs text-gray-800">Date</p>
                           <p className="font-semibold text-gray-900">{new Date(doc.date).toLocaleDateString('fr-FR')}</p>
                         </div>
                       )}
                       {doc.echeance && (
                         <div>
-                          <p className="text-xs text-gray-500">Échéance</p>
+                          <p className="text-xs text-gray-800">Échéance</p>
                           <p className="font-semibold text-yellow-700">{new Date(doc.echeance).toLocaleDateString('fr-FR')}</p>
                         </div>
                       )}

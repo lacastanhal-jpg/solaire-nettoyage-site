@@ -194,8 +194,8 @@ export default function CalendrierFinancier({ projets }: CalendrierFinancierProp
       <div className="space-y-3">
         {echeancesFiltrees.length === 0 ? (
           <div className="bg-white border-4 border-black rounded-lg p-12 text-center">
-            <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <p className="text-2xl font-bold text-gray-400">Aucune échéance dans ce filtre</p>
+            <Calendar className="w-16 h-16 text-gray-700 mx-auto mb-4" />
+            <p className="text-2xl font-bold text-gray-700">Aucune échéance dans ce filtre</p>
           </div>
         ) : (
           echeancesFiltrees.map(ech => {
@@ -203,7 +203,7 @@ export default function CalendrierFinancier({ projets }: CalendrierFinancierProp
             const isPasse = ech.joursRestants < 0 && ech.statut === 'a_venir'
             
             let bgColor = 'bg-white'
-            let borderColor = 'border-gray-300'
+            let borderColor = 'border-gray-500'
             
             if (ech.statut === 'payee') {
               bgColor = 'bg-green-50'

@@ -1,25 +1,150 @@
 'use client'
 
-import { Building2, Zap, FileText, Users, AlertCircle, Calendar, TrendingUp } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { doc, updateDoc } from 'firebase/firestore'
+import { db } from '@/lib/firebase/config'
+import { Building2, Zap, FileText, Users, AlertCircle, Calendar, TrendingUp, ArrowRightLeft, Plus, Pencil, Trash2 } from 'lucide-react'
 import { Projet } from '@/lib/gely/types'
 
 interface VueEnsembleProjetProps {
   projet: Projet
+  onUpdate?: () => void
 }
 
-export default function VueEnsembleProjet({ projet }: VueEnsembleProjetProps) {
+interface FluxInterSociete {
+  id: string
+  nom: string
+  type: 'loyer' | 'prestation' | 'autre'
+  societeSource: string
+  societeCible: string
+  montantAnnuel: number
+  avecInflation: boolean
+}
+
+export default function VueEnsembleProjet({ projet, onUpdate }: VueEnsembleProjetProps) {
   const formatNumber = (num: number) => num.toLocaleString('fr-FR', { maximumFractionDigits: 0 })
   const formatDate = (date: string) => new Date(date).toLocaleDateString('fr-FR')
 
   // Calculer ROI si données PV
   const roi = projet.revenusAnnuels ? (projet.budgetTotal / projet.revenusAnnuels).toFixed(1) : null
 
+  // CORRECTION: Charger les flux depuis Firebase
+  const [flux, setFlux] = useState<FluxInterSociete[]>(projet.fluxInterSocietes || [])
+  const [showModalFlux, setShowModalFlux] = useState(false)
+  const [fluxEnEdition, setFluxEnEdition] = useState<FluxInterSociete | null>(null)
+  const [nouveauFlux, setNouveauFlux] = useState<Partial<FluxInterSociete>>({
+    nom: '',
+    type: 'loyer',
+    societeSource: '',
+    societeCible: '',
+    montantAnnuel: 0,
+    avecInflation: true
+  })
+
+  const societes = ['SCI GELY', 'LEXA', 'LEXA 2', 'Solaire Nettoyage', 'GELY INVESTISSEMENT']
+
+  // Mettre à jour les flux quand le projet change
+  useEffect(() => {
+    setFlux(projet.fluxInterSocietes || [])
+  }, [projet.fluxInterSocietes])
+
+  const ouvrirModalAjout = () => {
+    setFluxEnEdition(null)
+    setNouveauFlux({
+      nom: '',
+      type: 'loyer',
+      societeSource: '',
+      societeCible: '',
+      montantAnnuel: 0,
+      avecInflation: true
+    })
+    setShowModalFlux(true)
+  }
+
+  const ouvrirModalEdition = (f: FluxInterSociete) => {
+    setFluxEnEdition(f)
+    setNouveauFlux(f)
+    setShowModalFlux(true)
+  }
+
+  // CORRECTION: Sauvegarder dans Firebase
+  const enregistrerFlux = async () => {
+    if (!nouveauFlux.nom || !nouveauFlux.societeSource || !nouveauFlux.societeCible || !nouveauFlux.montantAnnuel) {
+      alert('❌ Remplissez tous les champs')
+      return
+    }
+
+    try {
+      let nouveauxFlux: FluxInterSociete[]
+
+      if (fluxEnEdition) {
+        // Modifier
+        nouveauxFlux = flux.map(f => 
+          f.id === fluxEnEdition.id 
+            ? { ...nouveauFlux, id: f.id } as FluxInterSociete 
+            : f
+        )
+      } else {
+        // Créer
+        const newFlux: FluxInterSociete = {
+          id: Date.now().toString(),
+          nom: nouveauFlux.nom!,
+          type: nouveauFlux.type!,
+          societeSource: nouveauFlux.societeSource!,
+          societeCible: nouveauFlux.societeCible!,
+          montantAnnuel: nouveauFlux.montantAnnuel!,
+          avecInflation: nouveauFlux.avecInflation!
+        }
+        nouveauxFlux = [...flux, newFlux]
+      }
+
+      // Sauvegarder dans Firebase
+      await updateDoc(doc(db, 'projets', projet.id), {
+        fluxInterSocietes: nouveauxFlux,
+        updatedAt: new Date().toISOString()
+      })
+
+      setFlux(nouveauxFlux)
+      setShowModalFlux(false)
+      
+      if (onUpdate) onUpdate()
+      
+      alert('✅ Flux sauvegardé !')
+    } catch (error) {
+      console.error('Erreur sauvegarde flux:', error)
+      alert('❌ Erreur lors de la sauvegarde')
+    }
+  }
+
+  // CORRECTION: Supprimer depuis Firebase
+  const supprimerFlux = async (id: string) => {
+    if (!confirm('Supprimer ce flux ?')) return
+
+    try {
+      const nouveauxFlux = flux.filter(f => f.id !== id)
+
+      await updateDoc(doc(db, 'projets', projet.id), {
+        fluxInterSocietes: nouveauxFlux,
+        updatedAt: new Date().toISOString()
+      })
+
+      setFlux(nouveauxFlux)
+      
+      if (onUpdate) onUpdate()
+      
+      alert('✅ Flux supprimé !')
+    } catch (error) {
+      console.error('Erreur suppression flux:', error)
+      alert('❌ Erreur lors de la suppression')
+    }
+  }
+
   return (
     <div className="space-y-6">
-      {/* Informations générales */}
-      <div className="bg-white border-4 border-blue-600 rounded-lg p-6">
-        <h3 className="text-2xl font-bold text-blue-600 mb-4 flex items-center">
-          <Building2 className="w-6 h-6 mr-2" />
+      {/* INFORMATIONS GÉNÉRALES */}
+      <div className="bg-blue-100 border-4 border-blue-500 rounded-lg p-6">
+        <h3 className="text-2xl font-bold text-black mb-4 flex items-center">
+          <FileText className="w-6 h-6 mr-2" />
           INFORMATIONS GÉNÉRALES
         </h3>
         <div className="grid grid-cols-2 gap-4">
@@ -92,177 +217,176 @@ export default function VueEnsembleProjet({ projet }: VueEnsembleProjetProps) {
         </div>
       )}
 
-      {/* Contrats EDF OA */}
-      {projet.contratsEDF && projet.contratsEDF.length > 0 && (
-        <div className="bg-blue-100 border-4 border-blue-600 rounded-lg p-6">
-          <h3 className="text-2xl font-bold text-black mb-4 flex items-center">
-            <FileText className="w-6 h-6 mr-2" />
-            CONTRATS EDF OBLIGATION D'ACHAT
+      {/* FLUX INTER-SOCIÉTÉS */}
+      <div className="bg-orange-100 border-4 border-orange-600 rounded-lg p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-2xl font-bold text-black flex items-center">
+            <ArrowRightLeft className="w-6 h-6 mr-2" />
+            FLUX INTER-SOCIÉTÉS
           </h3>
-          <div className="space-y-3">
-            {projet.contratsEDF.map((contrat, idx) => (
-              <div key={idx} className="bg-white p-4 rounded-lg border-2 border-blue-600">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div>
-                    <p className="text-xs font-bold text-black">N° Contrat</p>
-                    <p className="text-lg font-bold text-blue-700">{contrat.numero}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-black">Tarif</p>
-                    <p className="text-lg font-bold text-green-700">{contrat.tarif} c€/kWh</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-black">Durée</p>
-                    <p className="text-lg font-bold text-black">{contrat.duree} ans</p>
-                  </div>
-                  {contrat.dateDebut && (
-                    <div>
-                      <p className="text-xs font-bold text-black">Début</p>
-                      <p className="text-lg font-bold text-black">{formatDate(contrat.dateDebut)}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+          <button
+            onClick={ouvrirModalAjout}
+            className="px-4 py-2 bg-orange-600 text-white font-bold rounded-lg hover:bg-orange-700 flex items-center space-x-2"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Ajouter un flux</span>
+          </button>
         </div>
-      )}
 
-      {/* Autorisations */}
-      {projet.autorisations && projet.autorisations.length > 0 && (
-        <div className="bg-purple-100 border-4 border-purple-600 rounded-lg p-6">
-          <h3 className="text-2xl font-bold text-black mb-4 flex items-center">
-            <FileText className="w-6 h-6 mr-2" />
-            AUTORISATIONS ADMINISTRATIVES
-          </h3>
+        {flux.length === 0 ? (
+          <div className="bg-white p-6 rounded-lg border-2 border-orange-600 text-center">
+            <p className="text-gray-600">Aucun flux inter-sociétés défini</p>
+            <p className="text-sm text-gray-500 mt-2">Cliquez sur "Ajouter un flux" pour commencer</p>
+          </div>
+        ) : (
           <div className="space-y-3">
-            {projet.autorisations.map((auth, idx) => (
-              <div key={idx} className="bg-white p-4 rounded-lg border-2 border-purple-600">
+            {flux.map((f) => (
+              <div key={f.id} className="bg-white p-4 rounded-lg border-2 border-orange-600">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <span className="px-3 py-1 bg-purple-600 text-white font-bold rounded-lg text-sm">
-                        {auth.type}
+                    <div className="flex items-center space-x-3 mb-2">
+                      <span className="px-3 py-1 bg-orange-600 text-white font-bold rounded-lg text-sm uppercase">
+                        {f.type}
                       </span>
-                      <span className="text-lg font-bold text-black">{auth.numero}</span>
+                      <span className="text-xl font-bold text-black">{f.nom}</span>
                     </div>
-                    {auth.notes && (
-                      <p className="text-sm text-black mt-2">{auth.notes}</p>
+                    <div className="flex items-center space-x-2 text-lg">
+                      <span className="font-bold text-green-700">{f.societeSource}</span>
+                      <ArrowRightLeft className="w-5 h-5 text-orange-600" />
+                      <span className="font-bold text-red-700">{f.societeCible}</span>
+                    </div>
+                    {f.avecInflation && (
+                      <span className="inline-block mt-2 px-2 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded">
+                        📈 Avec inflation
+                      </span>
                     )}
                   </div>
-                  <div className="text-right">
-                    {auth.dateDepot && (
-                      <p className="text-xs text-black"><span className="font-bold">Dépôt:</span> {formatDate(auth.dateDepot)}</p>
-                    )}
-                    {auth.dateObtention && (
-                      <p className="text-xs text-black"><span className="font-bold">Obtention:</span> {formatDate(auth.dateObtention)}</p>
-                    )}
+                  <div className="flex flex-col items-end space-y-2">
+                    <p className="text-3xl font-bold text-orange-600">{formatNumber(f.montantAnnuel)} €/an</p>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => ouvrirModalEdition(f)}
+                        className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center space-x-1"
+                      >
+                        <Pencil className="w-4 h-4" />
+                        <span>Modifier</span>
+                      </button>
+                      <button
+                        onClick={() => supprimerFlux(f.id)}
+                        className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 flex items-center space-x-1"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>Supprimer</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
             ))}
           </div>
-        </div>
-      )}
-
-      {/* Partenaires */}
-      {projet.partenaires && projet.partenaires.length > 0 && (
-        <div className="bg-gray-100 border-4 border-gray-600 rounded-lg p-6">
-          <h3 className="text-2xl font-bold text-black mb-4 flex items-center">
-            <Users className="w-6 h-6 mr-2" />
-            PARTENAIRES CLÉS
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {projet.partenaires.map((part, idx) => (
-              <div key={idx} className="bg-white p-4 rounded-lg border-2 border-gray-600">
-                <p className="text-lg font-bold text-black">{part.nom}</p>
-                <p className="text-sm font-semibold text-blue-700">{part.role}</p>
-                {part.contact && (
-                  <p className="text-sm text-black mt-2">👤 {part.contact}</p>
-                )}
-                {part.telephone && (
-                  <p className="text-sm text-black">📞 {part.telephone}</p>
-                )}
-                {part.email && (
-                  <p className="text-sm text-black">✉️ {part.email}</p>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Échéances critiques */}
-      {projet.echeancesCritiques && projet.echeancesCritiques.length > 0 && (
-        <div className="bg-red-100 border-4 border-red-600 rounded-lg p-6">
-          <h3 className="text-2xl font-bold text-red-700 mb-4 flex items-center">
-            <AlertCircle className="w-6 h-6 mr-2" />
-            ❗ ÉCHÉANCES CRITIQUES
-          </h3>
-          <div className="space-y-3">
-            {projet.echeancesCritiques.map((ech) => {
-              const isUrgent = new Date(ech.date) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-              return (
-                <div 
-                  key={ech.id} 
-                  className={`p-4 rounded-lg border-2 ${
-                    isUrgent ? 'bg-red-200 border-red-700' : 'bg-white border-red-600'
-                  }`}
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <Calendar className="w-5 h-5 text-red-700" />
-                        <span className="text-lg font-bold text-black">{formatDate(ech.date)}</span>
-                        {isUrgent && (
-                          <span className="px-2 py-1 bg-red-700 text-white font-bold rounded text-xs animate-pulse">
-                            URGENT !
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm font-bold text-black">{ech.description}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold text-red-700">{formatNumber(ech.montant)} €</p>
-                      <span className={`text-xs font-bold px-2 py-1 rounded ${
-                        ech.statut === 'payee' ? 'bg-green-200 text-green-800' :
-                        ech.statut === 'retard' ? 'bg-red-700 text-white' :
-                        'bg-yellow-200 text-yellow-800'
-                      }`}>
-                        {ech.statut === 'payee' ? '✅ Payée' : ech.statut === 'retard' ? '⚠️ Retard' : '⏳ À venir'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Calendrier projet */}
-      <div className="bg-white border-4 border-black rounded-lg p-6">
-        <h3 className="text-2xl font-bold text-black mb-4 flex items-center">
-          <Calendar className="w-6 h-6 mr-2" />
-          CALENDRIER PROJET
-        </h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-sm font-bold text-black">Démarrage</p>
-            <p className="text-xl font-bold text-green-700">{formatDate(projet.dateDebut)}</p>
-          </div>
-          {projet.dateFin && (
-            <div>
-              <p className="text-sm font-bold text-black">Fin</p>
-              <p className="text-xl font-bold text-blue-700">{formatDate(projet.dateFin)}</p>
-            </div>
-          )}
-          <div>
-            <p className="text-sm font-bold text-black">Dernière mise à jour</p>
-            <p className="text-lg font-bold text-black">{formatDate(projet.updatedAt)}</p>
-          </div>
-        </div>
+        )}
       </div>
+
+      {/* MODAL FLUX */}
+      {showModalFlux && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-2xl w-full mx-4">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">
+              {fluxEnEdition ? 'Modifier' : 'Ajouter'} un flux inter-sociétés
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-black mb-1">Nom du flux</label>
+                <input
+                  type="text"
+                  value={nouveauFlux.nom}
+                  onChange={(e) => setNouveauFlux({ ...nouveauFlux, nom: e.target.value })}
+                  className="w-full px-3 py-2 border-2 border-black rounded-lg"
+                  placeholder="Ex: Loyer toiture"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-black mb-1">Type</label>
+                <select
+                  value={nouveauFlux.type}
+                  onChange={(e) => setNouveauFlux({ ...nouveauFlux, type: e.target.value as any })}
+                  className="w-full px-3 py-2 border-2 border-black rounded-lg"
+                >
+                  <option value="loyer">Loyer</option>
+                  <option value="prestation">Prestation</option>
+                  <option value="autre">Autre</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-black mb-1">Société source (qui reçoit)</label>
+                  <select
+                    value={nouveauFlux.societeSource}
+                    onChange={(e) => setNouveauFlux({ ...nouveauFlux, societeSource: e.target.value })}
+                    className="w-full px-3 py-2 border-2 border-black rounded-lg"
+                  >
+                    <option value="">-- Choisir --</option>
+                    {societes.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-black mb-1">Société cible (qui paie)</label>
+                  <select
+                    value={nouveauFlux.societeCible}
+                    onChange={(e) => setNouveauFlux({ ...nouveauFlux, societeCible: e.target.value })}
+                    className="w-full px-3 py-2 border-2 border-black rounded-lg"
+                  >
+                    <option value="">-- Choisir --</option>
+                    {societes.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-black mb-1">Montant annuel (€)</label>
+                <input
+                  type="number"
+                  value={nouveauFlux.montantAnnuel}
+                  onChange={(e) => setNouveauFlux({ ...nouveauFlux, montantAnnuel: parseFloat(e.target.value) })}
+                  className="w-full px-3 py-2 border-2 border-black rounded-lg"
+                  placeholder="30000"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={nouveauFlux.avecInflation}
+                    onChange={(e) => setNouveauFlux({ ...nouveauFlux, avecInflation: e.target.checked })}
+                    className="w-5 h-5"
+                  />
+                  <span className="text-sm font-bold text-black">Avec inflation (0.6%/an)</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setShowModalFlux(false)}
+                className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={enregistrerFlux}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold"
+              >
+                💾 Enregistrer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

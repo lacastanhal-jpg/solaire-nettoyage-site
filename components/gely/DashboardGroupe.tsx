@@ -73,11 +73,11 @@ export default function DashboardGroupe({ projets }: DashboardGroupeProps) {
             </div>
             <div>
               <h2 className="text-4xl font-bold">GROUPE GELY</h2>
-              <p className="text-blue-100 text-lg">Vue consolidée de tous les projets</p>
+              <p className="text-blue-900 text-lg">Vue consolidée de tous les projets</p>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-sm text-blue-200">Total projets</p>
+            <p className="text-sm text-blue-800">Total projets</p>
             <p className="text-5xl font-bold">{projets.length}</p>
           </div>
         </div>

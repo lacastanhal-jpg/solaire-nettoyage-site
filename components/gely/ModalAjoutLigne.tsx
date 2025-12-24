@@ -269,7 +269,7 @@ export default function ModalAjoutLigne({ onClose, onSubmit }: ModalAjoutLignePr
           </div>
 
           {/* Upload PDF */}
-          <div className="bg-blue-50 border-2 border-blue-600 rounded-lg p-4">
+          <div className="bg-blue-100 border-2 border-blue-600 rounded-lg p-4">
             <label className={LABEL_CLASS}>
               <FileText className="w-5 h-5 inline mr-2" />
               Document PDF (facultatif)
@@ -304,16 +304,16 @@ export default function ModalAjoutLigne({ onClose, onSubmit }: ModalAjoutLignePr
               {errors.fichier && (
                 <p className="text-red-600 text-sm mt-1 font-bold">{errors.fichier}</p>
               )}
-              <p className="text-xs text-gray-600 mt-1">Max 10 MB - Format PDF uniquement</p>
+              <p className="text-xs text-gray-900 mt-1">Max 10 MB - Format PDF uniquement</p>
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 bg-gray-100 p-6 rounded-b-xl flex items-center justify-end space-x-3 border-t-2 border-gray-300">
+        <div className="sticky bottom-0 bg-gray-100 p-6 rounded-b-xl flex items-center justify-end space-x-3 border-t-2 border-gray-500">
           <button
             onClick={onClose}
-            className="px-6 py-3 bg-gray-500 text-white rounded-lg font-bold hover:bg-gray-600 transition"
+            className="px-6 py-3 bg-gray-1000 text-white rounded-lg font-bold hover:bg-gray-600 transition"
           >
             Annuler
           </button>

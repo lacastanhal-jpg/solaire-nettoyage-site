@@ -144,7 +144,7 @@ export default function DocumentsProjet({ projetId, projetNom }: DocumentsProjet
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {documentsFiltres.map(doc => (
-            <div key={doc.id} className="bg-white border-4 border-black rounded-lg p-4 hover:bg-blue-50 transition">
+            <div key={doc.id} className="bg-white border-4 border-black rounded-lg p-4 hover:bg-blue-100 transition">
               <div className="flex items-start justify-between mb-3">
                 <div className="text-4xl">{getTypeIcon(doc.type)}</div>
                 <div className="flex space-x-2">
@@ -230,7 +230,7 @@ export default function DocumentsProjet({ projetId, projetNom }: DocumentsProjet
 
               <div>
                 <label className="block text-xl font-bold text-black mb-2">Fichier *</label>
-                <div className="border-4 border-dashed border-black rounded-lg p-8 text-center bg-blue-50">
+                <div className="border-4 border-dashed border-black rounded-lg p-8 text-center bg-blue-100">
                   <Upload className="w-12 h-12 text-black mx-auto mb-3" />
                   <p className="text-lg font-bold text-black mb-2">Cliquez ou glissez-déposez</p>
                   <p className="text-sm font-semibold text-black">PDF, JPG, PNG (max 10 Mo)</p>

@@ -17,16 +17,14 @@ import SimulateurImpact from '@/components/gely/SimulateurImpact'
 import CalendrierFinancier from '@/components/gely/CalendrierFinancier'
 import DashboardGroupe from '@/components/gely/DashboardGroupe'
 import ExportDonnees from '@/components/gely/ExportDonnees'
-import PlanPrevisionnelGroupe from '@/components/gely/PlanPrevisionnelGroupe'
 import { useProjets, useLignesFinancieres } from '@/lib/gely/useFirestore'
 import { LIGNES_FINANCIERES_MOCK } from '@/lib/gely/mockData'
 
-type PageType = 'dashboard' | 'actionnaires' | 'sciGely' | 'lexa' | 'lexa2' | 'solaireNettoyage' | 'projets' | 'simulateur' | 'calendrier' | 'dashboardGroupe' | 'planPrevisionnel' | 'export'
+type PageType = 'dashboard' | 'actionnaires' | 'sciGely' | 'lexa' | 'lexa2' | 'solaireNettoyage' | 'projets' | 'simulateur' | 'calendrier' | 'dashboardGroupe' | 'export'
 
 const NAVIGATION = [
   { id: 'dashboard', label: 'Dashboard', icon: Home },
   { id: 'projets', label: 'Projets', icon: FolderKanban },
-  { id: 'planPrevisionnel', label: 'Plan Prévisionnel', icon: TrendingUp },
   { id: 'dashboardGroupe', label: 'Vue Groupe', icon: BarChart3 },
   { id: 'calendrier', label: 'Calendrier', icon: Calendar },
   { id: 'simulateur', label: 'Simulateur', icon: TrendingUp },
@@ -57,8 +55,8 @@ export default function GelyManagementPage() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-xl text-gray-900 font-semibold">Chargement des données...</p>
-            <p className="text-sm text-gray-800 mt-2">🔥 Firebase</p>
+            <p className="text-xl text-gray-600 font-semibold">Chargement des données...</p>
+            <p className="text-sm text-gray-500 mt-2">🔥 Firebase</p>
           </div>
         </div>
       )
@@ -84,8 +82,6 @@ export default function GelyManagementPage() {
         return <Dashboard setCurrentPage={setCurrentPage} />
       case 'projets':
         return <PageProjets onSelectProjet={setSelectedProjet} />
-      case 'planPrevisionnel':        return <PlanPrevisionnelGroupe />
-
       case 'dashboardGroupe':
         return <DashboardGroupe projets={projets} />
       case 'calendrier':
@@ -117,7 +113,7 @@ export default function GelyManagementPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-4xl font-bold mb-2">GROUPE GELY</h1>
-              <p className="text-blue-900 text-lg">Gestion et Suivi des Participations - 🔥 Firebase</p>
+              <p className="text-blue-100 text-lg">Gestion et Suivi des Participations - 🔥 Firebase</p>
             </div>
             <Link
               href="/intranet/dashboard"
@@ -131,7 +127,7 @@ export default function GelyManagementPage() {
       </div>
 
       {/* Navigation */}
-      <div className="bg-white shadow-md border-b border-gray-400">
+      <div className="bg-white shadow-md border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6">
           <nav className="flex space-x-1 overflow-x-auto">
             {NAVIGATION.map((item) => {
@@ -147,8 +143,8 @@ export default function GelyManagementPage() {
                   className={`
                     flex items-center space-x-2 px-6 py-4 border-b-4 transition-all whitespace-nowrap
                     ${isActive 
-                      ? 'border-blue-600 text-blue-600 font-semibold bg-blue-100' 
-                      : 'border-transparent text-gray-900 hover:border-gray-500 hover:text-gray-900'
+                      ? 'border-blue-600 text-blue-600 font-semibold bg-blue-50' 
+                      : 'border-transparent text-gray-600 hover:border-gray-300 hover:text-gray-900'
                     }
                   `}
                 >

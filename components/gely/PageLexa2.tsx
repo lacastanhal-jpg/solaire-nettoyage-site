@@ -22,11 +22,11 @@ export default function PageLexa2() {
             </div>
             <div>
               <h2 className="text-4xl font-bold">LEXA 2</h2>
-              <p className="text-blue-100 text-lg">Production photovoltaïque - Nouveaux projets</p>
+              <p className="text-blue-900 text-lg">Production photovoltaïque - Nouveaux projets</p>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-blue-200 text-sm">Président</p>
+            <p className="text-blue-800 text-sm">Président</p>
             <p className="text-xl font-bold">Axel GELY</p>
           </div>
         </div>
@@ -46,7 +46,7 @@ export default function PageLexa2() {
                 className={`px-6 py-3 font-semibold flex items-center space-x-2 transition-all ${
                   activeTab === tab.id
                     ? 'bg-white border-b-4 border-blue-600 text-blue-900'
-                    : 'text-gray-600 hover:bg-blue-50 hover:text-blue-700'
+                    : 'text-gray-900 hover:bg-blue-100 hover:text-blue-700'
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -67,20 +67,20 @@ export default function PageLexa2() {
               </span>
             </div>
             <div className="grid grid-cols-4 gap-4">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
-                <p className="text-xs text-gray-600 mb-1 font-medium">Puissance</p>
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-400">
+                <p className="text-xs text-gray-900 mb-1 font-medium">Puissance</p>
                 <p className="text-2xl font-bold text-blue-900">500 kWc</p>
               </div>
               <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 rounded-lg border border-yellow-200">
-                <p className="text-xs text-gray-600 mb-1 font-medium">Tarif EDF</p>
+                <p className="text-xs text-gray-900 mb-1 font-medium">Tarif EDF</p>
                 <p className="text-2xl font-bold text-yellow-700">13,70 c€/kWh</p>
               </div>
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
-                <p className="text-xs text-gray-600 mb-1 font-medium">Revenu/an</p>
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-400">
+                <p className="text-xs text-gray-900 mb-1 font-medium">Revenu/an</p>
                 <p className="text-2xl font-bold text-blue-900">76 720 €</p>
               </div>
               <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 rounded-lg border border-yellow-200">
-                <p className="text-xs text-gray-600 mb-1 font-medium">Budget</p>
+                <p className="text-xs text-gray-900 mb-1 font-medium">Budget</p>
                 <p className="text-2xl font-bold text-yellow-700">346 600 €</p>
               </div>
             </div>
@@ -94,20 +94,20 @@ export default function PageLexa2() {
               </span>
             </div>
             <div className="grid grid-cols-4 gap-4">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
-                <p className="text-xs text-gray-600 mb-1 font-medium">Puissance</p>
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-400">
+                <p className="text-xs text-gray-900 mb-1 font-medium">Puissance</p>
                 <p className="text-2xl font-bold text-blue-900">99,88 kWc</p>
               </div>
               <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 rounded-lg border border-yellow-200">
-                <p className="text-xs text-gray-600 mb-1 font-medium">Tarif EDF</p>
+                <p className="text-xs text-gray-900 mb-1 font-medium">Tarif EDF</p>
                 <p className="text-2xl font-bold text-yellow-700">11,26 c€/kWh</p>
               </div>
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
-                <p className="text-xs text-gray-600 mb-1 font-medium">Revenu/an</p>
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-400">
+                <p className="text-xs text-gray-900 mb-1 font-medium">Revenu/an</p>
                 <p className="text-2xl font-bold text-blue-900">12 611 €</p>
               </div>
               <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 rounded-lg border border-yellow-200">
-                <p className="text-xs text-gray-600 mb-1 font-medium">Statut</p>
+                <p className="text-xs text-gray-900 mb-1 font-medium">Statut</p>
                 <p className="text-lg font-bold text-yellow-700">Devis en cours</p>
               </div>
             </div>
@@ -117,7 +117,7 @@ export default function PageLexa2() {
 
       {activeTab === 'finances' && (
         <div className="bg-white rounded-xl shadow-lg overflow-hidden border-t-4 border-blue-600">
-          <div className="p-6 bg-gradient-to-r from-blue-50 to-blue-100 border-b-2 border-blue-200">
+          <div className="p-6 bg-gradient-to-r from-blue-50 to-blue-100 border-b-2 border-blue-400">
             <h3 className="text-2xl font-bold text-blue-900">Factures Projet 500 kWc</h3>
           </div>
           <div className="overflow-x-auto">
@@ -134,7 +134,7 @@ export default function PageLexa2() {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {FACTURES.map((f, i) => (
-                  <tr key={i} className="hover:bg-blue-50 transition-colors">
+                  <tr key={i} className="hover:bg-blue-100 transition-colors">
                     <td className="px-6 py-4 text-sm text-gray-900">{f.date}</td>
                     <td className="px-6 py-4 text-sm font-semibold text-blue-900">{f.fournisseur}</td>
                     <td className="px-6 py-4 text-sm text-gray-700">{f.description}</td>

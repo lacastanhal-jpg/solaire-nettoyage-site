@@ -37,8 +37,8 @@ export default function PageProjets({ onSelectProjet }: PageProjetsProps) {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-xl text-gray-600 font-semibold">Chargement des projets...</p>
-          <p className="text-sm text-gray-500 mt-2">Connexion à Firebase</p>
+          <p className="text-xl text-gray-900 font-semibold">Chargement des projets...</p>
+          <p className="text-sm text-gray-800 mt-2">Connexion à Firebase</p>
         </div>
       </div>
     )
@@ -116,7 +116,7 @@ export default function PageProjets({ onSelectProjet }: PageProjetsProps) {
             </div>
             <div>
               <h2 className="text-4xl font-bold">Gestion des Projets</h2>
-              <p className="text-blue-100 text-lg">Suivi financier et opérationnel en temps réel - 🔥 Firebase</p>
+              <p className="text-blue-900 text-lg">Suivi financier et opérationnel en temps réel - 🔥 Firebase</p>
             </div>
           </div>
           <button
@@ -138,20 +138,20 @@ export default function PageProjets({ onSelectProjet }: PageProjetsProps) {
         <div className="bg-white rounded-xl shadow-lg p-6 border-t-4 border-yellow-500">
           <p className="text-sm text-gray-900 mb-1 font-bold">💼 Budget total</p>
           <p className="text-3xl font-bold text-yellow-700">{getTotalBudgetHT().toLocaleString('fr-FR')} € HT</p>
-          <p className="text-sm text-gray-600">{getTotalBudget().toLocaleString('fr-FR')} € TTC</p>
-          <p className="text-xs text-gray-500 mt-1">TVA: {(getTotalBudget() - getTotalBudgetHT()).toLocaleString('fr-FR')} €</p>
+          <p className="text-sm text-gray-900">{getTotalBudget().toLocaleString('fr-FR')} € TTC</p>
+          <p className="text-xs text-gray-800 mt-1">TVA: {(getTotalBudget() - getTotalBudgetHT()).toLocaleString('fr-FR')} €</p>
         </div>
         <div className="bg-white rounded-xl shadow-lg p-6 border-t-4 border-green-500">
           <p className="text-sm text-gray-900 mb-1 font-bold">✅ Payé</p>
           <p className="text-3xl font-bold text-green-700">{getTotalDepenseHT().toLocaleString('fr-FR')} € HT</p>
-          <p className="text-sm text-gray-600">{getTotalDepense().toLocaleString('fr-FR')} € TTC</p>
-          <p className="text-xs text-gray-500 mt-1">TVA: {(getTotalDepense() - getTotalDepenseHT()).toLocaleString('fr-FR')} €</p>
+          <p className="text-sm text-gray-900">{getTotalDepense().toLocaleString('fr-FR')} € TTC</p>
+          <p className="text-xs text-gray-800 mt-1">TVA: {(getTotalDepense() - getTotalDepenseHT()).toLocaleString('fr-FR')} €</p>
         </div>
         <div className="bg-white rounded-xl shadow-lg p-6 border-t-4 border-orange-500">
           <p className="text-sm text-gray-900 mb-1 font-bold">⏳ À payer</p>
           <p className="text-3xl font-bold text-orange-700">{getTotalAPayerHT().toLocaleString('fr-FR')} € HT</p>
-          <p className="text-sm text-gray-600">{getTotalAPayer().toLocaleString('fr-FR')} € TTC</p>
-          <p className="text-xs text-gray-500 mt-1">TVA: {(getTotalAPayer() - getTotalAPayerHT()).toLocaleString('fr-FR')} €</p>
+          <p className="text-sm text-gray-900">{getTotalAPayer().toLocaleString('fr-FR')} € TTC</p>
+          <p className="text-xs text-gray-800 mt-1">TVA: {(getTotalAPayer() - getTotalAPayerHT()).toLocaleString('fr-FR')} €</p>
         </div>
         <div className="bg-gradient-to-br from-red-500 to-red-700 rounded-xl shadow-lg p-6 border-t-4 border-red-900">
           <p className="text-sm text-white font-bold mb-1">💰 Reste à financer</p>
@@ -249,30 +249,30 @@ export default function PageProjets({ onSelectProjet }: PageProjetsProps) {
 
                   {/* Indicateurs financiers */}
                   <div className="grid grid-cols-5 gap-3 mb-4">
-                    <div className="bg-gray-50 p-2 rounded-lg border-2 border-gray-300">
+                    <div className="bg-gray-100 p-2 rounded-lg border-2 border-gray-500">
                       <p className="text-xs text-gray-900 font-bold">Budget total</p>
                       <p className="text-xl font-bold text-gray-900">{(projet.budgetTotalHT || 0).toLocaleString('fr-FR')} € HT</p>
-                      <p className="text-xs text-gray-600">{(projet.budgetTotal || 0).toLocaleString('fr-FR')} € TTC</p>
+                      <p className="text-xs text-gray-900">{(projet.budgetTotal || 0).toLocaleString('fr-FR')} € TTC</p>
                     </div>
                     <div className="bg-green-50 p-2 rounded-lg border-2 border-green-500">
                       <p className="text-xs text-gray-900 font-bold">Payé</p>
                       <p className="text-xl font-bold text-green-700">{(projet.totalPayeHT || 0).toLocaleString('fr-FR')} € HT</p>
-                      <p className="text-xs text-gray-600">{(projet.totalPaye || 0).toLocaleString('fr-FR')} € TTC</p>
+                      <p className="text-xs text-gray-900">{(projet.totalPaye || 0).toLocaleString('fr-FR')} € TTC</p>
                     </div>
                     <div className="bg-orange-50 p-2 rounded-lg border-2 border-orange-500">
                       <p className="text-xs text-gray-900 font-bold">À payer</p>
                       <p className="text-xl font-bold text-orange-700">{(projet.totalAPayerHT || 0).toLocaleString('fr-FR')} € HT</p>
-                      <p className="text-xs text-gray-600">{(projet.totalAPayer || 0).toLocaleString('fr-FR')} € TTC</p>
+                      <p className="text-xs text-gray-900">{(projet.totalAPayer || 0).toLocaleString('fr-FR')} € TTC</p>
                     </div>
-                    <div className="bg-blue-50 p-2 rounded-lg border-2 border-blue-500">
+                    <div className="bg-blue-100 p-2 rounded-lg border-2 border-blue-500">
                       <p className="text-xs text-gray-900 font-bold">Reste budget</p>
                       <p className="text-xl font-bold text-blue-700">{(projet.resteHT || 0).toLocaleString('fr-FR')} € HT</p>
-                      <p className="text-xs text-gray-600">{(projet.reste || 0).toLocaleString('fr-FR')} € TTC</p>
+                      <p className="text-xs text-gray-900">{(projet.reste || 0).toLocaleString('fr-FR')} € TTC</p>
                     </div>
                     <div className="bg-red-50 p-2 rounded-lg border-2 border-red-600">
                       <p className="text-xs text-red-900 font-bold">💰 Reste à financer</p>
                       <p className="text-xl font-bold text-red-700">{((projet.budgetTotalHT || 0) - (projet.totalPayeHT || 0)).toLocaleString('fr-FR')} € HT</p>
-                      <p className="text-xs text-gray-600">{((projet.budgetTotal || 0) - (projet.totalPaye || 0)).toLocaleString('fr-FR')} € TTC</p>
+                      <p className="text-xs text-gray-900">{((projet.budgetTotal || 0) - (projet.totalPaye || 0)).toLocaleString('fr-FR')} € TTC</p>
                     </div>
                   </div>
 

@@ -53,11 +53,11 @@ export default function PageSciGely() {
             </div>
             <div>
               <h2 className="text-4xl font-bold">SCI GELY</h2>
-              <p className="text-blue-100 text-lg">Société Civile Immobilière</p>
+              <p className="text-blue-900 text-lg">Société Civile Immobilière</p>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-blue-200 text-sm">Gérant</p>
+            <p className="text-blue-800 text-sm">Gérant</p>
             <p className="text-xl font-bold">Jérôme GELY</p>
           </div>
         </div>
@@ -79,7 +79,7 @@ export default function PageSciGely() {
                 className={`px-6 py-3 font-semibold flex items-center space-x-2 transition-all ${
                   activeTab === tab.id
                     ? 'bg-white border-b-4 border-blue-600 text-blue-900'
-                    : 'text-gray-600 hover:bg-blue-50 hover:text-blue-700'
+                    : 'text-gray-900 hover:bg-blue-100 hover:text-blue-700'
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -97,21 +97,21 @@ export default function PageSciGely() {
             <h3 className="text-2xl font-bold text-blue-900 mb-4">{SCI_GELY_DATA.projetBatiment.nom}</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
-                <p className="text-xs text-gray-600 mb-1 font-medium">Surface</p>
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-400">
+                <p className="text-xs text-gray-900 mb-1 font-medium">Surface</p>
                 <p className="text-2xl font-bold text-blue-900">{SCI_GELY_DATA.projetBatiment.surface}</p>
               </div>
               <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 rounded-lg border border-yellow-200">
-                <p className="text-xs text-gray-600 mb-1 font-medium">Type</p>
+                <p className="text-xs text-gray-900 mb-1 font-medium">Type</p>
                 <p className="text-xl font-bold text-yellow-700">{SCI_GELY_DATA.projetBatiment.type}</p>
               </div>
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
-                <p className="text-xs text-gray-600 mb-1 font-medium">Permis</p>
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-400">
+                <p className="text-xs text-gray-900 mb-1 font-medium">Permis</p>
                 <p className="text-sm font-bold text-blue-900">{SCI_GELY_DATA.projetBatiment.permis}</p>
               </div>
             </div>
 
-            <div className="bg-gray-50 rounded-lg p-4 mb-6">
+            <div className="bg-gray-100 rounded-lg p-4 mb-6">
               <h4 className="font-bold text-gray-900 mb-2 flex items-center">
                 <MapPin className="w-4 h-4 mr-2" />
                 Localisation
@@ -119,7 +119,7 @@ export default function PageSciGely() {
               <p className="text-gray-700">{SCI_GELY_DATA.projetBatiment.localisation}</p>
             </div>
 
-            <div className="bg-gray-50 rounded-lg p-4 mb-6">
+            <div className="bg-gray-100 rounded-lg p-4 mb-6">
               <h4 className="font-bold text-gray-900 mb-2">Utilisation prévue</h4>
               <ul className="space-y-2">
                 {SCI_GELY_DATA.projetBatiment.usage.map((usage, i) => (
@@ -133,15 +133,15 @@ export default function PageSciGely() {
 
             <div className="grid grid-cols-3 gap-4">
               <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg border border-green-200">
-                <p className="text-xs text-gray-600 mb-1">Payé</p>
+                <p className="text-xs text-gray-900 mb-1">Payé</p>
                 <p className="text-lg font-bold text-green-700">{SCI_GELY_DATA.projetBatiment.paye}</p>
               </div>
               <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 rounded-lg border border-yellow-200">
-                <p className="text-xs text-gray-600 mb-1">Reste à payer</p>
+                <p className="text-xs text-gray-900 mb-1">Reste à payer</p>
                 <p className="text-lg font-bold text-yellow-700">{SCI_GELY_DATA.projetBatiment.reste}</p>
               </div>
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
-                <p className="text-xs text-gray-600 mb-1">Budget total</p>
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-400">
+                <p className="text-xs text-gray-900 mb-1">Budget total</p>
                 <p className="text-lg font-bold text-blue-900">{SCI_GELY_DATA.projetBatiment.budgetTotal}</p>
               </div>
             </div>
@@ -156,27 +156,27 @@ export default function PageSciGely() {
             <h3 className="text-2xl font-bold text-blue-900 mb-6">Informations légales</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Raison sociale</p>
+                <p className="text-sm text-gray-900 mb-1">Raison sociale</p>
                 <p className="font-bold text-gray-900">{SCI_GELY_DATA.informations.raisonSociale}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600 mb-1">Forme juridique</p>
+                <p className="text-sm text-gray-900 mb-1">Forme juridique</p>
                 <p className="font-bold text-gray-900">{SCI_GELY_DATA.informations.forme}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600 mb-1">Capital social</p>
+                <p className="text-sm text-gray-900 mb-1">Capital social</p>
                 <p className="font-bold text-gray-900">{SCI_GELY_DATA.informations.capital}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600 mb-1">RCS</p>
+                <p className="text-sm text-gray-900 mb-1">RCS</p>
                 <p className="font-bold text-gray-900">{SCI_GELY_DATA.informations.rcs}</p>
               </div>
               <div className="md:col-span-2">
-                <p className="text-sm text-gray-600 mb-1">Siège social</p>
+                <p className="text-sm text-gray-900 mb-1">Siège social</p>
                 <p className="font-bold text-gray-900">{SCI_GELY_DATA.informations.siege}</p>
               </div>
               <div className="md:col-span-2">
-                <p className="text-sm text-gray-600 mb-1">Gérant</p>
+                <p className="text-sm text-gray-900 mb-1">Gérant</p>
                 <p className="font-bold text-gray-900">{SCI_GELY_DATA.informations.gerant}</p>
               </div>
             </div>
@@ -189,11 +189,11 @@ export default function PageSciGely() {
             </h3>
             <div className="space-y-3">
               {SCI_GELY_DATA.actionnariat.map((act, i) => (
-                <div key={i} className="bg-gray-50 p-4 rounded-lg flex justify-between items-center">
+                <div key={i} className="bg-gray-100 p-4 rounded-lg flex justify-between items-center">
                   <span className="font-semibold text-gray-900">{act.nom}</span>
                   <div className="text-right">
                     <span className="font-bold text-blue-900">{act.pourcentage}</span>
-                    <span className="text-sm text-gray-600 ml-2">({act.parts} parts)</span>
+                    <span className="text-sm text-gray-900 ml-2">({act.parts} parts)</span>
                   </div>
                 </div>
               ))}
@@ -205,7 +205,7 @@ export default function PageSciGely() {
       {/* Contenu Finances */}
       {activeTab === 'finances' && (
         <div className="bg-white rounded-xl shadow-lg overflow-hidden border-t-4 border-blue-600">
-          <div className="p-6 bg-gradient-to-r from-blue-50 to-blue-100 border-b-2 border-blue-200">
+          <div className="p-6 bg-gradient-to-r from-blue-50 to-blue-100 border-b-2 border-blue-400">
             <h3 className="text-2xl font-bold text-blue-900">Dépenses Projet Bâtiment</h3>
           </div>
           <div className="overflow-x-auto">
@@ -222,7 +222,7 @@ export default function PageSciGely() {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {SCI_GELY_DATA.depenses.map((dep, i) => (
-                  <tr key={i} className="hover:bg-blue-50 transition-colors">
+                  <tr key={i} className="hover:bg-blue-100 transition-colors">
                     <td className="px-6 py-4 text-sm text-gray-900">{dep.date}</td>
                     <td className="px-6 py-4 text-sm font-semibold text-blue-900">{dep.poste}</td>
                     <td className="px-6 py-4 text-sm text-gray-700">{dep.fournisseur}</td>

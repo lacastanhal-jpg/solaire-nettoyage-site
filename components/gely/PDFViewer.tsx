@@ -21,7 +21,7 @@ export default function PDFViewer({ document, onClose }: PDFViewerProps) {
         <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-4 rounded-t-xl flex justify-between items-center">
           <div>
             <h2 className="text-xl font-bold">{document.nom}</h2>
-            <p className="text-sm text-blue-100">
+            <p className="text-sm text-blue-900">
               {document.fournisseur && `${document.fournisseur} - `}
               {document.numero && `N° ${document.numero}`}
             </p>
@@ -63,7 +63,7 @@ export default function PDFViewer({ document, onClose }: PDFViewerProps) {
           ) : (
             <div className="w-full h-full flex items-center justify-center">
               <div className="text-center">
-                <p className="text-gray-600 mb-4">Prévisualisation non disponible</p>
+                <p className="text-gray-900 mb-4">Prévisualisation non disponible</p>
                 <a
                   href={document.fileUrl}
                   download
@@ -78,29 +78,29 @@ export default function PDFViewer({ document, onClose }: PDFViewerProps) {
         </div>
 
         {/* Footer avec infos */}
-        <div className="bg-gray-50 p-4 rounded-b-xl border-t">
+        <div className="bg-gray-100 p-4 rounded-b-xl border-t">
           <div className="grid grid-cols-4 gap-4 text-sm">
             {document.montantHT && document.montantHT > 0 && (
               <div>
-                <p className="text-gray-600">Montant HT</p>
+                <p className="text-gray-900">Montant HT</p>
                 <p className="font-bold text-gray-900">{document.montantHT.toLocaleString('fr-FR')} €</p>
               </div>
             )}
             {document.montantTTC && document.montantTTC > 0 && (
               <div>
-                <p className="text-gray-600">Montant TTC</p>
+                <p className="text-gray-900">Montant TTC</p>
                 <p className="font-bold text-gray-900">{document.montantTTC.toLocaleString('fr-FR')} €</p>
               </div>
             )}
             {document.date && (
               <div>
-                <p className="text-gray-600">Date</p>
+                <p className="text-gray-900">Date</p>
                 <p className="font-bold text-gray-900">{new Date(document.date).toLocaleDateString('fr-FR')}</p>
               </div>
             )}
             {document.echeance && (
               <div>
-                <p className="text-gray-600">Échéance</p>
+                <p className="text-gray-900">Échéance</p>
                 <p className="font-bold text-yellow-700">{new Date(document.echeance).toLocaleDateString('fr-FR')}</p>
               </div>
             )}

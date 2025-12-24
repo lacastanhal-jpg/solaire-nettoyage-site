@@ -230,7 +230,7 @@ export default function SimulateurImpact({ projets }: SimulateurImpactProps) {
           <h3 className="text-2xl font-bold text-blue-600 mb-4">📊 SITUATION ACTUELLE</h3>
           
           <div className="space-y-4">
-            <div className="bg-blue-50 p-4 rounded-lg border-2 border-blue-600">
+            <div className="bg-blue-100 p-4 rounded-lg border-2 border-blue-600">
               <p className="text-sm font-bold text-black mb-2">PROJET : {selectedProjet.nom}</p>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div>
@@ -275,7 +275,7 @@ export default function SimulateurImpact({ projets }: SimulateurImpactProps) {
 
         {/* APRÈS */}
         <div className={`border-4 rounded-lg p-6 ${isSimulating ? 'bg-yellow-50 border-yellow-600' : 'bg-gray-100 border-gray-400'}`}>
-          <h3 className={`text-2xl font-bold mb-4 ${isSimulating ? 'text-yellow-700' : 'text-gray-500'}`}>
+          <h3 className={`text-2xl font-bold mb-4 ${isSimulating ? 'text-yellow-700' : 'text-gray-800'}`}>
             🎯 {isSimulating ? 'APRÈS SIMULATION' : 'Simulez pour voir l\'impact'}
           </h3>
           
@@ -328,7 +328,7 @@ export default function SimulateurImpact({ projets }: SimulateurImpactProps) {
             </div>
           ) : (
             <div className="flex items-center justify-center h-64">
-              <p className="text-gray-500 font-bold text-xl">Modifiez les valeurs et cliquez sur SIMULER</p>
+              <p className="text-gray-800 font-bold text-xl">Modifiez les valeurs et cliquez sur SIMULER</p>
             </div>
           )}
         </div>

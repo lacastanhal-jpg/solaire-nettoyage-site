@@ -29,7 +29,7 @@ export default function SocieteCard({ societe, onClick }: SocieteCardProps) {
         <Icon className="w-8 h-8 text-white" />
       </div>
       <h3 className="text-xl font-bold text-blue-900 mb-3">{societe.nom}</h3>
-      <div className="space-y-2 text-sm text-gray-600">
+      <div className="space-y-2 text-sm text-gray-900">
         <div className="flex justify-between">
           <span>Capital</span>
           <span className="font-semibold text-gray-900">{societe.capital}</span>

@@ -7,6 +7,7 @@ import { useProjet, useLignesFinancieres, ajouterLigneFinanciere, modifierLigneF
 import DocumentsProjet from './DocumentsProjet'
 import VueEnsembleProjet from './VueEnsembleProjet'
 import ModalAjoutLigne from './ModalAjoutLigne'
+import PlanPrevisionnel20ans from './PlanPrevisionnel20ans'
 
 const TYPES_LABELS: Record<TypeLigneFinanciereType, string> = {
   devis: 'Devis',
@@ -34,7 +35,7 @@ export default function ProjetDetail({ projetId, onBack }: ProjetDetailProps) {
   const lignes = lignesData as LigneFinanciere[]
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editedLigne, setEditedLigne] = useState<LigneFinanciere | null>(null)
-  const [activeTab, setActiveTab] = useState<'vue' | 'finances' | 'documents'>('finances')
+  const [activeTab, setActiveTab] = useState<'vue' | 'finances' | 'documents' | 'previsionnel'>('finances')
   const [showModalAjout, setShowModalAjout] = useState(false)
   const [fichiersPDF, setFichiersPDF] = useState<Map<string, File>>(new Map())
 
@@ -44,8 +45,8 @@ export default function ProjetDetail({ projetId, onBack }: ProjetDetailProps) {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-xl text-gray-600 font-semibold">Chargement du projet...</p>
-          <p className="text-sm text-gray-500 mt-2">🔥 Firebase</p>
+          <p className="text-xl text-gray-900 font-semibold">Chargement du projet...</p>
+          <p className="text-sm text-gray-800 mt-2">🔥 Firebase</p>
         </div>
       </div>
     )
@@ -163,14 +164,14 @@ export default function ProjetDetail({ projetId, onBack }: ProjetDetailProps) {
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-xl shadow-xl p-8">
         <button
           onClick={onBack}
-          className="flex items-center space-x-2 text-blue-100 hover:text-white mb-4 transition"
+          className="flex items-center space-x-2 text-blue-900 hover:text-white mb-4 transition"
         >
           <ArrowLeft className="w-5 h-5" />
           <span>Retour aux projets</span>
         </button>
         <div>
           <h2 className="text-4xl font-bold mb-2">{projet.nom}</h2>
-          <div className="flex items-center space-x-4 text-blue-100">
+          <div className="flex items-center space-x-4 text-blue-900">
             <span>{projet.responsable}</span>
             <span>•</span>
             <span>Budget: {(projet.budgetTotal || 0).toLocaleString('fr-FR')} €</span>
@@ -185,24 +186,24 @@ export default function ProjetDetail({ projetId, onBack }: ProjetDetailProps) {
         <div className="bg-white rounded-xl shadow-lg p-6 border-t-4 border-yellow-500">
           <p className="text-sm text-gray-900 mb-1 font-bold">Budget total</p>
           <p className="text-2xl font-bold text-yellow-700">{(projet.budgetTotalHT || 0).toLocaleString('fr-FR')} € HT</p>
-          <p className="text-sm text-gray-600">{(projet.budgetTotal || 0).toLocaleString('fr-FR')} € TTC</p>
+          <p className="text-sm text-gray-900">{(projet.budgetTotal || 0).toLocaleString('fr-FR')} € TTC</p>
         </div>
         <div className="bg-white rounded-xl shadow-lg p-6 border-t-4 border-green-500">
           <p className="text-sm text-gray-900 mb-1 font-bold">Payé</p>
           <p className="text-2xl font-bold text-green-700">{totaux.totalPayeHT.toLocaleString('fr-FR')} € HT</p>
-          <p className="text-sm text-gray-600">{totaux.totalPaye.toLocaleString('fr-FR')} € TTC</p>
+          <p className="text-sm text-gray-900">{totaux.totalPaye.toLocaleString('fr-FR')} € TTC</p>
         </div>
         <div className="bg-white rounded-xl shadow-lg p-6 border-t-4 border-orange-500">
           <p className="text-sm text-gray-900 mb-1 font-bold">À payer</p>
           <p className="text-2xl font-bold text-orange-700">{totaux.totalAPayerHT.toLocaleString('fr-FR')} € HT</p>
-          <p className="text-sm text-gray-600">{totaux.totalAPayer.toLocaleString('fr-FR')} € TTC</p>
+          <p className="text-sm text-gray-900">{totaux.totalAPayer.toLocaleString('fr-FR')} € TTC</p>
         </div>
         <div className="bg-white rounded-xl shadow-lg p-6 border-t-4 border-blue-500">
           <p className="text-sm text-gray-900 mb-1 font-bold">Reste budget</p>
           <p className="text-2xl font-bold text-blue-700">
             {((projet.budgetTotalHT || 0) - totaux.totalFacturesHT - totaux.totalDevisHT).toLocaleString('fr-FR')} € HT
           </p>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-900">
             {((projet.budgetTotal || 0) - totaux.totalFactures - totaux.totalDevis).toLocaleString('fr-FR')} € TTC
           </p>
         </div>
@@ -228,6 +229,7 @@ export default function ProjetDetail({ projetId, onBack }: ProjetDetailProps) {
         <div className="flex space-x-1 px-6">
           {[
             { id: 'finances' as const, label: 'Finances' },
+            { id: 'previsionnel' as const, label: 'Plan Prévisionnel 20 ans' },
             { id: 'vue' as const, label: 'Vue d\'ensemble' },
             { id: 'documents' as const, label: 'Documents' }
           ].map(tab => (
@@ -277,7 +279,7 @@ export default function ProjetDetail({ projetId, onBack }: ProjetDetailProps) {
               <tbody className="divide-y divide-gray-200">
                 {lignes.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                    <td colSpan={8} className="px-4 py-8 text-center text-gray-800">
                       Aucune ligne financière. Cliquez sur "Ajouter ligne" pour commencer.
                     </td>
                   </tr>
@@ -287,7 +289,7 @@ export default function ProjetDetail({ projetId, onBack }: ProjetDetailProps) {
                     const displayLigne = isEditing && editedLigne ? editedLigne : ligne
 
                     return (
-                      <tr key={ligne.id} className={isEditing ? 'bg-blue-50' : 'hover:bg-gray-50'}>
+                      <tr key={ligne.id} className={isEditing ? 'bg-blue-100' : 'hover:bg-gray-100'}>
                         <td className="px-4 py-3">
                           {isEditing ? (
                             <select
@@ -393,7 +395,7 @@ export default function ProjetDetail({ projetId, onBack }: ProjetDetailProps) {
                                 </button>
                                 <button
                                   onClick={handleEditCancel}
-                                  className="p-1 bg-gray-400 text-white border-2 border-black rounded hover:bg-gray-500"
+                                  className="p-1 bg-gray-400 text-white border-2 border-black rounded hover:bg-gray-1000"
                                   title="Annuler"
                                 >
                                   <X className="w-4 h-4" />
@@ -424,7 +426,7 @@ export default function ProjetDetail({ projetId, onBack }: ProjetDetailProps) {
                   })
                 )}
               </tbody>
-              <tfoot className="bg-gray-50 border-t-2 border-gray-300">
+              <tfoot className="bg-gray-100 border-t-2 border-gray-500">
                 <tr className="font-bold">
                   <td colSpan={3} className="px-4 py-3 text-right">TOTAUX</td>
                   <td className="px-4 py-3 text-right text-blue-900">
@@ -447,6 +449,13 @@ export default function ProjetDetail({ projetId, onBack }: ProjetDetailProps) {
       )}
 
       {/* Documents */}
+      {/* Plan Prévisionnel 20 ans */}
+      {activeTab === 'previsionnel' && (
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <PlanPrevisionnel20ans projetId={projetId} projetData={projet} />
+        </div>
+      )}
+
       {activeTab === 'documents' && (
         <DocumentsProjet projetId={projet.id} projetNom={projet.nom} />
       )}

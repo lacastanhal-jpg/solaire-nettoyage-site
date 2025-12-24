@@ -299,7 +299,7 @@ export default function ExportDonnees({ projets, lignesFinancieres }: ExportDonn
         <h3 className="text-2xl font-bold text-black mb-4">📁 EXPORTS PAR PROJET</h3>
         <div className="space-y-3">
           {projets.map(projet => (
-            <div key={projet.id} className="bg-blue-50 border-2 border-blue-600 rounded-lg p-4 flex items-center justify-between">
+            <div key={projet.id} className="bg-blue-100 border-2 border-blue-600 rounded-lg p-4 flex items-center justify-between">
               <div className="flex-1">
                 <p className="text-lg font-bold text-black">{projet.nom}</p>
                 <p className="text-sm text-black">{SOCIETES_LABELS[projet.societe]} - {formatNumber(projet.budgetTotal)} €</p>

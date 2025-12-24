@@ -63,19 +63,19 @@ export default function PageLexa() {
       {/* KPIs rapides */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl shadow-lg p-6 border-t-4 border-yellow-500">
-          <p className="text-sm text-gray-600 mb-1">Puissance</p>
+          <p className="text-sm text-gray-900 mb-1">Puissance</p>
           <p className="text-3xl font-bold text-yellow-600">{LEXA_DATA.installation.puissance}</p>
         </div>
         <div className="bg-white rounded-xl shadow-lg p-6 border-t-4 border-blue-600">
-          <p className="text-sm text-gray-600 mb-1">CA 2024</p>
+          <p className="text-sm text-gray-900 mb-1">CA 2024</p>
           <p className="text-3xl font-bold text-blue-900">{LEXA_DATA.finances.ca2024}</p>
         </div>
         <div className="bg-white rounded-xl shadow-lg p-6 border-t-4 border-green-500">
-          <p className="text-sm text-gray-600 mb-1">Marge nette</p>
+          <p className="text-sm text-gray-900 mb-1">Marge nette</p>
           <p className="text-3xl font-bold text-green-600">{LEXA_DATA.finances.margeNette}</p>
         </div>
         <div className="bg-white rounded-xl shadow-lg p-6 border-t-4 border-green-600">
-          <p className="text-sm text-gray-600 mb-1">CO₂ économisé/an</p>
+          <p className="text-sm text-gray-900 mb-1">CO₂ économisé/an</p>
           <p className="text-3xl font-bold text-green-700">{LEXA_DATA.installation.co2Economise}</p>
         </div>
       </div>
@@ -97,7 +97,7 @@ export default function PageLexa() {
                 className={`px-6 py-3 font-semibold flex items-center space-x-2 transition-all ${
                   activeTab === tab.id
                     ? 'bg-white border-b-4 border-yellow-500 text-yellow-700'
-                    : 'text-gray-600 hover:bg-yellow-50 hover:text-yellow-700'
+                    : 'text-gray-900 hover:bg-yellow-50 hover:text-yellow-700'
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -116,25 +116,25 @@ export default function PageLexa() {
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 rounded-lg border border-yellow-200">
-                <p className="text-xs text-gray-600 mb-1 font-medium">Puissance installée</p>
+                <p className="text-xs text-gray-900 mb-1 font-medium">Puissance installée</p>
                 <p className="text-2xl font-bold text-yellow-700">{LEXA_DATA.installation.puissance}</p>
               </div>
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
-                <p className="text-xs text-gray-600 mb-1 font-medium">Production annuelle</p>
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-400">
+                <p className="text-xs text-gray-900 mb-1 font-medium">Production annuelle</p>
                 <p className="text-xl font-bold text-blue-900">{LEXA_DATA.installation.productionAnnuelle}</p>
               </div>
               <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg border border-green-200">
-                <p className="text-xs text-gray-600 mb-1 font-medium">CO₂ évité/an</p>
+                <p className="text-xs text-gray-900 mb-1 font-medium">CO₂ évité/an</p>
                 <p className="text-xl font-bold text-green-700">{LEXA_DATA.installation.co2Economise}</p>
               </div>
             </div>
 
-            <div className="bg-gray-50 rounded-lg p-4 mb-4">
+            <div className="bg-gray-100 rounded-lg p-4 mb-4">
               <h4 className="font-bold text-gray-900 mb-2">Localisation</h4>
               <p className="text-gray-700">{LEXA_DATA.installation.localisation}</p>
             </div>
 
-            <div className="bg-blue-50 rounded-lg p-4 mb-4">
+            <div className="bg-blue-100 rounded-lg p-4 mb-4">
               <h4 className="font-bold text-blue-900 mb-2 flex items-center">
                 <Calendar className="w-4 h-4 mr-2" />
                 Contrat EDF Obligation d'Achat
@@ -160,15 +160,15 @@ export default function PageLexa() {
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Chiffre d'affaires 2024</p>
+                <p className="text-sm text-gray-900 mb-1">Chiffre d'affaires 2024</p>
                 <p className="text-3xl font-bold text-blue-900">{LEXA_DATA.finances.ca2024}</p>
               </div>
               <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Résultat net 2024</p>
+                <p className="text-sm text-gray-900 mb-1">Résultat net 2024</p>
                 <p className="text-3xl font-bold text-green-700">{LEXA_DATA.finances.resultatNet2024}</p>
               </div>
               <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-6 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Marge nette</p>
+                <p className="text-sm text-gray-900 mb-1">Marge nette</p>
                 <p className="text-3xl font-bold text-yellow-700">{LEXA_DATA.finances.margeNette}</p>
               </div>
             </div>
@@ -206,35 +206,35 @@ export default function PageLexa() {
           <h3 className="text-2xl font-bold text-blue-900 mb-6">Informations légales</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Raison sociale</p>
+              <p className="text-sm text-gray-900 mb-1">Raison sociale</p>
               <p className="font-bold text-gray-900">{LEXA_DATA.informations.raisonSociale}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600 mb-1">Forme juridique</p>
+              <p className="text-sm text-gray-900 mb-1">Forme juridique</p>
               <p className="font-bold text-gray-900">{LEXA_DATA.informations.forme}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600 mb-1">Capital social</p>
+              <p className="text-sm text-gray-900 mb-1">Capital social</p>
               <p className="font-bold text-gray-900">{LEXA_DATA.informations.capital}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600 mb-1">RCS</p>
+              <p className="text-sm text-gray-900 mb-1">RCS</p>
               <p className="font-bold text-gray-900">{LEXA_DATA.informations.rcs}</p>
             </div>
             <div className="md:col-span-2">
-              <p className="text-sm text-gray-600 mb-1">Siège social</p>
+              <p className="text-sm text-gray-900 mb-1">Siège social</p>
               <p className="font-bold text-gray-900">{LEXA_DATA.informations.siege}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600 mb-1">Président</p>
+              <p className="text-sm text-gray-900 mb-1">Président</p>
               <p className="font-bold text-gray-900">{LEXA_DATA.informations.president}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600 mb-1">Création</p>
+              <p className="text-sm text-gray-900 mb-1">Création</p>
               <p className="font-bold text-gray-900">{LEXA_DATA.informations.creation}</p>
             </div>
             <div className="md:col-span-2">
-              <p className="text-sm text-gray-600 mb-1">Détention</p>
+              <p className="text-sm text-gray-900 mb-1">Détention</p>
               <p className="font-bold text-gray-900">{LEXA_DATA.informations.detention}</p>
             </div>
           </div>
@@ -259,18 +259,18 @@ export default function PageLexa() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg border-2 border-green-200">
-                <p className="text-sm text-gray-600 mb-2">CO₂ évité par an</p>
+                <p className="text-sm text-gray-900 mb-2">CO₂ évité par an</p>
                 <p className="text-4xl font-bold text-green-700 mb-2">14,5 tonnes</p>
-                <p className="text-xs text-gray-500">Calcul basé sur 85 g CO₂/kWh (mix énergétique français)</p>
+                <p className="text-xs text-gray-800">Calcul basé sur 85 g CO₂/kWh (mix énergétique français)</p>
               </div>
               <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg border-2 border-green-200">
-                <p className="text-sm text-gray-600 mb-2">CO₂ total évité (2009-2024)</p>
+                <p className="text-sm text-gray-900 mb-2">CO₂ total évité (2009-2024)</p>
                 <p className="text-4xl font-bold text-green-700 mb-2">~218 tonnes</p>
-                <p className="text-xs text-gray-500">15 ans de production propre</p>
+                <p className="text-xs text-gray-800">15 ans de production propre</p>
               </div>
             </div>
 
-            <div className="bg-blue-50 rounded-lg p-6">
+            <div className="bg-blue-100 rounded-lg p-6">
               <h5 className="font-bold text-blue-900 mb-4">Équivalences :</h5>
               <div className="space-y-3 text-gray-700">
                 <p>🌳 <strong>218 tonnes de CO₂</strong> = Absorption annuelle de <strong>~1 800 arbres</strong></p>
