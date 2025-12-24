@@ -11,6 +11,7 @@ export type TypeAutorisationType = 'PC' | 'DP' | 'DCR' | 'autre'
 export interface FluxInterSociete {
   id: string
   nom: string
+  type: 'loyer' | 'prestation' | 'autre'
   montantAnnuel: number
   societeSource: string
   societeCible: string
