@@ -1,6 +1,6 @@
 // Hook custom pour gérer les données GELY avec Firebase
 import { useState, useEffect } from 'react'
-import { collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, doc, where, getDocs } from 'firebase/firestore'
+import { collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc, where, getDocs } from 'firebase/firestore'
 import { db } from '@/lib/firebase/config'
 import { Projet } from './types'
 
@@ -147,10 +147,12 @@ export function useLignesFinancieres(projetId: string) {
 }
 
 // Fonction pour ajouter un projet
-export async function ajouterProjet(projet: Omit<Projet, 'id'>) {
+export async function ajouterProjet(projet: Projet) {
   try {
-    const docRef = await addDoc(collection(db, 'projets'), projet)
-    return { success: true, id: docRef.id }
+    // CORRECTION: Utiliser setDoc pour respecter l'ID fourni
+    const { id, ...projetData } = projet
+    await setDoc(doc(db, 'projets', id), projetData)
+    return { success: true, id: id }
   } catch (error) {
     console.error('Erreur ajout projet:', error)
     return { success: false, error }

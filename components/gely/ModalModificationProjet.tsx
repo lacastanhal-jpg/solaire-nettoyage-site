@@ -41,7 +41,9 @@ export default function ModalModificationProjet({ projet, onClose, onSave }: Mod
     description: projet.description,
     puissanceKWc: projet.puissanceKWc?.toString() || '',
     tarifEDF: projet.tarifEDF?.toString() || '',
-    surfaceM2: projet.surfaceM2?.toString() || ''
+    surfaceM2: projet.surfaceM2?.toString() || '',
+    dateDebutProjet: projet.dateDebutProjet || new Date().toISOString().split('T')[0],
+    dateFinProjet: projet.dateFinProjet || new Date(new Date().setFullYear(new Date().getFullYear() + 20)).toISOString().split('T')[0]
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -49,6 +51,11 @@ export default function ModalModificationProjet({ projet, onClose, onSave }: Mod
   const revenusCalcules = formData.puissanceKWc && formData.tarifEDF
     ? (parseFloat(formData.puissanceKWc) * parseFloat(formData.tarifEDF) * 1120).toFixed(0)
     : null
+
+  // Calculer la durée en années
+  const dureeAnnees = formData.dateDebutProjet && formData.dateFinProjet
+    ? new Date(formData.dateFinProjet).getFullYear() - new Date(formData.dateDebutProjet).getFullYear()
+    : 0
 
   const updateField = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -66,6 +73,11 @@ export default function ModalModificationProjet({ projet, onClose, onSave }: Mod
     if (!formData.nom.trim()) newErrors.nom = 'Obligatoire'
     if (!formData.budgetTotal || parseFloat(formData.budgetTotal) <= 0) newErrors.budgetTotal = 'Obligatoire'
     if (!formData.description.trim()) newErrors.description = 'Obligatoire'
+    if (!formData.dateDebutProjet) newErrors.dateDebutProjet = 'Obligatoire'
+    if (!formData.dateFinProjet) newErrors.dateFinProjet = 'Obligatoire'
+    if (formData.dateDebutProjet && formData.dateFinProjet && new Date(formData.dateFinProjet) <= new Date(formData.dateDebutProjet)) {
+      newErrors.dateFinProjet = 'Doit être après la date de début'
+    }
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -74,8 +86,11 @@ export default function ModalModificationProjet({ projet, onClose, onSave }: Mod
     if (!validate()) return
 
     const budgetTotal = parseFloat(formData.budgetTotal)
+    const budgetTotalHT = Math.round(budgetTotal / 1.2)
     const ancienBudget = projet.budgetTotal
+    const ancienBudgetHT = projet.budgetTotalHT || Math.round(ancienBudget / 1.2)
     const diffBudget = budgetTotal - ancienBudget
+    const diffBudgetHT = budgetTotalHT - ancienBudgetHT
     
     const projetModifie: Projet = {
       ...projet,
@@ -84,13 +99,27 @@ export default function ModalModificationProjet({ projet, onClose, onSave }: Mod
       responsable: formData.responsable,
       statut: formData.statut,
       budgetTotal: budgetTotal,
+      budgetTotalHT: budgetTotalHT,
       description: formData.description,
-      puissanceKWc: formData.puissanceKWc ? parseFloat(formData.puissanceKWc) : undefined,
-      tarifEDF: formData.tarifEDF ? parseFloat(formData.tarifEDF) : undefined,
-      surfaceM2: formData.surfaceM2 ? parseFloat(formData.surfaceM2) : undefined,
-      revenusAnnuels: revenusCalcules ? parseFloat(revenusCalcules) : undefined,
+      dateDebutProjet: formData.dateDebutProjet,
+      dateFinProjet: formData.dateFinProjet,
       reste: projet.reste + diffBudget,
+      resteHT: (projet.resteHT || 0) + diffBudgetHT,
       updatedAt: new Date().toISOString()
+    }
+
+    // Ajouter les champs optionnels uniquement s'ils ont une valeur
+    if (formData.puissanceKWc) {
+      projetModifie.puissanceKWc = parseFloat(formData.puissanceKWc)
+    }
+    if (formData.tarifEDF) {
+      projetModifie.tarifEDF = parseFloat(formData.tarifEDF)
+    }
+    if (formData.surfaceM2) {
+      projetModifie.surfaceM2 = parseFloat(formData.surfaceM2)
+    }
+    if (revenusCalcules) {
+      projetModifie.revenusAnnuels = parseFloat(revenusCalcules)
     }
 
     onSave(projetModifie)
@@ -163,6 +192,43 @@ export default function ModalModificationProjet({ projet, onClose, onSave }: Mod
                 </p>
               )}
             </div>
+          </div>
+
+          {/* DATES DÉBUT ET FIN DU PROJET */}
+          <div className="border-4 border-green-500 bg-green-100 p-6 rounded-lg">
+            <h3 className="text-2xl font-bold text-black mb-4">📅 Période du plan prévisionnel *</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-lg font-bold text-black mb-2">Date de début</label>
+                <input
+                  type="date"
+                  value={formData.dateDebutProjet}
+                  onChange={(e) => updateField('dateDebutProjet', e.target.value)}
+                  className={INPUT_CLASS}
+                />
+                {errors.dateDebutProjet && <p className="text-red-600 font-bold mt-1">{errors.dateDebutProjet}</p>}
+              </div>
+              <div>
+                <label className="block text-lg font-bold text-black mb-2">Date de fin</label>
+                <input
+                  type="date"
+                  value={formData.dateFinProjet}
+                  onChange={(e) => updateField('dateFinProjet', e.target.value)}
+                  className={INPUT_CLASS}
+                />
+                {errors.dateFinProjet && <p className="text-red-600 font-bold mt-1">{errors.dateFinProjet}</p>}
+              </div>
+            </div>
+            {dureeAnnees > 0 && (
+              <div className="mt-4 bg-white border-4 border-green-600 rounded-lg p-4">
+                <p className="text-xl font-bold text-black">
+                  📊 Durée du plan : <span className="text-green-700">{dureeAnnees} an{dureeAnnees > 1 ? 's' : ''}</span>
+                </p>
+                <p className="text-sm text-gray-700 mt-1">
+                  Du {new Date(formData.dateDebutProjet).toLocaleDateString('fr-FR')} au {new Date(formData.dateFinProjet).toLocaleDateString('fr-FR')}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Description */}

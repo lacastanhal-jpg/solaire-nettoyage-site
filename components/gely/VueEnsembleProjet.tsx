@@ -302,7 +302,7 @@ export default function VueEnsembleProjet({ projet, onUpdate }: VueEnsembleProje
                   type="text"
                   value={nouveauFlux.nom}
                   onChange={(e) => setNouveauFlux({ ...nouveauFlux, nom: e.target.value })}
-                  className="w-full px-3 py-2 border-2 border-black rounded-lg"
+                  className="w-full px-3 py-2 border-2 border-black rounded-lg text-black font-bold"
                   placeholder="Ex: Loyer toiture"
                 />
               </div>
@@ -312,7 +312,7 @@ export default function VueEnsembleProjet({ projet, onUpdate }: VueEnsembleProje
                 <select
                   value={nouveauFlux.type}
                   onChange={(e) => setNouveauFlux({ ...nouveauFlux, type: e.target.value as any })}
-                  className="w-full px-3 py-2 border-2 border-black rounded-lg"
+                  className="w-full px-3 py-2 border-2 border-black rounded-lg text-black font-bold"
                 >
                   <option value="loyer">Loyer</option>
                   <option value="prestation">Prestation</option>
@@ -322,11 +322,11 @@ export default function VueEnsembleProjet({ projet, onUpdate }: VueEnsembleProje
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-black mb-1">Société source (qui reçoit)</label>
+                  <label className="block text-sm font-bold text-black mb-1">Société qui PAIE</label>
                   <select
                     value={nouveauFlux.societeSource}
                     onChange={(e) => setNouveauFlux({ ...nouveauFlux, societeSource: e.target.value })}
-                    className="w-full px-3 py-2 border-2 border-black rounded-lg"
+                    className="w-full px-3 py-2 border-2 border-black rounded-lg text-black font-bold"
                   >
                     <option value="">-- Choisir --</option>
                     {societes.map(s => <option key={s} value={s}>{s}</option>)}
@@ -334,11 +334,11 @@ export default function VueEnsembleProjet({ projet, onUpdate }: VueEnsembleProje
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-black mb-1">Société cible (qui paie)</label>
+                  <label className="block text-sm font-bold text-black mb-1">Société qui REÇOIT</label>
                   <select
                     value={nouveauFlux.societeCible}
                     onChange={(e) => setNouveauFlux({ ...nouveauFlux, societeCible: e.target.value })}
-                    className="w-full px-3 py-2 border-2 border-black rounded-lg"
+                    className="w-full px-3 py-2 border-2 border-black rounded-lg text-black font-bold"
                   >
                     <option value="">-- Choisir --</option>
                     {societes.map(s => <option key={s} value={s}>{s}</option>)}
@@ -352,7 +352,7 @@ export default function VueEnsembleProjet({ projet, onUpdate }: VueEnsembleProje
                   type="number"
                   value={nouveauFlux.montantAnnuel}
                   onChange={(e) => setNouveauFlux({ ...nouveauFlux, montantAnnuel: parseFloat(e.target.value) })}
-                  className="w-full px-3 py-2 border-2 border-black rounded-lg"
+                  className="w-full px-3 py-2 border-2 border-black rounded-lg text-black font-bold"
                   placeholder="30000"
                 />
               </div>

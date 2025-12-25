@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { doc, updateDoc } from 'firebase/firestore'
+import { doc, updateDoc, getDocs, collection } from 'firebase/firestore'
 import { db } from '@/lib/firebase/config'
 import { useLignesFinancieres } from '@/lib/gely/useFirestore'
 import { LigneFinanciere } from '@/lib/gely/types'
@@ -73,6 +73,15 @@ export default function PlanPrevisionnel20ans({ projetId, projetData }: PlanPrev
   const { lignes: lignesData } = useLignesFinancieres(projetId)
   const lignes = (lignesData as LigneFinanciere[]) || []
   
+  // CALCUL DE LA DURÉE ET ANNÉE DE DÉBUT
+  const dateDebut = projetData?.dateDebutProjet || new Date().toISOString().split('T')[0]
+  const dateFin = projetData?.dateFinProjet || new Date(new Date().setFullYear(new Date().getFullYear() + 20)).toISOString().split('T')[0]
+  
+  const anneeDebut = new Date(dateDebut).getFullYear()
+  const anneeFin = new Date(dateFin).getFullYear()
+  const dureeProjet = Math.max(1, anneeFin - anneeDebut) // Durée réelle (18 ans)
+  const nbAnneesTableau = Math.max(1, anneeFin - anneeDebut + 1) // Nombre de lignes (19 lignes: 2026 à 2044)
+  
   const [params, setParams] = useState<ParamsProjet>({
     puissanceKWc: projetData?.puissanceKWc || 500,
     productionAnnuelleKWh: projetData?.productionAnnuelleKWh || 560000,
@@ -83,7 +92,7 @@ export default function PlanPrevisionnel20ans({ projetId, projetData }: PlanPrev
     dureeEmprunt: 15,
     differePremierAn: true,
     tauxIS: 0.15,
-    dureeAmortissement: 20,
+    dureeAmortissement: nbAnneesTableau,
     inflationGenerale: 0.006,
     baisseProductionAnnuelle: 0.008,
     charges: projetData?.paramsFinanciers?.charges || [
@@ -103,14 +112,38 @@ export default function PlanPrevisionnel20ans({ projetId, projetData }: PlanPrev
   })
   const [chargeEnEdition, setChargeEnEdition] = useState<string | null>(null)
 
-  // Charger les flux inter-sociétés
+  // Charger les flux inter-sociétés DE TOUS LES PROJETS
   useEffect(() => {
     const chargerFlux = async () => {
       try {
         setLoadingFlux(true)
-        // CORRECTION: Utiliser UNIQUEMENT les flux du projet (pas de fallback hardcodé)
-        const fluxData: FluxInterSociete[] = projetData?.fluxInterSocietes || []
-        setFlux(fluxData)
+        
+        // CORRECTION: Charger TOUS les projets pour avoir TOUS les flux
+        const projetsSnapshot = await getDocs(collection(db, 'projets'))
+        const tousLesFlux: FluxInterSociete[] = []
+        
+        projetsSnapshot.forEach(doc => {
+          const projetData = doc.data()
+          if (projetData.fluxInterSocietes && Array.isArray(projetData.fluxInterSocietes)) {
+            tousLesFlux.push(...projetData.fluxInterSocietes)
+          }
+        })
+        
+        // Filtrer pour garder uniquement les flux qui concernent CE projet
+        const societeProjet = projetData?.societe || 'lexa2'
+        const societeMap: Record<string, string> = {
+          'sciGely': 'SCI GELY',
+          'lexa': 'LEXA',
+          'lexa2': 'LEXA 2',
+          'solaireNettoyage': 'SOLAIRE NETTOYAGE'
+        }
+        const nomSocieteProjet = societeMap[societeProjet]
+        
+        const fluxConcernes = tousLesFlux.filter(f => 
+          f.societeSource === nomSocieteProjet || f.societeCible === nomSocieteProjet
+        )
+        
+        setFlux(fluxConcernes)
       } catch (error) {
         console.error('Erreur chargement flux:', error)
         setFlux([])
@@ -217,10 +250,23 @@ export default function PlanPrevisionnel20ans({ projetId, projetData }: PlanPrev
     let capitalRestant = emprunt
     let deficitReportable = 0
 
-    const fluxRevenus = flux.filter(f => f.societeSource === societeSelectionnee)
-    const fluxCharges = flux.filter(f => f.societeCible === societeSelectionnee)
+    // CORRECTION: Utiliser TOUS les flux du projet
+    // Les flux du projet sont ceux qui concernent ce projet
+    const societeProjet = projetData?.societe || 'lexa2'
+    const societeMap: Record<string, string> = {
+      'sciGely': 'SCI GELY',
+      'lexa': 'LEXA',
+      'lexa2': 'LEXA 2',
+      'solaireNettoyage': 'SOLAIRE NETTOYAGE'
+    }
+    const nomSocieteProjet = societeMap[societeProjet]
+    
+    // Flux revenus: ce projet REÇOIT de l'argent (societeCible = ce projet)
+    const fluxRevenus = flux.filter(f => f.societeCible === nomSocieteProjet)
+    // Flux charges: ce projet PAIE de l'argent (societeSource = ce projet)  
+    const fluxCharges = flux.filter(f => f.societeSource === nomSocieteProjet)
 
-    for (let annee = 0; annee < 20; annee++) {
+    for (let annee = 0; annee < nbAnneesTableau; annee++) {
       let reventeElec = 0
       
       if (societeSelectionnee === 'LEXA 2' || societeSelectionnee === 'LEXA') {
@@ -330,7 +376,7 @@ export default function PlanPrevisionnel20ans({ projetId, projetData }: PlanPrev
       const tresorerie = caf - remboursementCapital
 
       annees.push({
-        annee: annee + 1,
+        annee: anneeDebut + annee,
         productible: societeSelectionnee === 'LEXA 2' || societeSelectionnee === 'LEXA' 
           ? Math.round(params.productionAnnuelleKWh * Math.pow(1 - params.baisseProductionAnnuelle, annee)) 
           : 0,
@@ -494,7 +540,10 @@ export default function PlanPrevisionnel20ans({ projetId, projetData }: PlanPrev
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Plan Prévisionnel 20 ans</h2>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Plan Prévisionnel ({anneeDebut} - {anneeFin})</h2>
+          <p className="text-sm text-gray-700">Durée: {dureeProjet} an{dureeProjet > 1 ? 's' : ''}</p>
+        </div>
         
         <div className="flex items-center space-x-4">
           <label className="text-sm font-bold text-black">🏢 Société:</label>
@@ -832,7 +881,7 @@ export default function PlanPrevisionnel20ans({ projetId, projetData }: PlanPrev
                               >
                                 <option value="ponctuel">Ponctuel (année 1)</option>
                                 <option value="amortissable">Amortissable</option>
-                                <option value="recurrent">Récurrent (20 ans)</option>
+                                <option value="recurrent">Récurrent ({nbAnneesTableau} ans)</option>
                               </select>
                             </div>
 
@@ -912,7 +961,7 @@ export default function PlanPrevisionnel20ans({ projetId, projetData }: PlanPrev
                               >
                                 <option value="ponctuel">Ponctuel (année 1)</option>
                                 <option value="amortissable">Amortissable</option>
-                                <option value="recurrent">Récurrent (20 ans)</option>
+                                <option value="recurrent">Récurrent ({nbAnneesTableau} ans)</option>
                               </select>
                             </div>
 
@@ -953,7 +1002,7 @@ export default function PlanPrevisionnel20ans({ projetId, projetData }: PlanPrev
 
       {/* Synthèse */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl shadow-lg p-6 text-white">
-        <h3 className="text-xl font-bold mb-4">📊 Synthèse sur 20 ans</h3>
+        <h3 className="text-xl font-bold mb-4">📊 Synthèse sur {dureeProjet} an{dureeProjet > 1 ? "s" : ""}</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
             <p className="text-sm opacity-90">Revenus Totaux</p>

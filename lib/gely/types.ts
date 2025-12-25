@@ -122,6 +122,10 @@ export interface Projet {
   paramsFinanciers?: ParamsFinanciers
   fluxInterSocietes?: FluxInterSociete[]
   
+  // Période du plan prévisionnel
+  dateDebutProjet?: string // Format: "YYYY-MM-DD"
+  dateFinProjet?: string   // Format: "YYYY-MM-DD"
+  
   // Calculés automatiquement (TTC)
   totalDevis: number
   totalFactures: number
