@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useProjets } from '@/lib/gely/useFirestore'
+import { collection, getDocs } from 'firebase/firestore'
+import { db } from '@/lib/firebase/config'
 
 interface AnneeConsolidee {
   annee: number
@@ -111,6 +113,25 @@ export default function PlanPrevisionnelGroupe() {
   const [ongletActif, setOngletActif] = useState<'tableau' | 'kpis'>('tableau')
   const [kpiExplique, setKpiExplique] = useState<string | null>(null)
   const [legendeVisible, setLegendeVisible] = useState(false)
+  const [fluxGlobaux, setFluxGlobaux] = useState<any[]>([])
+
+  // Charger tous les flux depuis la collection globale
+  useEffect(() => {
+    const chargerFlux = async () => {
+      try {
+        const fluxSnapshot = await getDocs(collection(db, 'flux_intersocietes'))
+        const flux: any[] = []
+        fluxSnapshot.forEach(doc => {
+          flux.push({ id: doc.id, ...doc.data() })
+        })
+        setFluxGlobaux(flux)
+      } catch (error) {
+        console.error('Erreur chargement flux:', error)
+        setFluxGlobaux([])
+      }
+    }
+    chargerFlux()
+  }, [])
 
   useEffect(() => {
     if (projets.length > 0) {
@@ -216,13 +237,11 @@ export default function PlanPrevisionnelGroupe() {
       charges: projet.paramsFinanciers?.charges || []
     }
 
-    const flux = projet.fluxInterSocietes || []
-    
     const societeMap: Record<string, string> = {
       'sciGely': 'SCI GELY',
       'lexa': 'LEXA',
       'lexa2': 'LEXA 2',
-      'solaireNettoyage': 'SOLAIRE NETTOYAGE'
+      'solaireNettoyage': 'Solaire Nettoyage'
     }
     const societe = societeMap[projet.societe] || projet.societe || 'LEXA'
 
@@ -237,8 +256,9 @@ export default function PlanPrevisionnelGroupe() {
     let capitalRestant = emprunt
     let deficitReportable = 0
 
-    const fluxRevenus = flux.filter((f: any) => f.societeSource === societe)
-    const fluxCharges = flux.filter((f: any) => f.societeCible === societe)
+    // Filtrer les flux globaux pour cette société
+    const fluxRevenus = fluxGlobaux.filter((f: any) => f.societeCible === societe)
+    const fluxCharges = fluxGlobaux.filter((f: any) => f.societeSource === societe)
 
     for (let i = 0; i < 20; i++) {
       let productible = 0
@@ -281,7 +301,7 @@ export default function PlanPrevisionnelGroupe() {
       const vraisAmortissements = amortissements
 
       const resultatExploitation = ebe - amortissements
-      const chargesFinancieres = i < params.dureeEmprunt ? capitalRestant * params.tauxEmprunt : 0
+      const chargesFinancieres = i <= params.dureeEmprunt ? capitalRestant * params.tauxEmprunt : 0
       const resultatAvantIS = resultatExploitation - chargesFinancieres
       
       let is = 0
@@ -306,7 +326,7 @@ export default function PlanPrevisionnelGroupe() {
       const caf = resultatNet + vraisAmortissements
 
       let remboursementCapital = 0
-      if (i < params.dureeEmprunt && annuiteEmprunt > 0) {
+      if (i <= params.dureeEmprunt && annuiteEmprunt > 0) {
         if (i === 0 && params.differePremierAn) {
           remboursementCapital = 0
         } else {

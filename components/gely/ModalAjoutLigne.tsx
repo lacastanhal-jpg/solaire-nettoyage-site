@@ -96,18 +96,26 @@ export default function ModalAjoutLigne({ onClose, onSubmit }: ModalAjoutLignePr
   const handleSubmit = () => {
     if (!validate()) return
 
-    const nouvelleLigne: LigneFinanciere = {
+    const nouvelleLigne: any = {
       id: `ligne_${Date.now()}`,
       type: formData.type,
       fournisseur: formData.fournisseur.trim(),
-      numero: formData.numero.trim() || undefined,
       description: formData.description.trim(),
       montantHT: parseFloat(formData.montantHT),
       montantTTC: parseFloat(formData.montantTTC),
       statut: formData.statut,
-      date: formData.date,
-      echeance: formData.echeance || undefined,
-      notes: formData.notes.trim() || undefined
+      date: formData.date
+    }
+
+    // Ajouter les champs optionnels SEULEMENT s'ils sont remplis
+    if (formData.numero.trim()) {
+      nouvelleLigne.numero = formData.numero.trim()
+    }
+    if (formData.echeance) {
+      nouvelleLigne.echeance = formData.echeance
+    }
+    if (formData.notes.trim()) {
+      nouvelleLigne.notes = formData.notes.trim()
     }
 
     onSubmit(nouvelleLigne, fichier || undefined)

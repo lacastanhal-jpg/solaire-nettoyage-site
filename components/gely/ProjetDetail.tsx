@@ -1,9 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ArrowLeft, Plus, Edit2, Trash2, Save, X } from 'lucide-react'
 import { Projet, LigneFinanciere, TypeLigneFinanciereType, StatutLigneType } from '@/lib/gely/types'
 import { useProjet, useLignesFinancieres, ajouterLigneFinanciere, modifierLigneFinanciere, supprimerLigneFinanciere } from '@/lib/gely/useFirestore'
+import { doc, updateDoc } from 'firebase/firestore'
+import { db } from '@/lib/firebase/config'
 import DocumentsProjet from './DocumentsProjet'
 import VueEnsembleProjet from './VueEnsembleProjet'
 import ModalAjoutLigne from './ModalAjoutLigne'
@@ -38,6 +40,59 @@ export default function ProjetDetail({ projetId, onBack }: ProjetDetailProps) {
   const [activeTab, setActiveTab] = useState<'vue' | 'finances' | 'documents' | 'previsionnel'>('finances')
   const [showModalAjout, setShowModalAjout] = useState(false)
   const [fichiersPDF, setFichiersPDF] = useState<Map<string, File>>(new Map())
+
+  // Mettre à jour les totaux dans Firebase quand les lignes changent
+  useEffect(() => {
+    const mettreAJourTotaux = async () => {
+      if (!projet) return
+      
+      // Calculer totaux
+      let totalDevis = 0, totalDevisHT = 0
+      let totalFactures = 0, totalFacturesHT = 0  
+      let totalPaye = 0, totalPayeHT = 0
+
+      lignes.forEach(ligne => {
+        if (ligne.type === 'devis' && ligne.statut === 'signe') {
+          totalDevis += ligne.montantTTC || 0
+          totalDevisHT += ligne.montantHT || 0
+        }
+        if (ligne.type === 'facture') {
+          totalFactures += ligne.montantTTC || 0
+          totalFacturesHT += ligne.montantHT || 0
+          
+          if (ligne.statut === 'paye') {
+            totalPaye += ligne.montantTTC || 0
+            totalPayeHT += ligne.montantHT || 0
+          }
+        }
+      })
+      
+      // Vérifier si les totaux ont changé
+      if (
+        projet.totalPaye === totalPaye &&
+        projet.totalPayeHT === totalPayeHT &&
+        projet.budgetTotal === (totalDevis + totalFactures) &&
+        projet.budgetTotalHT === (totalDevisHT + totalFacturesHT)
+      ) {
+        return
+      }
+      
+      try {
+        await updateDoc(doc(db, 'projets', projetId), {
+          totalPaye: totalPaye,
+          totalPayeHT: totalPayeHT,
+          budgetTotal: totalDevis + totalFactures,
+          budgetTotalHT: totalDevisHT + totalFacturesHT,
+          updatedAt: new Date().toISOString()
+        })
+      } catch (error) {
+        console.error('Erreur mise à jour totaux:', error)
+      }
+    }
+    
+    mettreAJourTotaux()
+  }, [lignes, projet, projetId])
+
 
   // Loading
   if (loadingProjet || loadingLignes) {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { doc, updateDoc } from 'firebase/firestore'
+import { doc, updateDoc, collection, addDoc, getDocs, deleteDoc, setDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/config'
 import { Building2, Zap, FileText, Users, AlertCircle, Calendar, TrendingUp, ArrowRightLeft, Plus, Pencil, Trash2 } from 'lucide-react'
 import { Projet } from '@/lib/gely/types'
@@ -15,8 +15,8 @@ interface FluxInterSociete {
   id: string
   nom: string
   type: 'loyer' | 'prestation' | 'autre'
-  societeSource: string
-  societeCible: string
+  societeSource: string  // Société qui REÇOIT l'argent
+  societeCible: string   // Société qui PAIE l'argent
   montantAnnuel: number
   avecInflation: boolean
 }
@@ -28,8 +28,9 @@ export default function VueEnsembleProjet({ projet, onUpdate }: VueEnsembleProje
   // Calculer ROI si données PV
   const roi = projet.revenusAnnuels ? (projet.budgetTotal / projet.revenusAnnuels).toFixed(1) : null
 
-  // CORRECTION: Charger les flux depuis Firebase
-  const [flux, setFlux] = useState<FluxInterSociete[]>(projet.fluxInterSocietes || [])
+  // ✅ CORRECTION: Charger les flux depuis la collection GLOBALE Firebase
+  const [flux, setFlux] = useState<FluxInterSociete[]>([])
+  const [loading, setLoading] = useState(true)
   const [showModalFlux, setShowModalFlux] = useState(false)
   const [fluxEnEdition, setFluxEnEdition] = useState<FluxInterSociete | null>(null)
   const [nouveauFlux, setNouveauFlux] = useState<Partial<FluxInterSociete>>({
@@ -43,10 +44,29 @@ export default function VueEnsembleProjet({ projet, onUpdate }: VueEnsembleProje
 
   const societes = ['SCI GELY', 'LEXA', 'LEXA 2', 'Solaire Nettoyage', 'GELY INVESTISSEMENT']
 
-  // Mettre à jour les flux quand le projet change
+  // Charger TOUS les flux depuis Firebase
   useEffect(() => {
-    setFlux(projet.fluxInterSocietes || [])
-  }, [projet.fluxInterSocietes])
+    const chargerFlux = async () => {
+      try {
+        setLoading(true)
+        const fluxSnapshot = await getDocs(collection(db, 'flux_intersocietes'))
+        const tousLesFlux: FluxInterSociete[] = []
+        
+        fluxSnapshot.forEach(doc => {
+          tousLesFlux.push({ id: doc.id, ...doc.data() } as FluxInterSociete)
+        })
+        
+        setFlux(tousLesFlux)
+      } catch (error) {
+        console.error('Erreur chargement flux:', error)
+        setFlux([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    chargerFlux()
+  }, [])
 
   const ouvrirModalAjout = () => {
     setFluxEnEdition(null)
@@ -67,7 +87,7 @@ export default function VueEnsembleProjet({ projet, onUpdate }: VueEnsembleProje
     setShowModalFlux(true)
   }
 
-  // CORRECTION: Sauvegarder dans Firebase
+  // ✅ CORRECTION: Sauvegarder dans la collection GLOBALE Firebase
   const enregistrerFlux = async () => {
     if (!nouveauFlux.nom || !nouveauFlux.societeSource || !nouveauFlux.societeCible || !nouveauFlux.montantAnnuel) {
       alert('❌ Remplissez tous les champs')
@@ -75,19 +95,40 @@ export default function VueEnsembleProjet({ projet, onUpdate }: VueEnsembleProje
     }
 
     try {
-      let nouveauxFlux: FluxInterSociete[]
-
       if (fluxEnEdition) {
-        // Modifier
-        nouveauxFlux = flux.map(f => 
+        // Modifier un flux existant
+        await setDoc(doc(db, 'flux_intersocietes', fluxEnEdition.id), {
+          nom: nouveauFlux.nom,
+          type: nouveauFlux.type,
+          societeSource: nouveauFlux.societeSource,
+          societeCible: nouveauFlux.societeCible,
+          montantAnnuel: nouveauFlux.montantAnnuel,
+          avecInflation: nouveauFlux.avecInflation,
+          updatedAt: new Date().toISOString()
+        })
+        
+        // Mettre à jour l'état local
+        setFlux(flux.map(f => 
           f.id === fluxEnEdition.id 
             ? { ...nouveauFlux, id: f.id } as FluxInterSociete 
             : f
-        )
+        ))
       } else {
-        // Créer
+        // Créer un nouveau flux
+        const docRef = await addDoc(collection(db, 'flux_intersocietes'), {
+          nom: nouveauFlux.nom,
+          type: nouveauFlux.type,
+          societeSource: nouveauFlux.societeSource,
+          societeCible: nouveauFlux.societeCible,
+          montantAnnuel: nouveauFlux.montantAnnuel,
+          avecInflation: nouveauFlux.avecInflation,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        })
+        
+        // Ajouter à l'état local
         const newFlux: FluxInterSociete = {
-          id: Date.now().toString(),
+          id: docRef.id,
           nom: nouveauFlux.nom!,
           type: nouveauFlux.type!,
           societeSource: nouveauFlux.societeSource!,
@@ -95,16 +136,9 @@ export default function VueEnsembleProjet({ projet, onUpdate }: VueEnsembleProje
           montantAnnuel: nouveauFlux.montantAnnuel!,
           avecInflation: nouveauFlux.avecInflation!
         }
-        nouveauxFlux = [...flux, newFlux]
+        setFlux([...flux, newFlux])
       }
 
-      // Sauvegarder dans Firebase
-      await updateDoc(doc(db, 'projets', projet.id), {
-        fluxInterSocietes: nouveauxFlux,
-        updatedAt: new Date().toISOString()
-      })
-
-      setFlux(nouveauxFlux)
       setShowModalFlux(false)
       
       if (onUpdate) onUpdate()
@@ -116,19 +150,13 @@ export default function VueEnsembleProjet({ projet, onUpdate }: VueEnsembleProje
     }
   }
 
-  // CORRECTION: Supprimer depuis Firebase
+  // ✅ CORRECTION: Supprimer depuis la collection GLOBALE Firebase
   const supprimerFlux = async (id: string) => {
     if (!confirm('Supprimer ce flux ?')) return
 
     try {
-      const nouveauxFlux = flux.filter(f => f.id !== id)
-
-      await updateDoc(doc(db, 'projets', projet.id), {
-        fluxInterSocietes: nouveauxFlux,
-        updatedAt: new Date().toISOString()
-      })
-
-      setFlux(nouveauxFlux)
+      await deleteDoc(doc(db, 'flux_intersocietes', id))
+      setFlux(flux.filter(f => f.id !== id))
       
       if (onUpdate) onUpdate()
       
@@ -169,8 +197,8 @@ export default function VueEnsembleProjet({ projet, onUpdate }: VueEnsembleProje
         </div>
       </div>
 
-      {/* Données techniques PV */}
-      {projet.puissanceKWc && (
+      {/* Données techniques PV - seulement si projet photovoltaïque */}
+      {projet.puissanceKWc && projet.puissanceKWc > 0 && (
         <div className="bg-yellow-100 border-4 border-yellow-500 rounded-lg p-6">
           <h3 className="text-2xl font-bold text-black mb-4 flex items-center">
             <Zap className="w-6 h-6 mr-2" />
@@ -222,7 +250,7 @@ export default function VueEnsembleProjet({ projet, onUpdate }: VueEnsembleProje
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-2xl font-bold text-black flex items-center">
             <ArrowRightLeft className="w-6 h-6 mr-2" />
-            FLUX INTER-SOCIÉTÉS
+            FLUX INTER-SOCIÉTÉS (TOUS)
           </h3>
           <button
             onClick={ouvrirModalAjout}
@@ -233,7 +261,11 @@ export default function VueEnsembleProjet({ projet, onUpdate }: VueEnsembleProje
           </button>
         </div>
 
-        {flux.length === 0 ? (
+        {loading ? (
+          <div className="bg-white p-6 rounded-lg border-2 border-orange-600 text-center">
+            <p className="text-gray-600">Chargement des flux...</p>
+          </div>
+        ) : flux.length === 0 ? (
           <div className="bg-white p-6 rounded-lg border-2 border-orange-600 text-center">
             <p className="text-gray-600">Aucun flux inter-sociétés défini</p>
             <p className="text-sm text-gray-500 mt-2">Cliquez sur "Ajouter un flux" pour commencer</p>
@@ -251,9 +283,9 @@ export default function VueEnsembleProjet({ projet, onUpdate }: VueEnsembleProje
                       <span className="text-xl font-bold text-black">{f.nom}</span>
                     </div>
                     <div className="flex items-center space-x-2 text-lg">
-                      <span className="font-bold text-green-700">{f.societeSource}</span>
-                      <ArrowRightLeft className="w-5 h-5 text-orange-600" />
                       <span className="font-bold text-red-700">{f.societeCible}</span>
+                      <span className="text-gray-600">→ paie →</span>
+                      <span className="font-bold text-green-700">{f.societeSource}</span>
                     </div>
                     {f.avecInflation && (
                       <span className="inline-block mt-2 px-2 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded">
@@ -322,11 +354,14 @@ export default function VueEnsembleProjet({ projet, onUpdate }: VueEnsembleProje
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-black mb-1">Société qui PAIE</label>
+                  <label className="block text-sm font-bold text-black mb-1">
+                    Société qui PAIE ❌
+                    <span className="block text-xs text-gray-600 font-normal">(societeCible = charge)</span>
+                  </label>
                   <select
-                    value={nouveauFlux.societeSource}
-                    onChange={(e) => setNouveauFlux({ ...nouveauFlux, societeSource: e.target.value })}
-                    className="w-full px-3 py-2 border-2 border-black rounded-lg text-black font-bold"
+                    value={nouveauFlux.societeCible}
+                    onChange={(e) => setNouveauFlux({ ...nouveauFlux, societeCible: e.target.value })}
+                    className="w-full px-3 py-2 border-2 border-red-500 rounded-lg text-black font-bold"
                   >
                     <option value="">-- Choisir --</option>
                     {societes.map(s => <option key={s} value={s}>{s}</option>)}
@@ -334,11 +369,14 @@ export default function VueEnsembleProjet({ projet, onUpdate }: VueEnsembleProje
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-black mb-1">Société qui REÇOIT</label>
+                  <label className="block text-sm font-bold text-black mb-1">
+                    Société qui REÇOIT ✅
+                    <span className="block text-xs text-gray-600 font-normal">(societeSource = revenu)</span>
+                  </label>
                   <select
-                    value={nouveauFlux.societeCible}
-                    onChange={(e) => setNouveauFlux({ ...nouveauFlux, societeCible: e.target.value })}
-                    className="w-full px-3 py-2 border-2 border-black rounded-lg text-black font-bold"
+                    value={nouveauFlux.societeSource}
+                    onChange={(e) => setNouveauFlux({ ...nouveauFlux, societeSource: e.target.value })}
+                    className="w-full px-3 py-2 border-2 border-green-500 rounded-lg text-black font-bold"
                   >
                     <option value="">-- Choisir --</option>
                     {societes.map(s => <option key={s} value={s}>{s}</option>)}

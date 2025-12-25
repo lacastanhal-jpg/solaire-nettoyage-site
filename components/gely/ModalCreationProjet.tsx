@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Save, Calculator } from 'lucide-react'
+import { X, Save, Calculator, Zap, Building2 } from 'lucide-react'
 import { SocieteType, StatutProjetType, ResponsableType } from '@/lib/gely/types'
 
 interface ModalCreationProjetProps {
@@ -32,6 +32,9 @@ const RESPONSABLES: { value: ResponsableType; label: string }[] = [
 const INPUT_CLASS = "w-full px-4 py-3 bg-white text-black font-bold text-lg border-4 border-black rounded-lg focus:border-blue-600 focus:outline-none placeholder:text-black placeholder:opacity-50"
 
 export default function ModalCreationProjet({ onClose, onSave }: ModalCreationProjetProps) {
+  // ✅ NOUVEAU: Type de projet
+  const [typeProjet, setTypeProjet] = useState<'photovoltaique' | 'autre'>('photovoltaique')
+  
   const [formData, setFormData] = useState({
     nom: '',
     societe: 'lexa2' as SocieteType,
@@ -42,8 +45,8 @@ export default function ModalCreationProjet({ onClose, onSave }: ModalCreationPr
     puissanceKWc: '',
     tarifEDF: '',
     surfaceM2: '',
-    dateDebutProjet: new Date().toISOString().split('T')[0], // Date du jour par défaut
-    dateFinProjet: new Date(new Date().setFullYear(new Date().getFullYear() + 20)).toISOString().split('T')[0] // +20 ans par défaut
+    dateDebutProjet: new Date().toISOString().split('T')[0],
+    dateFinProjet: new Date(new Date().setFullYear(new Date().getFullYear() + 20)).toISOString().split('T')[0]
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -88,7 +91,7 @@ export default function ModalCreationProjet({ onClose, onSave }: ModalCreationPr
     const budgetTTC = parseFloat(formData.budgetTotal)
     const budgetHT = Math.round(budgetTTC / 1.2)
     
-    const nouveauProjet = {
+    const nouveauProjet: any = {
       id: `proj_${Date.now()}`,
       nom: formData.nom,
       societe: formData.societe,
@@ -99,10 +102,6 @@ export default function ModalCreationProjet({ onClose, onSave }: ModalCreationPr
       description: formData.description,
       dateDebutProjet: formData.dateDebutProjet,
       dateFinProjet: formData.dateFinProjet,
-      ...(formData.puissanceKWc && { puissanceKWc: parseFloat(formData.puissanceKWc) }),
-      ...(formData.tarifEDF && { tarifEDF: parseFloat(formData.tarifEDF) }),
-      ...(formData.surfaceM2 && { surfaceM2: parseFloat(formData.surfaceM2) }),
-      ...(revenusCalcules && { revenusAnnuels: parseFloat(revenusCalcules) }),
       totalDevis: 0,
       totalDevisHT: 0,
       totalFactures: 0,
@@ -116,6 +115,24 @@ export default function ModalCreationProjet({ onClose, onSave }: ModalCreationPr
       dateDebut: new Date().toISOString().split('T')[0],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
+    }
+
+    // ✅ CORRECTION: Seulement ajouter les données PV si type = photovoltaïque ET champs remplis
+    if (typeProjet === 'photovoltaique') {
+      if (formData.puissanceKWc) {
+        nouveauProjet.puissanceKWc = parseFloat(formData.puissanceKWc)
+      }
+      if (formData.tarifEDF) {
+        nouveauProjet.tarifEDF = parseFloat(formData.tarifEDF)
+      }
+      if (revenusCalcules) {
+        nouveauProjet.revenusAnnuels = parseFloat(revenusCalcules)
+      }
+    }
+    
+    // Surface disponible pour tous types de projets
+    if (formData.surfaceM2) {
+      nouveauProjet.surfaceM2 = parseFloat(formData.surfaceM2)
     }
 
     onSave(nouveauProjet)
@@ -136,6 +153,40 @@ export default function ModalCreationProjet({ onClose, onSave }: ModalCreationPr
         {/* Form */}
         <div className="p-8 space-y-8">
           
+          {/* ✅ NOUVEAU: Choix du type de projet */}
+          <div className="bg-purple-100 border-4 border-purple-600 rounded-lg p-6">
+            <h3 className="text-2xl font-bold text-black mb-4">🎯 Type de projet *</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => setTypeProjet('photovoltaique')}
+                className={`p-6 rounded-lg border-4 transition-all ${
+                  typeProjet === 'photovoltaique'
+                    ? 'bg-yellow-500 border-yellow-700 text-white'
+                    : 'bg-white border-gray-300 text-black hover:border-yellow-500'
+                }`}
+              >
+                <Zap className="w-12 h-12 mx-auto mb-2" />
+                <p className="text-xl font-bold">Photovoltaïque</p>
+                <p className="text-sm mt-2 opacity-80">Production d'électricité</p>
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setTypeProjet('autre')}
+                className={`p-6 rounded-lg border-4 transition-all ${
+                  typeProjet === 'autre'
+                    ? 'bg-green-500 border-green-700 text-white'
+                    : 'bg-white border-gray-300 text-black hover:border-green-500'
+                }`}
+              >
+                <Building2 className="w-12 h-12 mx-auto mb-2" />
+                <p className="text-xl font-bold">Autre</p>
+                <p className="text-sm mt-2 opacity-80">Immobilier, location, etc.</p>
+              </button>
+            </div>
+          </div>
+
           {/* Nom */}
           <div>
             <label className="block text-xl font-bold text-black mb-2">Nom du projet *</label>
@@ -236,32 +287,45 @@ export default function ModalCreationProjet({ onClose, onSave }: ModalCreationPr
             {errors.description && <p className="text-red-600 font-bold mt-1">{errors.description}</p>}
           </div>
 
-          {/* Données techniques */}
-          <div className="border-4 border-yellow-500 bg-yellow-100 p-6 rounded-lg">
-            <h3 className="text-2xl font-bold text-black mb-4">Données techniques (optionnel)</h3>
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="block text-lg font-bold text-black mb-2">Puissance (kWc)</label>
-                <input type="number" step="0.01" value={formData.puissanceKWc} onChange={(e) => updateField('puissanceKWc', e.target.value)} className={INPUT_CLASS} placeholder="500" />
+          {/* Données techniques - SEULEMENT SI PHOTOVOLTAÏQUE */}
+          {typeProjet === 'photovoltaique' && (
+            <div className="border-4 border-yellow-500 bg-yellow-100 p-6 rounded-lg">
+              <h3 className="text-2xl font-bold text-black mb-4">⚡ Données photovoltaïques (optionnel)</h3>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-lg font-bold text-black mb-2">Puissance (kWc)</label>
+                  <input type="number" step="0.01" value={formData.puissanceKWc} onChange={(e) => updateField('puissanceKWc', e.target.value)} className={INPUT_CLASS} placeholder="500" />
+                </div>
+                <div>
+                  <label className="block text-lg font-bold text-black mb-2">Tarif EDF (€/kWh)</label>
+                  <input type="number" step="0.001" value={formData.tarifEDF} onChange={(e) => updateField('tarifEDF', e.target.value)} className={INPUT_CLASS} placeholder="0.137" />
+                </div>
+                <div>
+                  <label className="block text-lg font-bold text-black mb-2">Surface (m²)</label>
+                  <input type="number" value={formData.surfaceM2} onChange={(e) => updateField('surfaceM2', e.target.value)} className={INPUT_CLASS} placeholder="2496" />
+                </div>
               </div>
-              <div>
-                <label className="block text-lg font-bold text-black mb-2">Tarif EDF (€/kWh)</label>
-                <input type="number" step="0.001" value={formData.tarifEDF} onChange={(e) => updateField('tarifEDF', e.target.value)} className={INPUT_CLASS} placeholder="0.137" />
-              </div>
+
+              {revenusCalcules && (
+                <div className="mt-4 bg-green-200 border-4 border-green-600 rounded-lg p-4">
+                  <p className="text-xl font-bold text-black">
+                    Revenus annuels : <span className="text-green-700">{parseFloat(revenusCalcules).toLocaleString('fr-FR')} € / an</span>
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Surface - POUR PROJETS AUTRES */}
+          {typeProjet === 'autre' && (
+            <div className="border-4 border-green-500 bg-green-100 p-6 rounded-lg">
+              <h3 className="text-2xl font-bold text-black mb-4">🏢 Données immobilières (optionnel)</h3>
               <div>
                 <label className="block text-lg font-bold text-black mb-2">Surface (m²)</label>
                 <input type="number" value={formData.surfaceM2} onChange={(e) => updateField('surfaceM2', e.target.value)} className={INPUT_CLASS} placeholder="2496" />
               </div>
             </div>
-
-            {revenusCalcules && (
-              <div className="mt-4 bg-green-200 border-4 border-green-600 rounded-lg p-4">
-                <p className="text-xl font-bold text-black">
-                  Revenus annuels : <span className="text-green-700">{parseFloat(revenusCalcules).toLocaleString('fr-FR')} € / an</span>
-                </p>
-              </div>
-            )}
-          </div>
+          )}
         </div>
 
         {/* Footer */}

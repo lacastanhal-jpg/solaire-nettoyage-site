@@ -184,11 +184,24 @@ export async function supprimerProjet(projetId: string) {
 // Fonction pour ajouter une ligne financière
 export async function ajouterLigneFinanciere(projetId: string, ligne: any) {
   try {
-    const docRef = await addDoc(collection(db, 'lignesFinancieres'), {
-      ...ligne,
-      projetId
+    // Nettoyer les valeurs undefined (Firebase ne les supporte pas)
+    const { id, ...ligneData } = ligne
+    const ligneClean: any = { projetId }
+    
+    Object.keys(ligneData).forEach(key => {
+      if (ligneData[key] !== undefined && ligneData[key] !== null) {
+        ligneClean[key] = ligneData[key]
+      }
     })
-    return { success: true, id: docRef.id }
+    
+    // Utiliser setDoc avec l'ID fourni au lieu de addDoc qui crée son propre ID
+    if (id) {
+      await setDoc(doc(db, 'lignesFinancieres', id), ligneClean)
+      return { success: true, id: id }
+    } else {
+      const docRef = await addDoc(collection(db, 'lignesFinancieres'), ligneClean)
+      return { success: true, id: docRef.id }
+    }
   } catch (error) {
     console.error('Erreur ajout ligne:', error)
     return { success: false, error }
@@ -198,7 +211,16 @@ export async function ajouterLigneFinanciere(projetId: string, ligne: any) {
 // Fonction pour modifier une ligne financière
 export async function modifierLigneFinanciere(ligneId: string, data: any) {
   try {
-    await updateDoc(doc(db, 'lignesFinancieres', ligneId), data)
+    // Nettoyer les valeurs undefined
+    const dataClean: any = {}
+    
+    Object.keys(data).forEach(key => {
+      if (data[key] !== undefined && data[key] !== null) {
+        dataClean[key] = data[key]
+      }
+    })
+    
+    await updateDoc(doc(db, 'lignesFinancieres', ligneId), dataClean)
     return { success: true }
   } catch (error) {
     console.error('Erreur modification ligne:', error)

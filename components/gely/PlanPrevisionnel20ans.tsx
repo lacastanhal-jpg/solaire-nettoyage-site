@@ -83,25 +83,45 @@ export default function PlanPrevisionnel20ans({ projetId, projetData }: PlanPrev
   const nbAnneesTableau = Math.max(1, anneeFin - anneeDebut + 1) // Nombre de lignes (19 lignes: 2026 à 2044)
   
   const [params, setParams] = useState<ParamsProjet>({
-    puissanceKWc: projetData?.puissanceKWc || 500,
-    productionAnnuelleKWh: projetData?.productionAnnuelleKWh || 560000,
-    tarifEDF: projetData?.tarifEDF || 0.137,
-    investissement: projetData?.budgetTotalHT || 395416,
-    apport: projetData?.totalPayeHT || 67331,
-    tauxEmprunt: 0.035,
-    dureeEmprunt: 15,
-    differePremierAn: true,
-    tauxIS: 0.15,
-    dureeAmortissement: nbAnneesTableau,
-    inflationGenerale: 0.006,
-    baisseProductionAnnuelle: 0.008,
-    charges: projetData?.paramsFinanciers?.charges || [
-      { id: '1', nom: 'Maintenance (6% CA)', type: 'pourcentage', valeurPourcentage: 0.06, montantAnnuel: 0, avecInflation: false },
-      { id: '2', nom: 'IFER', type: 'fixe', montantAnnuel: 2000, avecInflation: true }
-    ],
-    lignesFinancieresParams: projetData?.paramsFinanciers?.lignesFinancieresParams || {},
-    utiliserAmortissementGlobal: projetData?.paramsFinanciers?.utiliserAmortissementGlobal || false
+    puissanceKWc: projetData?.puissanceKWc ?? 0,
+    productionAnnuelleKWh: projetData?.productionAnnuelleKWh ?? 0,
+    tarifEDF: projetData?.tarifEDF ?? 0,
+    investissement: projetData?.budgetTotalHT ?? 0,
+    apport: projetData?.totalPayeHT ?? 0,
+    tauxEmprunt: projetData?.paramsFinanciers?.tauxEmprunt ?? 0.035,
+    dureeEmprunt: projetData?.paramsFinanciers?.dureeEmprunt ?? 15,
+    differePremierAn: projetData?.paramsFinanciers?.differePremierAn ?? true,
+    tauxIS: projetData?.paramsFinanciers?.tauxIS ?? 0.15,
+    dureeAmortissement: projetData?.paramsFinanciers?.dureeAmortissement ?? nbAnneesTableau,
+    inflationGenerale: projetData?.paramsFinanciers?.inflationGenerale ?? 0.006,
+    baisseProductionAnnuelle: projetData?.paramsFinanciers?.baisseProductionAnnuelle ?? 0.008,
+    charges: projetData?.paramsFinanciers?.charges ?? [],
+    lignesFinancieresParams: projetData?.paramsFinanciers?.lignesFinancieresParams ?? {},
+    utiliserAmortissementGlobal: projetData?.paramsFinanciers?.utiliserAmortissementGlobal ?? false
   })
+
+  // Mettre à jour params quand projetData change (chargement depuis Firebase)
+  useEffect(() => {
+    if (projetData) {
+      setParams({
+        puissanceKWc: projetData?.puissanceKWc ?? 0,
+        productionAnnuelleKWh: projetData?.productionAnnuelleKWh ?? 0,
+        tarifEDF: projetData?.tarifEDF ?? 0,
+        investissement: projetData?.budgetTotalHT ?? 0,
+        apport: projetData?.totalPayeHT ?? 0,
+        tauxEmprunt: projetData?.paramsFinanciers?.tauxEmprunt ?? 0.035,
+        dureeEmprunt: projetData?.paramsFinanciers?.dureeEmprunt ?? 15,
+        differePremierAn: projetData?.paramsFinanciers?.differePremierAn ?? true,
+        tauxIS: projetData?.paramsFinanciers?.tauxIS ?? 0.15,
+        dureeAmortissement: projetData?.paramsFinanciers?.dureeAmortissement ?? nbAnneesTableau,
+        inflationGenerale: projetData?.paramsFinanciers?.inflationGenerale ?? 0.006,
+        baisseProductionAnnuelle: projetData?.paramsFinanciers?.baisseProductionAnnuelle ?? 0.008,
+        charges: projetData?.paramsFinanciers?.charges ?? [],
+        lignesFinancieresParams: projetData?.paramsFinanciers?.lignesFinancieresParams ?? {},
+        utiliserAmortissementGlobal: projetData?.paramsFinanciers?.utiliserAmortissementGlobal ?? false
+      })
+    }
+  }, [projetData, nbAnneesTableau])
 
   const [nouvelleCharge, setNouvelleCharge] = useState({
     nom: '',
@@ -112,21 +132,18 @@ export default function PlanPrevisionnel20ans({ projetId, projetData }: PlanPrev
   })
   const [chargeEnEdition, setChargeEnEdition] = useState<string | null>(null)
 
-  // Charger les flux inter-sociétés DE TOUS LES PROJETS
+  // Charger les flux inter-sociétés depuis collection GLOBALE Firebase
   useEffect(() => {
     const chargerFlux = async () => {
       try {
         setLoadingFlux(true)
         
-        // CORRECTION: Charger TOUS les projets pour avoir TOUS les flux
-        const projetsSnapshot = await getDocs(collection(db, 'projets'))
+        // Charger TOUS les flux depuis la collection globale flux_intersocietes
+        const fluxSnapshot = await getDocs(collection(db, 'flux_intersocietes'))
         const tousLesFlux: FluxInterSociete[] = []
         
-        projetsSnapshot.forEach(doc => {
-          const projetData = doc.data()
-          if (projetData.fluxInterSocietes && Array.isArray(projetData.fluxInterSocietes)) {
-            tousLesFlux.push(...projetData.fluxInterSocietes)
-          }
+        fluxSnapshot.forEach(doc => {
+          tousLesFlux.push({ id: doc.id, ...doc.data() } as FluxInterSociete)
         })
         
         // Filtrer pour garder uniquement les flux qui concernent CE projet
@@ -199,7 +216,7 @@ export default function PlanPrevisionnel20ans({ projetId, projetData }: PlanPrev
         }
       } else if (ligneParams.type === 'amortissable') {
         // Réparti sur X années
-        if (annee < ligneParams.duree) {
+        if (annee <= ligneParams.duree) {
           total += montant / ligneParams.duree
         }
       } else if (ligneParams.type === 'recurrent') {
@@ -228,7 +245,7 @@ export default function PlanPrevisionnel20ans({ projetId, projetData }: PlanPrev
           total += montant
         }
       } else if (ligneParams.type === 'amortissable') {
-        if (annee < ligneParams.duree) {
+        if (annee <= ligneParams.duree) {
           total += montant / ligneParams.duree
         }
       } else if (ligneParams.type === 'recurrent') {
@@ -261,7 +278,7 @@ export default function PlanPrevisionnel20ans({ projetId, projetData }: PlanPrev
     }
     const nomSocieteProjet = societeMap[societeProjet]
     
-    // Flux revenus: ce projet REÇOIT de l'argent (societeCible = ce projet)
+    // Flux revenus: ce projet REÇOIT de l'argent (societeSource = ce projet)
     const fluxRevenus = flux.filter(f => f.societeCible === nomSocieteProjet)
     // Flux charges: ce projet PAIE de l'argent (societeSource = ce projet)  
     const fluxCharges = flux.filter(f => f.societeSource === nomSocieteProjet)
@@ -309,20 +326,20 @@ export default function PlanPrevisionnel20ans({ projetId, projetData }: PlanPrev
       const ebe = revenusTotal - chargesExternes
 
       let amortissements = 0
-      if (params.utiliserAmortissementGlobal) {
+      if (params.utiliserAmortissementGlobal && annee <= params.dureeAmortissement) {
         amortissements = params.investissement / params.dureeAmortissement
       }
 
       const resultatExploitation = ebe - amortissements
 
       let chargesFinancieres = 0
-      chargesFinancieres = annee < params.dureeEmprunt ? capitalRestant * params.tauxEmprunt : 0
+      chargesFinancieres = annee <= params.dureeEmprunt ? capitalRestant * params.tauxEmprunt : 0
 
       const resultatAvantIS = resultatExploitation - chargesFinancieres
       
       // CALCUL VRAIS AMORTISSEMENTS pour CAF
       let vraisAmortissements = 0
-      if (params.utiliserAmortissementGlobal) {
+      if (params.utiliserAmortissementGlobal && annee <= params.dureeAmortissement) {
         vraisAmortissements = amortissements
       } else {
         // Calculer depuis les lignes financières (charges uniquement)
@@ -334,7 +351,7 @@ export default function PlanPrevisionnel20ans({ projetId, projetData }: PlanPrev
           
           const ligneParams = params.lignesFinancieresParams[ligne.id]
           if (ligneParams?.inclus && ligneParams.type === 'amortissable') {
-            if (annee < ligneParams.duree) {
+            if (annee <= ligneParams.duree) {
               vraisAmortissements += (ligne.montantHT || 0) / ligneParams.duree
             }
           }
@@ -364,7 +381,7 @@ export default function PlanPrevisionnel20ans({ projetId, projetData }: PlanPrev
       const caf = resultatNet + vraisAmortissements
 
       let remboursementCapital = 0
-      if (annee < params.dureeEmprunt) {
+      if (annee <= params.dureeEmprunt) {
         if (annee === 0 && params.differePremierAn) {
           remboursementCapital = 0
         } else {
