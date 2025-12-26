@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Header from '@/app/components/Header'
 
 export default function NotreHistoirePage() {
   const [countersVisible, setCountersVisible] = useState(false)
@@ -36,7 +37,7 @@ export default function NotreHistoirePage() {
           setCount(end)
           clearInterval(timer)
         } else {
-          setCount(Math.floor(start))
+          setCount(Math.round(start * 10) / 10)
         }
       }, 16)
 
@@ -68,16 +69,23 @@ export default function NotreHistoirePage() {
       description: 'Obtention des certifications pour intervenir sur les sites Seveso haute sécurité (ArcelorMittal, Safran). Investissement dans du matériel de pointe pour 1,5M€.'
     },
     {
-      year: '2024',
+      year: '2025',
       title: 'Leader français',
-      description: '6 professionnels, 4 camions, 3 équipes mobiles. Plus de 3600 sites nettoyés par an pour les plus grands énergéticiens français. 4 millions de m² traités annuellement.'
+      description: '6 professionnels, 4 camions, 3 équipes mobiles. Plus de 3600 sites nettoyés par an pour les plus grands énergéticiens français. 3,5 millions de m² traités annuellement.'
+    },
+    {
+      year: '2026',
+      title: 'Digitalisation & Innovation',
+      description: 'Mise en place d\'un dataroom sécurisé pour les clients permettant un suivi en temps réel des interventions, l\'accès aux rapports détaillés et une gestion simplifiée des sites.'
     }
   ]
 
   return (
     <div className="min-h-screen bg-white">
+      <Header />
+      
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-blue-600 to-blue-400 py-32 overflow-hidden">
+      <section className="relative bg-gradient-to-br from-blue-600 to-blue-400 py-32 overflow-hidden mt-[77px]">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-yellow-400 rounded-full blur-3xl" />
           <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-yellow-400 rounded-full blur-3xl" />
@@ -124,7 +132,7 @@ export default function NotreHistoirePage() {
             {/* Stat 2 */}
             <div className="text-center">
               <div className="text-6xl font-bold text-yellow-500 mb-4">
-                {countersVisible && <Counter end={4} />}M
+                {countersVisible && <Counter end={3.5} />}M
               </div>
               <div className="text-xl font-semibold text-blue-900 mb-2">m² nettoyés / an</div>
               <p className="text-blue-700">
@@ -152,10 +160,10 @@ export default function NotreHistoirePage() {
           {/* Titre section */}
           <div className="text-center mb-20">
             <span className="text-sm font-semibold text-yellow-500 tracking-[0.15em] uppercase block mb-4">
-              2016 - 2024
+              2016 - 2026
             </span>
             <h2 className="text-4xl md:text-5xl font-bold text-blue-900 mb-6">
-              8 ans d'excellence
+              10 ans d'excellence
             </h2>
             <p className="text-xl text-blue-700 max-w-3xl mx-auto">
               De l'entreprise familiale au leader français du nettoyage photovoltaïque

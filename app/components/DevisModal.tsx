@@ -50,42 +50,55 @@ export default function DevisModal({ isOpen, onClose }: DevisModalProps) {
       return
     }
 
-    try {
-      const response = await fetch('/api/send-devis', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      })
+    // Préparer l'email
+    const subject = `Demande de devis - ${formData.entreprise}`
+    const body = `
+Bonjour,
 
-      if (!response.ok) {
-        throw new Error('Erreur lors de l\'envoi')
-      }
+Je souhaite obtenir un devis pour le nettoyage de panneaux photovoltaïques.
 
-      setStatus('success')
-      setFormData({
-        nom: '',
-        entreprise: '',
-        email: '',
-        telephone: '',
-        surface: '',
-        puissance: '',
-        pente: '',
-        unitePente: 'degres',
-        typeInstallation: '',
-        message: ''
-      })
+INFORMATIONS CLIENT :
+- Nom : ${formData.nom}
+- Entreprise : ${formData.entreprise}
+- Email : ${formData.email}
+- Téléphone : ${formData.telephone}
 
-      // Fermer la modal après 3 secondes
-      setTimeout(() => {
-        setStatus('idle')
-        onClose()
-      }, 3000)
-    } catch (error) {
-      setStatus('error')
-      setErrorMessage('Une erreur est survenue. Veuillez réessayer ou nous appeler au 06 32 13 47 66.')
-    }
+CARACTÉRISTIQUES DE L'INSTALLATION :
+- Surface à nettoyer : ${formData.surface || 'Non renseigné'} m²
+- Puissance installée : ${formData.puissance || 'Non renseigné'} kWc
+- Pente : ${formData.pente ? formData.pente + ' ' + (formData.unitePente === 'degres' ? '°' : '%') : 'Non renseigné'}
+- Type d'installation : ${formData.typeInstallation}
+
+DÉTAILS DU PROJET :
+${formData.message || 'Aucun détail supplémentaire'}
+
+Cordialement,
+${formData.nom}
+    `.trim()
+
+    // Ouvrir le client mail
+    window.location.href = `mailto:contact@solairenettoyage.fr?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+
+    // Afficher le message de succès
+    setStatus('success')
+    setFormData({
+      nom: '',
+      entreprise: '',
+      email: '',
+      telephone: '',
+      surface: '',
+      puissance: '',
+      pente: '',
+      unitePente: 'degres',
+      typeInstallation: '',
+      message: ''
+    })
+
+    // Fermer la modal après 3 secondes
+    setTimeout(() => {
+      setStatus('idle')
+      onClose()
+    }, 3000)
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -150,7 +163,7 @@ export default function DevisModal({ isOpen, onClose }: DevisModalProps) {
                   required
                   value={formData.nom}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fbbf24] focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fbbf24] focus:border-transparent transition-all text-gray-900"
                   placeholder="Jean Dupont"
                 />
               </div>
@@ -167,7 +180,7 @@ export default function DevisModal({ isOpen, onClose }: DevisModalProps) {
                   required
                   value={formData.entreprise}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fbbf24] focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fbbf24] focus:border-transparent transition-all text-gray-900"
                   placeholder="Nom de votre entreprise"
                 />
               </div>
@@ -185,7 +198,7 @@ export default function DevisModal({ isOpen, onClose }: DevisModalProps) {
                     required
                     value={formData.email}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fbbf24] focus:border-transparent transition-all"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fbbf24] focus:border-transparent transition-all text-gray-900"
                     placeholder="contact@entreprise.fr"
                   />
                 </div>
@@ -201,7 +214,7 @@ export default function DevisModal({ isOpen, onClose }: DevisModalProps) {
                     required
                     value={formData.telephone}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fbbf24] focus:border-transparent transition-all"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fbbf24] focus:border-transparent transition-all text-gray-900"
                     placeholder="06 12 34 56 78"
                   />
                 </div>
@@ -220,7 +233,7 @@ export default function DevisModal({ isOpen, onClose }: DevisModalProps) {
                     min="1"
                     value={formData.surface}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fbbf24] focus:border-transparent transition-all"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fbbf24] focus:border-transparent transition-all text-gray-900"
                     placeholder="5000"
                   />
                 </div>
@@ -237,7 +250,7 @@ export default function DevisModal({ isOpen, onClose }: DevisModalProps) {
                     step="0.1"
                     value={formData.puissance}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fbbf24] focus:border-transparent transition-all"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fbbf24] focus:border-transparent transition-all text-gray-900"
                     placeholder="500"
                   />
                 </div>
@@ -265,14 +278,14 @@ export default function DevisModal({ isOpen, onClose }: DevisModalProps) {
                       step="0.1"
                       value={formData.pente}
                       onChange={handleChange}
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fbbf24] focus:border-transparent transition-all"
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fbbf24] focus:border-transparent transition-all text-gray-900"
                       placeholder="15"
                     />
                     <select
                       name="unitePente"
                       value={formData.unitePente}
                       onChange={handleChange}
-                      className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fbbf24] focus:border-transparent transition-all bg-white"
+                      className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fbbf24] focus:border-transparent transition-all bg-white text-gray-900"
                     >
                       <option value="degres">° (degrés)</option>
                       <option value="pourcent">% (pourcent)</option>
@@ -290,7 +303,7 @@ export default function DevisModal({ isOpen, onClose }: DevisModalProps) {
                     required
                     value={formData.typeInstallation}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fbbf24] focus:border-transparent transition-all bg-white"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fbbf24] focus:border-transparent transition-all bg-white text-gray-900"
                   >
                     <option value="">Sélectionnez...</option>
                     <option value="toiture">Toiture</option>
@@ -314,7 +327,7 @@ export default function DevisModal({ isOpen, onClose }: DevisModalProps) {
                   rows={4}
                   value={formData.message}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fbbf24] focus:border-transparent transition-all resize-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fbbf24] focus:border-transparent transition-all resize-none text-gray-900"
                   placeholder="Décrivez votre projet, localisation, fréquence souhaitée..."
                 />
               </div>

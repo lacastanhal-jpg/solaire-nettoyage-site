@@ -55,6 +55,8 @@ export interface InterventionCalendar {
     nouvelleHeureFin: string
     raison: string
     indisponibilites: Indisponibilite[]
+    typeDemande?: 'changement' | 'annulation'
+    dateEnvoi?: number
     demandeLe: string
   } | null
   createdAt: string
@@ -241,7 +243,8 @@ export async function demanderChangementDate(
   nouvelleHeureDebut: string,
   nouvelleHeureFin: string,
   raison: string,
-  indisponibilites?: Indisponibilite[]
+  indisponibilites?: Indisponibilite[],
+  typeDemande?: 'changement' | 'annulation'
 ) {
   try {
     await updateDoc(doc(db, 'interventions_calendar', interventionId), {
@@ -253,6 +256,8 @@ export async function demanderChangementDate(
         nouvelleHeureFin,
         raison,
         indisponibilites: indisponibilites || [],
+        typeDemande: typeDemande || 'changement',
+        dateEnvoi: Date.now(),
         demandeLe: new Date().toISOString()
       },
       updatedAt: new Date().toISOString()

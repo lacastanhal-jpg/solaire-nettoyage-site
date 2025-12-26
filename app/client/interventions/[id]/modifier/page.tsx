@@ -11,6 +11,8 @@ import {
   type Indisponibilite
 } from '@/lib/firebase'
 
+type TypeDemande = 'changement' | 'annulation'
+
 export default function ModifierInterventionPage() {
   const router = useRouter()
   const params = useParams()
@@ -20,6 +22,7 @@ export default function ModifierInterventionPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
+  const [typeDemande, setTypeDemande] = useState<TypeDemande>('changement')
   const [indisponibilites, setIndisponibilites] = useState<Indisponibilite[]>([])
   const [showCreneauModal, setShowCreneauModal] = useState(false)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
@@ -133,6 +136,11 @@ export default function ModifierInterventionPage() {
       return
     }
 
+    if (typeDemande === 'changement' && indisponibilites.length === 0) {
+      const confirmer = confirm('⚠️ Vous n\'avez indiqué aucune indisponibilité.\n\nContinuer quand même ?')
+      if (!confirmer) return
+    }
+
     try {
       setSubmitting(true)
 
@@ -143,10 +151,16 @@ export default function ModifierInterventionPage() {
         intervention!.heureDebut,
         intervention!.heureFin,
         formData.raison,
-        indisponibilites
+        indisponibilites,
+        typeDemande
       )
 
-      alert('✅ Demande de modification envoyée !\n\nNous traiterons votre demande dans les plus brefs délais.')
+      if (typeDemande === 'annulation') {
+        alert('✅ Demande d\'annulation envoyée !\n\nNous traiterons votre demande dans les plus brefs délais.')
+      } else {
+        alert('✅ Demande de modification envoyée !\n\nNous traiterons votre demande dans les plus brefs délais.')
+      }
+      
       router.push('/client/interventions')
     } catch (error) {
       console.error('Erreur:', error)
@@ -170,6 +184,11 @@ export default function ModifierInterventionPage() {
 
   const allDays = getAllDays()
   const totalJours = allDays.length
+  
+  let colonnes = 7
+  if (totalJours > 31) {
+    colonnes = 10
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700">
@@ -178,10 +197,14 @@ export default function ModifierInterventionPage() {
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center">
-                <span className="text-2xl">🔄</span>
+                <span className="text-2xl">
+                  {typeDemande === 'annulation' ? '❌' : '🔄'}
+                </span>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">Indiquer vos indisponibilités</h1>
+                <h1 className="text-xl font-bold text-white">
+                  {typeDemande === 'annulation' ? 'Demander l\'annulation' : 'Indiquer vos indisponibilités'}
+                </h1>
                 <p className="text-sm text-blue-200">{intervention.siteName}</p>
               </div>
             </div>
@@ -242,6 +265,54 @@ export default function ModifierInterventionPage() {
           </div>
         </div>
 
+        {/* Choix type de demande */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+          <h2 className="text-lg font-bold text-gray-900 mb-4">🎯 Type de demande</h2>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <button
+              type="button"
+              onClick={() => {
+                setTypeDemande('changement')
+                setIndisponibilites([])
+              }}
+              className={`p-6 rounded-xl border-2 transition-all ${
+                typeDemande === 'changement'
+                  ? 'bg-blue-50 border-blue-500 shadow-lg'
+                  : 'bg-white border-gray-200 hover:border-blue-300'
+              }`}
+            >
+              <div className="text-4xl mb-3">🔄</div>
+              <div className="text-lg font-bold text-gray-900 mb-2">Reporter l'intervention</div>
+              <div className="text-sm text-gray-600">
+                Indiquez vos indisponibilités pour qu'on trouve de nouvelles dates
+              </div>
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => {
+                setTypeDemande('annulation')
+                setIndisponibilites([])
+              }}
+              className={`p-6 rounded-xl border-2 transition-all ${
+                typeDemande === 'annulation'
+                  ? 'bg-red-50 border-red-500 shadow-lg'
+                  : 'bg-white border-gray-200 hover:border-red-300'
+              }`}
+            >
+              <div className="text-4xl mb-3">❌</div>
+              <div className="text-lg font-bold text-gray-900 mb-2">Annuler l'intervention</div>
+              <div className="text-sm text-gray-600">
+                Demander l'annulation complète de cette intervention
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+        {typeDemande === 'changement' && (
+          <>
         <div className="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-6 mb-8">
           <div className="flex items-start gap-3">
             <span className="text-3xl">💡</span>
@@ -256,7 +327,6 @@ export default function ModifierInterventionPage() {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit}>
           <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-lg font-bold text-gray-900">
@@ -273,19 +343,19 @@ export default function ModifierInterventionPage() {
               )}
             </div>
 
-            <div className="grid grid-cols-7 gap-2">
+            <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${colonnes}, minmax(0, 1fr))` }}>
               {allDays.map((day) => {
                 const date = new Date(day)
                 const indispo = getIndisponibilite(day)
                 const isToday = day === new Date().toISOString().split('T')[0]
                 
                 return (
-                  <div key={day} className="relative">
+                  <div key={day} className="relative flex justify-center">
                     <button
                       type="button"
                       onClick={() => handleDayClick(day)}
                       className={`
-                        w-full aspect-square rounded-lg border-2 flex flex-col items-center justify-center
+                        h-14 w-14 rounded-lg border-2 flex flex-col items-center justify-center
                         transition-all font-bold
                         ${indispo 
                           ? 'bg-red-100 border-red-400 hover:bg-red-200' 
@@ -294,14 +364,14 @@ export default function ModifierInterventionPage() {
                         ${isToday ? 'ring-2 ring-blue-500' : ''}
                       `}
                     >
-                      <div className="text-xs text-gray-600 font-medium">
+                      <div className="text-[9px] text-gray-600 font-medium">
                         {date.toLocaleDateString('fr-FR', { weekday: 'short' })}
                       </div>
-                      <div className="text-lg font-bold text-gray-900">
+                      <div className="text-sm font-bold text-gray-900">
                         {date.getDate()}
                       </div>
                       {date.getDate() === 1 && (
-                        <div className="text-xs text-gray-600 font-medium">
+                        <div className="text-[9px] text-gray-600 font-medium">
                           {date.toLocaleDateString('fr-FR', { month: 'short' })}
                         </div>
                       )}
@@ -386,6 +456,8 @@ export default function ModifierInterventionPage() {
               </div>
             </div>
           )}
+          </>
+        )}
 
           <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
             <label className="block text-base font-bold text-gray-900 mb-3">
@@ -396,7 +468,11 @@ export default function ModifierInterventionPage() {
               onChange={(e) => setFormData({ ...formData, raison: e.target.value })}
               rows={4}
               className="w-full px-4 py-3 border-2 border-gray-400 rounded-lg focus:border-blue-500 focus:outline-none text-blue-900 font-medium"
-              placeholder="Expliquez pourquoi vous avez ces indisponibilités..."
+              placeholder={
+                typeDemande === 'annulation'
+                  ? "Expliquez la raison de votre demande d'annulation..."
+                  : "Expliquez pourquoi vous avez ces indisponibilités..."
+              }
               required
             />
           </div>
@@ -412,9 +488,18 @@ export default function ModifierInterventionPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-4 px-6 rounded-lg transition-all disabled:opacity-50 text-lg"
+              className={`flex-1 font-bold py-4 px-6 rounded-lg transition-all disabled:opacity-50 text-lg ${
+                typeDemande === 'annulation'
+                  ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white'
+                  : 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white'
+              }`}
             >
-              {submitting ? '⏳ Envoi...' : '✅ Envoyer la demande'}
+              {submitting 
+                ? '⏳ Envoi...' 
+                : typeDemande === 'annulation' 
+                  ? '❌ Demander annulation' 
+                  : '✅ Envoyer la demande'
+              }
             </button>
             <a
               href="/client/interventions"

@@ -1,8 +1,18 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 
 export default function CarrieresPage() {
+  const [modalOpen, setModalOpen] = useState(false)
+  const [formData, setFormData] = useState({
+    nom: '',
+    prenom: '',
+    email: '',
+    telephone: '',
+    poste: '',
+    message: ''
+  })
   return (
     <div className="min-h-screen">
       {/* Hero */}
@@ -23,15 +33,15 @@ export default function CarrieresPage() {
             Rejoignez le leader français du nettoyage photovoltaïque et participez à la transition énergétique
           </p>
 
-          <Link 
-            href="/#contact"
+          <button 
+            onClick={() => setModalOpen(true)}
             className="bg-[#fbbf24] text-blue-900 px-10 py-4 text-base font-semibold hover:bg-[#fbbf24]/90 transition-all hover:-translate-y-0.5 inline-flex items-center gap-2"
           >
             Postuler
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
             </svg>
-          </Link>
+          </button>
         </div>
       </section>
 
@@ -216,6 +226,185 @@ export default function CarrieresPage() {
           </p>
         </div>
       </section>
+
+      {/* Modal Candidature */}
+      {modalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setModalOpen(false)}>
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            {/* Header Modal */}
+            <div className="sticky top-0 bg-gradient-to-br from-blue-600 to-blue-400 px-8 py-6 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <h3 className="text-2xl font-bold text-white">Postuler chez Solaire Nettoyage</h3>
+                <button 
+                  onClick={() => setModalOpen(false)}
+                  className="text-white hover:text-[#fbbf24] transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Formulaire */}
+            <form 
+              className="p-8 space-y-6"
+              onSubmit={(e) => {
+                e.preventDefault()
+                
+                // Préparer l'email
+                const subject = `Candidature - ${formData.poste}`
+                const body = `
+Bonjour,
+
+Je me permets de vous adresser ma candidature pour le poste de ${formData.poste}.
+
+Informations du candidat :
+- Nom : ${formData.nom}
+- Prénom : ${formData.prenom}
+- Email : ${formData.email}
+- Téléphone : ${formData.telephone}
+
+Lettre de motivation :
+${formData.message || 'Voir CV en pièce jointe'}
+
+Cordialement,
+${formData.prenom} ${formData.nom}
+                `.trim()
+                
+                // Ouvrir le client mail
+                window.location.href = `mailto:contact@solairenettoyage.fr?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+                
+                // Fermer la modal
+                setTimeout(() => setModalOpen(false), 500)
+              }}
+            >
+              {/* Nom & Prénom */}
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Nom <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.nom}
+                    onChange={(e) => setFormData({...formData, nom: e.target.value})}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900"
+                    placeholder="Dupont"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Prénom <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.prenom}
+                    onChange={(e) => setFormData({...formData, prenom: e.target.value})}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900"
+                    placeholder="Jean"
+                  />
+                </div>
+              </div>
+
+              {/* Email & Téléphone */}
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Email <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900"
+                    placeholder="jean.dupont@email.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Téléphone <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    value={formData.telephone}
+                    onChange={(e) => setFormData({...formData, telephone: e.target.value})}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900"
+                    placeholder="06 12 34 56 78"
+                  />
+                </div>
+              </div>
+
+              {/* Poste visé */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Poste visé <span className="text-red-500">*</span>
+                </label>
+                <select
+                  required
+                  value={formData.poste}
+                  onChange={(e) => setFormData({...formData, poste: e.target.value})}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900"
+                >
+                  <option value="">Sélectionnez un poste</option>
+                  <option value="Technicien de nettoyage photovoltaïque">Technicien de nettoyage photovoltaïque</option>
+                  <option value="Chef d'équipe">Chef d'équipe</option>
+                  <option value="Conducteur de nacelle">Conducteur de nacelle</option>
+                  <option value="Candidature spontanée">Candidature spontanée</option>
+                </select>
+              </div>
+
+              {/* CV Upload */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  CV (à joindre dans votre email)
+                </label>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-gray-900">
+                    📎 Après avoir cliqué sur "Envoyer", votre logiciel mail s'ouvrira automatiquement. 
+                    Vous pourrez alors joindre votre CV avant d'envoyer le message.
+                  </p>
+                </div>
+              </div>
+
+              {/* Message / Lettre de motivation */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Lettre de motivation
+                </label>
+                <textarea
+                  value={formData.message}
+                  onChange={(e) => setFormData({...formData, message: e.target.value})}
+                  rows={6}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none text-gray-900"
+                  placeholder="Parlez-nous de votre motivation, votre expérience, vos compétences..."
+                />
+              </div>
+
+              {/* Boutons */}
+              <div className="flex gap-4 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  className="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-50 transition-all"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-6 py-3 bg-[#fbbf24] text-blue-900 rounded-lg font-semibold hover:bg-[#fbbf24]/90 transition-all"
+                >
+                  Envoyer ma candidature
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

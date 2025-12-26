@@ -49,32 +49,63 @@ export interface SiteImport extends SiteComplet {
 
 const SITES_COLLECTION = 'sites'
 
-// Importer plusieurs sites depuis Excel
+// Importer plusieurs sites depuis Excel AVEC détection de doublons
 export async function importSitesFromExcel(
   sites: Omit<SiteComplet, 'id'>[],
   clientId: string,
   groupeId: string
-): Promise<{ success: number; errors: string[] }> {
+): Promise<{ success: number; updated: number; errors: string[]; duplicates: string[] }> {
   let success = 0
+  let updated = 0
   const errors: string[] = []
+  const duplicates: string[] = []
+
+  // Charger tous les sites existants pour ce client
+  const q = query(collection(db, SITES_COLLECTION), where('clientId', '==', clientId))
+  const snapshot = await getDocs(q)
+  
+  // Créer un index des sites existants par complementNom
+  const existingSites = new Map<string, string>()
+  snapshot.forEach(docSnap => {
+    const site = docSnap.data()
+    if (site.complementNom) {
+      existingSites.set(site.complementNom.trim().toLowerCase(), docSnap.id)
+    }
+  })
 
   for (const site of sites) {
     try {
-      const siteRef = doc(collection(db, SITES_COLLECTION))
-      await setDoc(siteRef, {
-        ...site,
-        clientId,
-        groupeId,
-        createdAt: new Date().toISOString()
-      })
-      success++
+      const complementNomKey = site.complementNom?.trim().toLowerCase() || ''
+      
+      if (complementNomKey && existingSites.has(complementNomKey)) {
+        // Site existe déjà → MISE À JOUR
+        const siteId = existingSites.get(complementNomKey)!
+        await updateDoc(doc(db, SITES_COLLECTION, siteId), {
+          ...site,
+          clientId,
+          groupeId,
+          updatedAt: new Date().toISOString()
+        })
+        updated++
+        duplicates.push(site.nomSite || site.complementNom)
+      } else {
+        // Nouveau site → CRÉATION
+        const siteRef = doc(collection(db, SITES_COLLECTION))
+        await setDoc(siteRef, {
+          ...site,
+          clientId,
+          groupeId,
+          createdAt: new Date().toISOString()
+        })
+        success++
+      }
     } catch (error) {
       console.error('Erreur import site:', error)
       errors.push(`${site.nomSite}: ${error}`)
     }
   }
 
-  return { success, errors }
+  return { success, updated, errors, duplicates }
 }
 
 // Récupérer tous les sites

@@ -5,9 +5,13 @@ import { useRouter } from 'next/navigation'
 import { 
   getAllInterventionsCalendar,
   getAllEquipes,
+  getAllClients,
+  getAllGroupes,
   deleteInterventionCalendar,
   type InterventionCalendar,
-  type Equipe
+  type Equipe,
+  type Client,
+  type Groupe
 } from '@/lib/firebase'
 import ImportInterventionsModal from '@/components/ImportInterventionsModal'
 
@@ -15,10 +19,17 @@ export default function CalendrierPage() {
   const router = useRouter()
   const [interventions, setInterventions] = useState<(InterventionCalendar & { id: string })[]>([])
   const [equipes, setEquipes] = useState<Equipe[]>([])
+  const [clients, setClients] = useState<Client[]>([])
+  const [groupes, setGroupes] = useState<Groupe[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedEquipe, setSelectedEquipe] = useState<string>('all')
   const [selectedStatut, setSelectedStatut] = useState<string>('all')
+  const [selectedClient, setSelectedClient] = useState<string>('all')
+  const [selectedGroupe, setSelectedGroupe] = useState<string>('all')
+  const [searchTerm, setSearchTerm] = useState('')
   const [showImportModal, setShowImportModal] = useState(false)
+  const [selectedInterventions, setSelectedInterventions] = useState<string[]>([])
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     const userRole = localStorage.getItem('user_role')
@@ -32,12 +43,16 @@ export default function CalendrierPage() {
   const loadData = async () => {
     try {
       setLoading(true)
-      const [interventionsData, equipesData] = await Promise.all([
+      const [interventionsData, equipesData, clientsData, groupesData] = await Promise.all([
         getAllInterventionsCalendar(),
-        getAllEquipes()
+        getAllEquipes(),
+        getAllClients(),
+        getAllGroupes()
       ])
       setInterventions(interventionsData)
       setEquipes(equipesData)
+      setClients(clientsData)
+      setGroupes(groupesData)
     } catch (error) {
       console.error('Erreur:', error)
     } finally {
@@ -55,6 +70,56 @@ export default function CalendrierPage() {
     } catch (error) {
       console.error('Erreur:', error)
       alert('❌ Erreur suppression')
+    }
+  }
+
+  const toggleInterventionSelection = (id: string) => {
+    setSelectedInterventions(prev => 
+      prev.includes(id) 
+        ? prev.filter(i => i !== id)
+        : [...prev, id]
+    )
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedInterventions.length === sortedInterventions.length) {
+      setSelectedInterventions([])
+    } else {
+      setSelectedInterventions(sortedInterventions.map(i => i.id!))
+    }
+  }
+
+  const handleDeleteSelected = async () => {
+    if (selectedInterventions.length === 0) {
+      alert('⚠️ Aucune intervention sélectionnée')
+      return
+    }
+
+    if (!confirm(`Supprimer ${selectedInterventions.length} intervention(s) sélectionnée(s) ?`)) return
+
+    try {
+      setDeleting(true)
+      let success = 0
+      let errors = 0
+
+      for (const id of selectedInterventions) {
+        try {
+          await deleteInterventionCalendar(id)
+          success++
+        } catch (error) {
+          console.error(`Erreur suppression ${id}:`, error)
+          errors++
+        }
+      }
+
+      alert(`✅ ${success} intervention(s) supprimée(s)${errors > 0 ? ` - ${errors} erreur(s)` : ''}`)
+      setSelectedInterventions([])
+      loadData()
+    } catch (error) {
+      console.error('Erreur suppression multiple:', error)
+      alert('❌ Erreur lors de la suppression')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -79,11 +144,31 @@ export default function CalendrierPage() {
 
   // Filtrer interventions
   const filteredInterventions = interventions.filter(inter => {
+    // Filtre équipe
     if (selectedEquipe !== 'all' && inter.equipeId !== parseInt(selectedEquipe)) {
       return false
     }
+    // Filtre statut
     if (selectedStatut !== 'all' && inter.statut !== selectedStatut) {
       return false
+    }
+    // Filtre client
+    if (selectedClient !== 'all' && inter.clientId !== selectedClient) {
+      return false
+    }
+    // Filtre groupe
+    if (selectedGroupe !== 'all' && inter.groupeId !== selectedGroupe) {
+      return false
+    }
+    // Recherche intelligente
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase()
+      return (
+        inter.siteName?.toLowerCase().includes(search) ||
+        inter.clientName?.toLowerCase().includes(search) ||
+        inter.notes?.toLowerCase().includes(search) ||
+        inter.type?.toLowerCase().includes(search)
+      )
     }
     return true
   })
@@ -196,36 +281,99 @@ export default function CalendrierPage() {
 
         {/* Filtres */}
         <div className="bg-white rounded-xl shadow-lg border border-blue-200 p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <h2 className="text-lg font-bold text-gray-900 mb-4">🔍 Filtres</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Recherche intelligente */}
+            <div className="md:col-span-3">
+              <label className="block text-sm font-bold text-gray-900 mb-2">Recherche</label>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Rechercher par site, client, notes, type..."
+                className="w-full px-4 py-2 border-2 border-gray-400 rounded-lg focus:border-purple-500 focus:outline-none text-gray-900"
+              />
+            </div>
+
+            {/* Filtre Groupe */}
             <div>
-              <label className="block text-base font-bold text-gray-900 mb-2">Filtrer par équipe</label>
+              <label className="block text-sm font-bold text-gray-900 mb-2">Groupe</label>
+              <select
+                value={selectedGroupe}
+                onChange={(e) => {
+                  setSelectedGroupe(e.target.value)
+                  setSelectedClient('all') // Reset client quand on change de groupe
+                }}
+                className="w-full px-4 py-2 border-2 border-gray-400 rounded-lg focus:border-purple-500 focus:outline-none text-gray-900"
+              >
+                <option value="all">Tous les groupes</option>
+                {groupes.map(groupe => (
+                  <option key={groupe.id} value={groupe.id}>
+                    {groupe.nom} ({interventions.filter(i => i.groupeId === groupe.id).length})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Filtre Client */}
+            <div>
+              <label className="block text-sm font-bold text-gray-900 mb-2">Client</label>
+              <select
+                value={selectedClient}
+                onChange={(e) => setSelectedClient(e.target.value)}
+                className="w-full px-4 py-2 border-2 border-gray-400 rounded-lg focus:border-purple-500 focus:outline-none text-gray-900"
+              >
+                <option value="all">Tous les clients</option>
+                {clients
+                  .filter(c => selectedGroupe === 'all' || c.groupeId === selectedGroupe)
+                  .map(client => (
+                    <option key={client.id} value={client.id}>
+                      {client.company} ({interventions.filter(i => i.clientId === client.id).length})
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            {/* Filtre Équipe */}
+            <div>
+              <label className="block text-sm font-bold text-gray-900 mb-2">Équipe</label>
               <select
                 value={selectedEquipe}
                 onChange={(e) => setSelectedEquipe(e.target.value)}
-                className="w-full px-4 py-2 border-2 border-gray-400 rounded-lg focus:border-purple-500 focus:outline-none text-gray-900 font-bold"
+                className="w-full px-4 py-2 border-2 border-gray-400 rounded-lg focus:border-purple-500 focus:outline-none text-gray-900"
               >
-                <option value="all">Toutes les équipes ({interventions.length})</option>
+                <option value="all">Toutes les équipes</option>
                 <option value="1">🔴 Équipe 1 ({interventions.filter(i => i.equipeId === 1).length})</option>
                 <option value="2">🔵 Équipe 2 ({interventions.filter(i => i.equipeId === 2).length})</option>
                 <option value="3">🟢 Équipe 3 ({interventions.filter(i => i.equipeId === 3).length})</option>
               </select>
             </div>
 
-            <div>
-              <label className="block text-base font-bold text-gray-900 mb-2">Filtrer par statut</label>
+            {/* Filtre Statut */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-bold text-gray-900 mb-2">Statut</label>
               <select
                 value={selectedStatut}
                 onChange={(e) => setSelectedStatut(e.target.value)}
-                className="w-full px-4 py-2 border-2 border-gray-400 rounded-lg focus:border-purple-500 focus:outline-none text-gray-900 font-bold"
+                className="w-full px-4 py-2 border-2 border-gray-400 rounded-lg focus:border-purple-500 focus:outline-none text-gray-900"
               >
-                <option value="all">Tous les statuts ({interventions.length})</option>
-                <option value="Planifiée">Planifiée ({stats.planifiees})</option>
-                <option value="En cours">En cours ({stats.enCours})</option>
-                <option value="Terminée">Terminée ({stats.terminees})</option>
-                <option value="Demande modification">Demande modification ({stats.demandes})</option>
+                <option value="all">Tous les statuts</option>
+                <option value="Planifiée">📅 Planifiée ({stats.planifiees})</option>
+                <option value="En cours">🔄 En cours ({stats.enCours})</option>
+                <option value="Terminée">✅ Terminée ({stats.terminees})</option>
+                <option value="Demande modification">🔔 Demande modification ({stats.demandes})</option>
               </select>
             </div>
           </div>
+
+          {/* Afficher le résultat du filtrage */}
+          {(searchTerm || selectedGroupe !== 'all' || selectedClient !== 'all' || selectedEquipe !== 'all' || selectedStatut !== 'all') && (
+            <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+              <p className="text-sm font-bold text-purple-900">
+                {filteredInterventions.length} intervention(s) trouvée(s) sur {interventions.length} au total
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Liste interventions */}
@@ -235,6 +383,36 @@ export default function CalendrierPage() {
               📋 Interventions ({sortedInterventions.length})
             </h3>
           </div>
+
+          {/* Barre d'actions sélection */}
+          {sortedInterventions.length > 0 && (
+            <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={toggleSelectAll}
+                  className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white text-sm font-medium rounded-lg transition-colors"
+                >
+                  {selectedInterventions.length === sortedInterventions.length && sortedInterventions.length > 0
+                    ? '◻️ Tout désélectionner'
+                    : '☑️ Tout sélectionner'}
+                </button>
+                {selectedInterventions.length > 0 && (
+                  <span className="text-sm text-gray-700 font-medium">
+                    {selectedInterventions.length} intervention(s) sélectionnée(s)
+                  </span>
+                )}
+              </div>
+              {selectedInterventions.length > 0 && (
+                <button
+                  onClick={handleDeleteSelected}
+                  disabled={deleting}
+                  className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-bold rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {deleting ? '⏳ Suppression...' : `🗑️ Supprimer (${selectedInterventions.length})`}
+                </button>
+              )}
+            </div>
+          )}
 
           {sortedInterventions.length === 0 ? (
             <div className="p-12 text-center">
@@ -270,7 +448,18 @@ export default function CalendrierPage() {
             <div className="divide-y divide-blue-100">
               {sortedInterventions.map((inter) => (
                 <div key={inter.id} className="p-6 hover:bg-blue-50">
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-4">
+                    {/* Checkbox */}
+                    <div className="pt-1">
+                      <input
+                        type="checkbox"
+                        checked={selectedInterventions.includes(inter.id!)}
+                        onChange={() => toggleInterventionSelection(inter.id!)}
+                        className="w-5 h-5 cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Contenu intervention */}
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-3">
                         <span className={`px-4 py-1 rounded-full text-sm font-bold border-2 ${getEquipeCouleur(inter.equipeId)}`}>
@@ -425,7 +614,14 @@ export default function CalendrierPage() {
                       )}
                     </div>
 
-                    <div className="flex gap-2 ml-4">
+                    {/* Boutons actions */}
+                    <div className="flex gap-2">
+                      <a
+                        href={`/admin/interventions/${inter.id}`}
+                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-bold transition-colors"
+                      >
+                        👁️ Détail
+                      </a>
                       <a
                         href={`/admin/interventions/${inter.id}/modifier`}
                         className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold transition-colors"

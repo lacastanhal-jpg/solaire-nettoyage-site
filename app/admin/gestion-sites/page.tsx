@@ -25,6 +25,8 @@ export default function GestionSitesPage() {
   const [showModal, setShowModal] = useState(false)
   const [editingSite, setEditingSite] = useState<(SiteComplet & { id: string }) | null>(null)
   const [saving, setSaving] = useState(false)
+  const [selectedSites, setSelectedSites] = useState<string[]>([])
+  const [deleting, setDeleting] = useState(false)
   const [formData, setFormData] = useState<Partial<SiteComplet>>({
     clientId: '',
     groupeId: '',
@@ -205,6 +207,56 @@ export default function GestionSitesPage() {
     } catch (error) {
       console.error('Erreur suppression:', error)
       alert('❌ Erreur lors de la suppression')
+    }
+  }
+
+  const toggleSiteSelection = (siteId: string) => {
+    setSelectedSites(prev => 
+      prev.includes(siteId) 
+        ? prev.filter(id => id !== siteId)
+        : [...prev, siteId]
+    )
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedSites.length === filteredSites.length) {
+      setSelectedSites([])
+    } else {
+      setSelectedSites(filteredSites.map(site => site.id))
+    }
+  }
+
+  const handleDeleteSelected = async () => {
+    if (selectedSites.length === 0) {
+      alert('⚠️ Aucun site sélectionné')
+      return
+    }
+
+    if (!confirm(`Supprimer ${selectedSites.length} site(s) sélectionné(s) ?`)) return
+
+    try {
+      setDeleting(true)
+      let success = 0
+      let errors = 0
+
+      for (const siteId of selectedSites) {
+        try {
+          await deleteSiteComplet(siteId)
+          success++
+        } catch (error) {
+          console.error(`Erreur suppression ${siteId}:`, error)
+          errors++
+        }
+      }
+
+      alert(`✅ ${success} site(s) supprimé(s)${errors > 0 ? ` - ${errors} erreur(s)` : ''}`)
+      setSelectedSites([])
+      loadData()
+    } catch (error) {
+      console.error('Erreur suppression multiple:', error)
+      alert('❌ Erreur lors de la suppression')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -398,10 +450,46 @@ export default function GestionSitesPage() {
 
         {/* Tableau Sites */}
         <div className="bg-white rounded-xl shadow-lg border border-blue-200 overflow-hidden">
+          {/* Barre d'actions */}
+          <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={toggleSelectAll}
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                {selectedSites.length === filteredSites.length && filteredSites.length > 0
+                  ? '◻️ Tout désélectionner'
+                  : '☑️ Tout sélectionner'}
+              </button>
+              {selectedSites.length > 0 && (
+                <span className="text-sm text-gray-700 font-medium">
+                  {selectedSites.length} site(s) sélectionné(s)
+                </span>
+              )}
+            </div>
+            {selectedSites.length > 0 && (
+              <button
+                onClick={handleDeleteSelected}
+                disabled={deleting}
+                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-bold rounded-lg transition-colors disabled:opacity-50"
+              >
+                {deleting ? '⏳ Suppression...' : `🗑️ Supprimer (${selectedSites.length})`}
+              </button>
+            )}
+          </div>
+
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-blue-50 border-b border-blue-200">
                 <tr>
+                  <th className="px-4 py-3 text-center text-xs font-bold text-blue-900 uppercase w-12">
+                    <input
+                      type="checkbox"
+                      checked={selectedSites.length === filteredSites.length && filteredSites.length > 0}
+                      onChange={toggleSelectAll}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                  </th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-blue-900 uppercase">ID</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-blue-900 uppercase">Nom Site</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-blue-900 uppercase">Ville</th>
@@ -415,13 +503,21 @@ export default function GestionSitesPage() {
               <tbody className="divide-y divide-blue-100">
                 {filteredSites.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-8 text-center text-blue-600">
+                    <td colSpan={9} className="px-6 py-8 text-center text-blue-600">
                       Aucun site trouvé
                     </td>
                   </tr>
                 ) : (
                   filteredSites.map((site) => (
                     <tr key={site.id} className="hover:bg-blue-50">
+                      <td className="px-4 py-3 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedSites.includes(site.id)}
+                          onChange={() => toggleSiteSelection(site.id)}
+                          className="w-4 h-4 cursor-pointer"
+                        />
+                      </td>
                       <td className="px-4 py-3 whitespace-nowrap text-blue-900 font-mono text-xs">
                         {site.complementNom || '-'}
                       </td>

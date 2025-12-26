@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { X, Upload, FileSpreadsheet, Edit2, Trash2, Check } from 'lucide-react'
 import { db } from '@/lib/firebase'
-import { collection, addDoc, query, where, getDocs } from 'firebase/firestore'
+import { collection, addDoc, query, where, getDocs, updateDoc } from 'firebase/firestore'
 
 interface Intervention {
   ref: string
@@ -33,11 +33,24 @@ export default function ImportInterventionsModal({
   onClose,
   onSuccess,
 }: ImportInterventionsModalProps) {
-  const [step, setStep] = useState<'upload' | 'preview'>('upload')
+  const [step, setStep] = useState<'upload' | 'preview' | 'results'>('upload')
   const [file, setFile] = useState<File | null>(null)
   const [interventions, setInterventions] = useState<Intervention[]>([])
   const [error, setError] = useState<string>('')
   const [loading, setLoading] = useState(false)
+  const [importResults, setImportResults] = useState<{
+    created: string[]
+    updated: string[]
+    errors: { site: string; reason: string }[]
+  }>({ created: [], updated: [], errors: [] })
+
+  // Fonction pour normaliser les noms de sites
+  const normalizeSiteName = (name: string): string => {
+    return name
+      .trim() // Supprimer espaces début/fin
+      .replace(/\s+/g, ' ') // Remplacer espaces multiples par un seul
+      .toLowerCase() // Tout en minuscules
+  }
 
   if (!isOpen) return null
 
@@ -76,47 +89,140 @@ export default function ImportInterventionsModal({
     setFile(null)
     setInterventions([])
     setError('')
+    setImportResults({ created: [], updated: [], errors: [] })
     onClose()
+  }
+
+  const handleCloseWithRefresh = () => {
+    onSuccess() // Rafraîchir le calendrier
+    handleClose()
+  }
+
+  const handleExportReport = () => {
+    const timestamp = new Date().toLocaleString('fr-FR')
+    let report = `RAPPORT D'IMPORT INTERVENTIONS
+Date : ${timestamp}
+===========================================
+
+RÉSUMÉ
+------
+✅ Interventions créées : ${importResults.created.length}
+🔄 Interventions mises à jour : ${importResults.updated.length}
+❌ Erreurs : ${importResults.errors.length}
+
+`
+
+    if (importResults.created.length > 0) {
+      report += `\nINTERVENTIONS CRÉÉES (${importResults.created.length})
+${'='.repeat(50)}\n`
+      importResults.created.forEach((site, idx) => {
+        report += `${idx + 1}. ${site}\n`
+      })
+    }
+
+    if (importResults.updated.length > 0) {
+      report += `\n\nINTERVENTIONS MISES À JOUR (${importResults.updated.length})
+${'='.repeat(50)}\n`
+      importResults.updated.forEach((site, idx) => {
+        report += `${idx + 1}. ${site}\n`
+      })
+    }
+
+    if (importResults.errors.length > 0) {
+      report += `\n\nERREURS DÉTAILLÉES (${importResults.errors.length})
+${'='.repeat(50)}\n`
+      importResults.errors.forEach((error, idx) => {
+        report += `\n${idx + 1}. ${error.site}\n   → ${error.reason}\n`
+      })
+    }
+
+    // Créer un blob et télécharger
+    const blob = new Blob([report], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `rapport-import-interventions-${new Date().toISOString().split('T')[0]}.txt`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
   }
 
   const handleCreateInterventions = async () => {
     setLoading(true)
 
+    const created: string[] = []
+    const updated: string[] = []
+    const errors: { site: string; reason: string }[] = []
+
     try {
-      let created = 0
+      // Charger TOUS les sites UNE FOIS pour optimiser
+      const allSitesQuery = query(collection(db, 'sites'))
+      const allSitesSnapshot = await getDocs(allSitesQuery)
+      
+      // Créer un index des sites normalisés
+      const sitesIndex = new Map<string, any>()
+      allSitesSnapshot.docs.forEach(doc => {
+        const site = doc.data()
+        const normalizedComplementNom = normalizeSiteName(site.complementNom || '')
+        const normalizedNomSite = normalizeSiteName(site.nomSite || '')
+        
+        const siteData = { id: doc.id, ...site }
+        
+        // Indexer par les deux noms possibles
+        if (normalizedComplementNom) sitesIndex.set(normalizedComplementNom, siteData)
+        if (normalizedNomSite) sitesIndex.set(normalizedNomSite, siteData)
+      })
 
       for (const interv of interventions) {
         try {
-          // Vérifier si le site existe
-          const sitesQuery = query(
-            collection(db, 'sites'),
-            where('nom', '==', interv.site.nom)
-          )
-          const sitesSnapshot = await getDocs(sitesQuery)
+          // Normaliser le nom du site recherché
+          const searchName = normalizeSiteName(interv.site.nom)
 
-          let siteId
-          if (sitesSnapshot.empty) {
-            // Créer le site
-            const siteRef = await addDoc(collection(db, 'sites'), {
-              nom: interv.site.nom,
-              surface: interv.site.surface,
-              client: interv.client,
-              createdAt: new Date(),
+          // Chercher dans l'index
+          const siteData = sitesIndex.get(searchName)
+
+          if (!siteData) {
+            errors.push({
+              site: interv.site.nom,
+              reason: 'Site non trouvé dans la base de données (vérifier espaces et majuscules)'
             })
-            siteId = siteRef.id
-          } else {
-            siteId = sitesSnapshot.docs[0].id
+            continue
           }
 
-          // Créer l'intervention dans interventions_calendar
-          await addDoc(collection(db, 'interventions_calendar'), {
-            siteId,
+          // Récupérer clientId et groupeId du site
+          const clientId = siteData.clientId
+          const groupeId = siteData.groupeId
+
+          if (!clientId || !groupeId) {
+            errors.push({
+              site: interv.site.nom,
+              reason: 'Site sans client ou groupe (données incomplètes)'
+            })
+            continue
+          }
+
+          // Date début pour la recherche de doublon
+          const dateDebut = interv.dateDebut
+            ? new Date(interv.dateDebut).toISOString().split('T')[0]
+            : new Date().toISOString().split('T')[0]
+
+          // DÉTECTION DE DOUBLON : siteId + dateDebut
+          const existingQuery = query(
+            collection(db, 'interventions_calendar'),
+            where('siteId', '==', siteData.id),
+            where('dateDebut', '==', dateDebut)
+          )
+          const existingSnapshot = await getDocs(existingQuery)
+
+          const interventionData = {
+            siteId: siteData.id,
             siteName: interv.site.nom,
+            clientId: clientId,
+            groupeId: groupeId,
             clientName: interv.client,
             surface: interv.quantite,
-            dateDebut: interv.dateDebut
-              ? new Date(interv.dateDebut).toISOString().split('T')[0]
-              : new Date().toISOString().split('T')[0],
+            dateDebut: dateDebut,
             dateFin: interv.dateFin
               ? new Date(interv.dateFin).toISOString().split('T')[0]
               : new Date().toISOString().split('T')[0],
@@ -126,18 +232,37 @@ export default function ImportInterventionsModal({
             statut: 'Planifiée',
             equipeId: 1,
             notes: interv.description || '',
-            createdAt: new Date(),
-          })
+          }
 
-          created++
-        } catch (err) {
+          if (!existingSnapshot.empty) {
+            // DOUBLON DÉTECTÉ → MISE À JOUR
+            const existingDoc = existingSnapshot.docs[0]
+            await updateDoc(existingDoc.ref, {
+              ...interventionData,
+              updatedAt: new Date(),
+            })
+            updated.push(interv.site.nom)
+          } else {
+            // NOUVELLE INTERVENTION → CRÉATION
+            await addDoc(collection(db, 'interventions_calendar'), {
+              ...interventionData,
+              createdAt: new Date(),
+            })
+            created.push(interv.site.nom)
+          }
+        } catch (err: any) {
           console.error('Erreur intervention:', err)
+          errors.push({
+            site: interv.site.nom,
+            reason: err.message || 'Erreur inconnue'
+          })
         }
       }
 
-      alert(`✅ ${created} interventions créées !`)
-      onSuccess()
-      handleClose()
+      // Stocker les résultats et passer à l'étape results
+      setImportResults({ created, updated, errors })
+      setStep('results')
+      // Ne PAS appeler onSuccess() ici - on le fera à la fermeture
     } catch (err: any) {
       console.error('Erreur:', err)
       alert('❌ Erreur lors de la création')
@@ -246,16 +371,114 @@ export default function ImportInterventionsModal({
               </div>
             </div>
           )}
+
+          {step === 'results' && (
+            <div className="space-y-4">
+              {/* Résumé */}
+              <div className="bg-blue-50 border border-blue-300 rounded-lg p-4">
+                <h3 className="font-bold text-blue-900 text-lg mb-2">📊 Résultats de l'import</h3>
+                <div className="space-y-1 text-sm">
+                  {importResults.created.length > 0 && (
+                    <p className="text-green-700 font-bold">
+                      ✅ {importResults.created.length} intervention(s) créée(s)
+                    </p>
+                  )}
+                  {importResults.updated.length > 0 && (
+                    <p className="text-blue-700 font-bold">
+                      🔄 {importResults.updated.length} intervention(s) mise(s) à jour
+                    </p>
+                  )}
+                  {importResults.errors.length > 0 && (
+                    <p className="text-red-700 font-bold">
+                      ❌ {importResults.errors.length} erreur(s)
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Interventions créées */}
+              {importResults.created.length > 0 && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <h4 className="font-bold text-green-900 mb-2">
+                    ✅ Interventions créées ({importResults.created.length})
+                  </h4>
+                  <div className="max-h-32 overflow-y-auto space-y-1">
+                    {importResults.created.slice(0, 10).map((site, idx) => (
+                      <p key={idx} className="text-sm text-green-800">{site}</p>
+                    ))}
+                    {importResults.created.length > 10 && (
+                      <p className="text-xs text-green-600 mt-1">
+                        ... et {importResults.created.length - 10} autre(s)
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Interventions mises à jour */}
+              {importResults.updated.length > 0 && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="font-bold text-blue-900 mb-2">
+                    🔄 Interventions mises à jour ({importResults.updated.length})
+                  </h4>
+                  <div className="max-h-32 overflow-y-auto space-y-1">
+                    {importResults.updated.slice(0, 10).map((site, idx) => (
+                      <p key={idx} className="text-sm text-blue-800">{site}</p>
+                    ))}
+                    {importResults.updated.length > 10 && (
+                      <p className="text-xs text-blue-600 mt-1">
+                        ... et {importResults.updated.length - 10} autre(s)
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* ERREURS DÉTAILLÉES */}
+              {importResults.errors.length > 0 && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <h4 className="font-bold text-red-900 mb-3">
+                    ❌ Erreurs détaillées ({importResults.errors.length})
+                  </h4>
+                  <div className="max-h-64 overflow-y-auto space-y-2">
+                    {importResults.errors.map((error, idx) => (
+                      <div key={idx} className="bg-white border border-red-200 rounded p-3">
+                        <p className="font-bold text-red-900 text-sm">{error.site}</p>
+                        <p className="text-xs text-red-700 mt-1">→ {error.reason}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="border-t p-6 flex items-center justify-between bg-gray-50">
-          <button
-            onClick={handleClose}
-            disabled={loading}
-            className="px-6 py-2 border-2 border-gray-400 rounded-lg hover:bg-gray-100 disabled:opacity-50 text-gray-900 font-bold"
-          >
-            Annuler
-          </button>
+          {step === 'results' ? (
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={handleExportReport}
+                className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold flex items-center justify-center gap-2"
+              >
+                📥 Télécharger rapport
+              </button>
+              <button
+                onClick={handleCloseWithRefresh}
+                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold"
+              >
+                Fermer
+              </button>
+            </div>
+          ) : (
+            <>
+              <button
+                onClick={handleClose}
+                disabled={loading}
+                className="px-6 py-2 border-2 border-gray-400 rounded-lg hover:bg-gray-100 disabled:opacity-50 text-gray-900 font-bold"
+              >
+                Annuler
+              </button>
 
           {step === 'upload' && (
             <button
@@ -276,6 +499,8 @@ export default function ImportInterventionsModal({
               <Check className="w-5 h-5" />
               {loading ? 'Création...' : `Créer ${interventions.length} intervention(s)`}
             </button>
+          )}
+            </>
           )}
         </div>
       </div>
