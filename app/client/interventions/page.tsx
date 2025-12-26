@@ -122,11 +122,7 @@ export default function ClientInterventionsPage() {
         // Type
         inter.type?.toLowerCase().includes(search) ||
         // Statut
-        inter.statut?.toLowerCase().includes(search) ||
-        // Technicien (si rapport)
-        inter.rapport?.technicien?.toLowerCase().includes(search) ||
-        // N° intervention (si rapport)
-        inter.rapport?.numeroIntervention?.toLowerCase().includes(search)
+        inter.statut?.toLowerCase().includes(search)
       )
     })
   }
