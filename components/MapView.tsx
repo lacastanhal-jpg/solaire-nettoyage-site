@@ -30,8 +30,8 @@ interface MapViewProps {
   center?: { lat: number; lng: number }
   zoom?: number
   height?: string
-  onMarkerClick?: (site: SiteComplet & { id: string }) => void
-  selectedSite?: (SiteComplet & { id: string }) | null
+  onMarkerClick?: (site: SiteComplet) => void
+  selectedSite?: SiteComplet | null
 }
 
 // Composant pour ajuster les bounds automatiquement
