@@ -359,7 +359,7 @@ export default function ClientInterventionsPage() {
                               🚨 Urgence
                             </span>
                           )}
-                          {inter.rapport && (
+                          {inter.rapportUrl && (
                             <span className="px-3 py-1 text-xs font-bold rounded-full bg-green-100 text-green-900 border-2 border-green-300">
                               📄 Rapport disponible
                             </span>
@@ -413,14 +413,14 @@ export default function ClientInterventionsPage() {
                         )}
 
                         {/* Rapport d'intervention */}
-                        {inter.rapport && (
+                        {inter.rapportUrl && (
                           <div className="mt-4 p-4 bg-gradient-to-br from-green-50 to-blue-50 border-2 border-green-200 rounded-lg">
-                            <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center justify-between">
                               <h5 className="text-base font-bold text-green-900">
-                                📄 Rapport d'intervention
+                                📄 Rapport d'intervention disponible
                               </h5>
                               <a
-                                href={inter.rapport.pdfUrl}
+                                href={inter.rapportUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-lg transition-colors inline-flex items-center gap-2"
@@ -430,91 +430,6 @@ export default function ClientInterventionsPage() {
                                 </svg>
                                 Télécharger PDF
                               </a>
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-3 text-sm">
-                              {/* N° Intervention */}
-                              {inter.rapport.numeroIntervention && (
-                                <div>
-                                  <span className="font-bold text-gray-900">N° Intervention :</span>
-                                  <p className="text-gray-700">{inter.rapport.numeroIntervention}</p>
-                                </div>
-                              )}
-                              
-                              {/* Date intervention */}
-                              {inter.rapport.dateIntervention && (
-                                <div>
-                                  <span className="font-bold text-gray-900">Date intervention :</span>
-                                  <p className="text-gray-700">{inter.rapport.dateIntervention}</p>
-                                </div>
-                              )}
-                              
-                              {/* Technicien */}
-                              {inter.rapport.technicien && (
-                                <div>
-                                  <span className="font-bold text-gray-900">Technicien :</span>
-                                  <p className="text-gray-700">{inter.rapport.technicien}</p>
-                                </div>
-                              )}
-                              
-                              {/* Type intervention */}
-                              {inter.rapport.typeIntervention && (
-                                <div>
-                                  <span className="font-bold text-gray-900">Type :</span>
-                                  <p className="text-gray-700">{inter.rapport.typeIntervention}</p>
-                                </div>
-                              )}
-                              
-                              {/* Matériel utilisé */}
-                              {inter.rapport.materiel && inter.rapport.materiel.length > 0 && !inter.rapport.materiel.includes('Non spécifié') && (
-                                <div className="col-span-2">
-                                  <span className="font-bold text-gray-900">Matériel utilisé :</span>
-                                  <p className="text-gray-700">{inter.rapport.materiel.join(', ')}</p>
-                                </div>
-                              )}
-                              
-                              {/* Eau utilisée */}
-                              {inter.rapport.eauUtilisee && inter.rapport.eauUtilisee.length > 0 && !inter.rapport.eauUtilisee.includes('Non spécifié') && (
-                                <div className="col-span-2">
-                                  <span className="font-bold text-gray-900">Eau utilisée :</span>
-                                  <p className="text-gray-700">{inter.rapport.eauUtilisee.join(', ')}</p>
-                                </div>
-                              )}
-                              
-                              {/* Niveau encrassement */}
-                              {inter.rapport.niveauEncrassement && (
-                                <div>
-                                  <span className="font-bold text-gray-900">Encrassement :</span>
-                                  <p className="text-gray-700">{inter.rapport.niveauEncrassement}</p>
-                                </div>
-                              )}
-                              
-                              {/* Type encrassement */}
-                              {inter.rapport.typeEncrassement && inter.rapport.typeEncrassement.length > 0 && !inter.rapport.typeEncrassement.includes('Non spécifié') && (
-                                <div>
-                                  <span className="font-bold text-gray-900">Type encrassement :</span>
-                                  <p className="text-gray-700">{inter.rapport.typeEncrassement.join(', ')}</p>
-                                </div>
-                              )}
-                              
-                              {/* Détails encrassement */}
-                              {inter.rapport.detailsEncrassement && (
-                                <div className="col-span-2">
-                                  <span className="font-bold text-gray-900">Détails :</span>
-                                  <p className="text-gray-700">{inter.rapport.detailsEncrassement}</p>
-                                </div>
-                              )}
-                              
-                              {/* Date upload */}
-                              <div className="col-span-2 text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200">
-                                <span className="font-bold">Rapport uploadé le :</span> {new Date(inter.rapport.uploadedAt).toLocaleDateString('fr-FR', {
-                                  day: 'numeric',
-                                  month: 'long',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </div>
                             </div>
                           </div>
                         )}
