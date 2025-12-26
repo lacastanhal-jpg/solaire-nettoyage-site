@@ -34,7 +34,7 @@ export default function ClientDashboard() {
   
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'clients' | 'sites' | 'interventions' | 'carte'>('clients')
-  const [selectedSite, setSelectedSite] = useState<(SiteComplet & { id: string }) | null>(null)
+  const [selectedSite, setSelectedSite] = useState<SiteComplet | null>(null)
   const [showOnlySitesWithInter, setShowOnlySitesWithInter] = useState(false)
   const [showOnlyMapSitesWithInter, setShowOnlyMapSitesWithInter] = useState(false)
 
