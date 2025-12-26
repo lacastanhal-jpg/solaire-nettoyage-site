@@ -4,11 +4,9 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
   getAllInterventionsCalendar,
-  getAllClients,
   accepterChangementDate,
   refuserChangementDate,
-  type InterventionCalendar,
-  type Client
+  type InterventionCalendar
 } from '@/lib/firebase'
 import { updateDoc, doc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/config'
@@ -16,7 +14,6 @@ import { db } from '@/lib/firebase/config'
 export default function DemandesModificationsPage() {
   const router = useRouter()
   const [interventions, setInterventions] = useState<(InterventionCalendar & { id: string })[]>([])
-  const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState<string | null>(null)
 
@@ -32,10 +29,7 @@ export default function DemandesModificationsPage() {
   const loadDemandes = async () => {
     try {
       setLoading(true)
-      const [data, clientsData] = await Promise.all([
-        getAllInterventionsCalendar(),
-        getAllClients()
-      ])
+      const data = await getAllInterventionsCalendar()
       
       const demandes = data.filter(i => i.statut === 'Demande modification')
       
@@ -47,17 +41,11 @@ export default function DemandesModificationsPage() {
       })
       
       setInterventions(demandesSorted)
-      setClients(clientsData)
     } catch (error) {
       console.error('Erreur:', error)
     } finally {
       setLoading(false)
     }
-  }
-
-  const getClientName = (clientId: string) => {
-    const client = clients.find(c => c.id === clientId)
-    return client?.entreprise || 'Client inconnu'
   }
 
   const handleAccepter = async (inter: InterventionCalendar & { id: string }) => {
@@ -178,7 +166,7 @@ export default function DemandesModificationsPage() {
                           </span>
                         </div>
                         <p className="text-sm text-gray-600 font-medium">
-                          {getClientName(inter.clientId)}
+                          {inter.clientName}
                         </p>
                       </div>
                       <div className="text-sm text-gray-500">
