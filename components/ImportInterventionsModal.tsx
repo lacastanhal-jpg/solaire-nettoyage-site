@@ -221,7 +221,7 @@ ${'='.repeat(50)}\n`
             clientId: clientId,
             groupeId: groupeId,
             clientName: interv.client,
-            surface: interv.quantite,
+            surface: interv.site.surface || 0,
             dateDebut: dateDebut,
             dateFin: interv.dateFin
               ? new Date(interv.dateFin).toISOString().split('T')[0]
