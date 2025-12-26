@@ -110,8 +110,8 @@ export default function ClientDashboard() {
     planifiees: interventions.filter(i => i.statut === 'Planifiée').length,
     enCours: interventions.filter(i => i.statut === 'En cours').length,
     terminees: interventions.filter(i => i.statut === 'Terminée').length,
-    termineesSansRapport: interventions.filter(i => i.statut === 'Terminée' && !i.rapport).length,
-    termineesAvecRapport: interventions.filter(i => i.statut === 'Terminée' && i.rapport).length,
+    termineesSansRapport: interventions.filter(i => i.statut === 'Terminée' && !i.rapportUrl).length,
+    termineesAvecRapport: interventions.filter(i => i.statut === 'Terminée' && i.rapportUrl).length,
     annulees: interventions.filter(i => i.statut === 'Annulée').length,
     demandes: interventions.filter(i => i.statut === 'Demande modification').length
   }
