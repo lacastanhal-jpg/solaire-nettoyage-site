@@ -14,11 +14,24 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 })
 
+// Icône pour le marker sélectionné
+const selectedIcon = new L.Icon({
+  iconRetinaUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+})
+
 interface MapViewProps {
   sites: SiteComplet[]
   center?: { lat: number; lng: number }
   zoom?: number
   height?: string
+  onMarkerClick?: (site: SiteComplet & { id: string }) => void
+  selectedSite?: (SiteComplet & { id: string }) | null
 }
 
 // Composant pour ajuster les bounds automatiquement
@@ -37,7 +50,7 @@ function MapBounds({ sites }: { sites: SiteComplet[] }) {
   return null
 }
 
-export default function MapView({ sites, center, zoom = 6, height = '600px' }: MapViewProps) {
+export default function MapView({ sites, center, zoom = 6, height = '600px', onMarkerClick, selectedSite }: MapViewProps) {
   // Filtrer les sites avec coordonnées valides
   const validSites = sites.filter(site => site.lat && site.lng)
 
@@ -75,11 +88,22 @@ export default function MapView({ sites, center, zoom = 6, height = '600px' }: M
         
         {!center && <MapBounds sites={validSites} />}
         
-        {validSites.map((site) => (
-          <Marker 
-            key={site.id} 
-            position={[site.lat, site.lng]}
-          >
+        {validSites.map((site) => {
+          const isSelected = selectedSite?.id === site.id
+          
+          return (
+            <Marker 
+              key={site.id} 
+              position={[site.lat, site.lng]}
+              icon={isSelected ? selectedIcon : undefined}
+              eventHandlers={{
+                click: () => {
+                  if (onMarkerClick) {
+                    onMarkerClick(site)
+                  }
+                }
+              }}
+            >
             <Popup>
               <div style={{ minWidth: '200px' }}>
                 <h3 style={{ margin: '0 0 10px 0', color: '#1e40af', fontSize: '16px', fontWeight: 'bold' }}>
@@ -111,7 +135,8 @@ export default function MapView({ sites, center, zoom = 6, height = '600px' }: M
               </div>
             </Popup>
           </Marker>
-        ))}
+          )
+        })}
       </MapContainer>
     </div>
   )
