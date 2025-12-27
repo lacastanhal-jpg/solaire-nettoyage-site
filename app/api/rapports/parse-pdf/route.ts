@@ -152,19 +152,38 @@ function extractTypeEncrassement(text: string): string[] {
 }
 
 function extractNomSite(text: string): string {
-  // Essayer différents patterns pour trouver le nom du site
-  const patterns = [
-    /Site\s*:\s*([^\n]+)/i,
-    /Centrale\s*:\s*([^\n]+)/i,
-    /Localisation\s*:\s*([^\n]+)/i,
-    /Client\s*:\s*([^\n]+?)(?:\s+Site\s*:|$)/i
-  ]
+  // Nettoyer le texte
+  const cleanText = text.replace(/\s+/g, ' ').trim()
   
-  for (const pattern of patterns) {
-    const match = text.match(pattern)
-    if (match && match[1].trim()) {
-      return match[1].trim()
-    }
+  // Pattern 1: "Site: XXXX" ou "Site : XXXX"
+  let match = cleanText.match(/Site\s*:?\s+([A-ZÀÂÄÉÈÊËÏÎÔÙÛÜŸÇÆŒ][A-ZÀÂÄÉÈÊËÏÎÔÙÛÜŸÇÆŒa-zàâäéèêëïîôùûüÿçæœ\s\-']+?)(?:\s+(?:Equipement|Adresse|Ville|Contact|Client\s+[A-Z]|Description\s+[A-Z])|$)/i)
+  if (match && match[1].trim().length > 2) {
+    return match[1].trim()
+  }
+  
+  // Pattern 2: Dans un tableau, chercher "Site" puis le nom (qui peut être après "Client")
+  // Ex: "Client MDB 4 Site PUECH Dominique Equipement"
+  match = cleanText.match(/Site\s+([A-ZÀÂÄÉÈÊËÏÎÔÙÛÜŸÇÆŒ][A-ZÀÂÄÉÈÊËÏÎÔÙÛÜŸÇÆŒa-zàâäéèêëïîôùûüÿçæœ\s\-']+?)(?:\s+(?:Equipement|Adresse|Ville|Contact|Description)|$)/i)
+  if (match && match[1].trim().length > 2) {
+    return match[1].trim()
+  }
+  
+  // Pattern 3: "Centrale: XXXX"
+  match = cleanText.match(/Centrale\s*:?\s+([A-ZÀÂÄÉÈÊËÏÎÔÙÛÜŸÇÆŒ][A-ZÀÂÄÉÈÊËÏÎÔÙÛÜŸÇÆŒa-zàâäéèêëïîôùûüÿçæœ\s\-']+?)(?:\s+(?:Equipement|Adresse|Ville|Contact)|$)/i)
+  if (match && match[1].trim().length > 2) {
+    return match[1].trim()
+  }
+  
+  // Pattern 4: "Localisation: XXXX"
+  match = cleanText.match(/Localisation\s*:?\s+([A-ZÀÂÄÉÈÊËÏÎÔÙÛÜŸÇÆŒ][A-ZÀÂÄÉÈÊËÏÎÔÙÛÜŸÇÆŒa-zàâäéèêëïîôùûüÿçæœ\s\-']+?)(?:\s+(?:Equipement|Adresse|Ville|Contact)|$)/i)
+  if (match && match[1].trim().length > 2) {
+    return match[1].trim()
+  }
+  
+  // Pattern 5: "Description: XXXX" (parfois le nom du site est dans la description)
+  match = cleanText.match(/Description\s*:?\s+([A-ZÀÂÄÉÈÊËÏÎÔÙÛÜŸÇÆŒ][A-ZÀÂÄÉÈÊËÏÎÔÙÛÜŸÇÆŒa-zàâäéèêëïîôùûüÿçæœ\s\-']+?)(?:\s+(?:Client|Equipement|Adresse|Ville|Contact)|$)/i)
+  if (match && match[1].trim().length > 2) {
+    return match[1].trim()
   }
   
   return ''
