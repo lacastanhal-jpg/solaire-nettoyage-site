@@ -255,13 +255,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           return
         }
         
-        // Chercher emails Praxedo des 15 derniers jours (lus ou non lus)
-        const fifteenDaysAgo = new Date()
-        fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15)
+        // Chercher emails Praxedo des 30 derniers jours (lus ou non lus)
+        const thirtyDaysAgo = new Date()
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
         
         // Format IMAP: DD-Mon-YYYY (ex: "27-Dec-2024")
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-        const sinceDate = `${fifteenDaysAgo.getDate()}-${months[fifteenDaysAgo.getMonth()]}-${fifteenDaysAgo.getFullYear()}`
+        const sinceDate = `${thirtyDaysAgo.getDate()}-${months[thirtyDaysAgo.getMonth()]}-${thirtyDaysAgo.getFullYear()}`
         
         imap.search([['FROM', PRAXEDO_SENDER], ['SINCE', sinceDate]], (err, searchResults) => {
           if (err) {
@@ -285,7 +285,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             return
           }
           
-          console.log(`📧 ${searchResults.length} emails Praxedo trouvés (15 derniers jours)`)
+          console.log(`📧 ${searchResults.length} emails Praxedo trouvés (30 derniers jours)`)
           
           const fetch = imap.fetch(searchResults, {
             bodies: '',

@@ -418,7 +418,7 @@ export default function SyncRapportsButton() {
         <h4 className="font-semibold text-yellow-900 mb-2">ℹ️ Comment ça marche ?</h4>
         <ul className="text-sm text-yellow-800 space-y-1">
           <li>• Se connecte à rapports@solairenettoyage.fr</li>
-          <li>• Lit tous les emails Praxedo des 15 derniers jours (lus ou non lus)</li>
+          <li>• Lit tous les emails Praxedo des 30 derniers jours (lus ou non lus)</li>
           <li>• Télécharge les PDF automatiquement</li>
           <li>• Associe aux interventions via le nom du site</li>
           <li>• Change le statut en "Terminée"</li>
