@@ -54,7 +54,7 @@ function extractSiteNameFromEmail(emailBody: string): string | null {
 /**
  * Rechercher l'intervention par nom de site et date proche
  */
-async function findInterventionBySiteName(nomSite: string, dateIntervention?: string) {
+async function findInterventionBySiteName(nomSite: string, dateIntervention?: string): Promise<any | null> {
   try {
     const interventionsRef = collection(db, 'interventions_calendar')
     
@@ -202,7 +202,7 @@ async function processEmail(mail: any, results: any) {
     
     results.success.push({
       site: nomSite,
-      intervention: intervention.siteName,
+      intervention: (intervention as any).siteName || nomSite,
       pdfUrl
     })
     
@@ -246,7 +246,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         }
         
         // Chercher emails non lus de Praxedo
-        imap.search(['UNSEEN', ['FROM', PRAXEDO_SENDER]], (err, results) => {
+        imap.search(['UNSEEN', ['FROM', PRAXEDO_SENDER]], (err, searchResults) => {
           if (err) {
             console.error('❌ Erreur recherche emails:', err)
             imap.end()
@@ -257,7 +257,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             return
           }
           
-          if (!results || results.length === 0) {
+          if (!searchResults || searchResults.length === 0) {
             console.log('ℹ️ Aucun nouvel email Praxedo')
             imap.end()
             resolve(NextResponse.json({
@@ -268,9 +268,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             return
           }
           
-          console.log(`📧 ${results.length} nouveaux emails trouvés`)
+          console.log(`📧 ${searchResults.length} nouveaux emails trouvés`)
           
-          const fetch = imap.fetch(results, {
+          const fetch = imap.fetch(searchResults, {
             bodies: '',
             markSeen: true
           })
