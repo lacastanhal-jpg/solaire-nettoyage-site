@@ -137,7 +137,7 @@ async function processEmail(mail: any, results: any) {
     
     // Parser le PDF avec l'API existante
     const formData = new FormData()
-    const blob = new Blob([pdfAttachment.content], { type: 'application/pdf' })
+    const blob = new Blob([new Uint8Array(pdfAttachment.content)], { type: 'application/pdf' })
     const fileName = pdfAttachment.filename || `rapport_${Date.now()}.pdf`
     formData.append('file', blob, fileName)
     
@@ -185,7 +185,7 @@ async function processEmail(mail: any, results: any) {
     
     // Upload PDF vers Firebase Storage (comme le système manuel)
     const storageRef = ref(storage, `rapports/${intervention.id}/${fileName}`)
-    await uploadBytes(storageRef, pdfAttachment.content)
+    await uploadBytes(storageRef, new Uint8Array(pdfAttachment.content))
     const pdfUrl = await getDownloadURL(storageRef)
     
     // Mettre à jour l'intervention (comme le système manuel)
