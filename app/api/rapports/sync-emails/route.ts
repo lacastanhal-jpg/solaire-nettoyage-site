@@ -183,6 +183,16 @@ async function processEmail(mail: any, results: any) {
       return
     }
     
+    // Vérifier si l'intervention a déjà un rapport (éviter les doublons)
+    if ((intervention as any).rapport && (intervention as any).rapport.pdfUrl) {
+      console.log('⏭️ Intervention déjà traitée, skip:', nomSite)
+      results.errors.push({
+        email: subject,
+        reason: `Intervention déjà traitée (rapport existant)`
+      })
+      return
+    }
+    
     // Upload PDF vers Firebase Storage (comme le système manuel)
     const storageRef = ref(storage, `rapports/${intervention.id}/${fileName}`)
     await uploadBytes(storageRef, new Uint8Array(pdfAttachment.content))
@@ -245,8 +255,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           return
         }
         
-        // Chercher emails non lus de Praxedo
-        imap.search(['UNSEEN', ['FROM', PRAXEDO_SENDER]], (err, searchResults) => {
+        // Chercher emails Praxedo des 15 derniers jours (lus ou non lus)
+        const fifteenDaysAgo = new Date()
+        fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15)
+        
+        // Format IMAP: DD-Mon-YYYY (ex: "27-Dec-2024")
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        const sinceDate = `${fifteenDaysAgo.getDate()}-${months[fifteenDaysAgo.getMonth()]}-${fifteenDaysAgo.getFullYear()}`
+        
+        imap.search([['FROM', PRAXEDO_SENDER], ['SINCE', sinceDate]], (err, searchResults) => {
           if (err) {
             console.error('❌ Erreur recherche emails:', err)
             imap.end()
@@ -258,21 +275,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           }
           
           if (!searchResults || searchResults.length === 0) {
-            console.log('ℹ️ Aucun nouvel email Praxedo')
+            console.log('ℹ️ Aucun email Praxedo trouvé')
             imap.end()
             resolve(NextResponse.json({
               success: true,
-              message: 'Aucun nouvel email',
+              message: 'Aucun email trouvé',
               results
             }))
             return
           }
           
-          console.log(`📧 ${searchResults.length} nouveaux emails trouvés`)
+          console.log(`📧 ${searchResults.length} emails Praxedo trouvés (15 derniers jours)`)
           
           const fetch = imap.fetch(searchResults, {
             bodies: '',
-            markSeen: true
+            markSeen: false // Ne pas marquer comme lu automatiquement
           })
           
           const emails: any[] = []
