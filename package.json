@@ -11,8 +11,10 @@
   "dependencies": {
     "dotenv": "^17.2.3",
     "firebase": "^12.6.0",
+    "imap": "^0.8.19",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.562.0",
+    "mailparser": "^3.9.1",
     "next": "14.2.0",
     "pdf2json": "^4.0.0",
     "react": "^18.3.0",
@@ -23,7 +25,9 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@types/imap": "^0.8.43",
     "@types/leaflet": "^1.9.21",
+    "@types/mailparser": "^3.4.6",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
