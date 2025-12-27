@@ -220,7 +220,7 @@ async function processEmail(mail: any, results: any) {
 /**
  * API POST - Synchroniser les emails
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   console.log('🔄 Démarrage synchronisation emails...')
   
   const results = {
@@ -229,7 +229,7 @@ export async function POST(request: NextRequest) {
     processed: 0
   }
   
-  return new Promise((resolve) => {
+  return new Promise<NextResponse>((resolve) => {
     const imap = new Imap(IMAP_CONFIG)
     
     imap.once('ready', () => {
@@ -341,7 +341,7 @@ export async function POST(request: NextRequest) {
 /**
  * API GET - Statut de synchronisation
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   return NextResponse.json({
     service: 'Synchronisation emails Praxedo',
     status: 'ready',
