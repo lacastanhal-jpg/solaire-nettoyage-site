@@ -14,6 +14,7 @@ import {
   type Groupe
 } from '@/lib/firebase'
 import ImportInterventionsModal from '@/components/ImportInterventionsModal'
+import SyncRapportsButton from '@/components/SyncRapportsButton'
 
 export default function CalendrierPage() {
   const router = useRouter()
@@ -253,6 +254,11 @@ export default function CalendrierPage() {
             </svg>
             Importer interventions
           </button>
+        </div>
+
+        {/* Synchronisation Rapports Praxedo */}
+        <div className="mb-8">
+          <SyncRapportsButton />
         </div>
 
         {/* Stats */}

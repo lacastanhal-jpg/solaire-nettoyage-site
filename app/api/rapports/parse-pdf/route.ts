@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
     const data = {
       numeroIntervention: extractField(text, /Intervention\s+n[°º]\s*(GX\d+)/i),
       dateIntervention: extractField(text, /Intervention\s+du\s*:\s*(\d{2}\/\d{2}\/\d{4})/i),
+      nomSite: extractNomSite(text),
       technicien: extractField(text, /Technicien\s+(.*?)(?:\s+Description|\s+Client)/i),
       typeIntervention: extractTypeIntervention(text),
       materiel: extractMateriel(text),
@@ -148,4 +149,23 @@ function extractTypeEncrassement(text: string): string[] {
   }
   
   return types.length > 0 ? types : ['Non spécifié']
+}
+
+function extractNomSite(text: string): string {
+  // Essayer différents patterns pour trouver le nom du site
+  const patterns = [
+    /Site\s*:\s*([^\n]+)/i,
+    /Centrale\s*:\s*([^\n]+)/i,
+    /Localisation\s*:\s*([^\n]+)/i,
+    /Client\s*:\s*([^\n]+?)(?:\s+Site\s*:|$)/i
+  ]
+  
+  for (const pattern of patterns) {
+    const match = text.match(pattern)
+    if (match && match[1].trim()) {
+      return match[1].trim()
+    }
+  }
+  
+  return ''
 }

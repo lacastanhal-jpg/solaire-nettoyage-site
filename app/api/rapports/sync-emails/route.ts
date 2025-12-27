@@ -1,0 +1,355 @@
+import { NextRequest, NextResponse } from 'next/server'
+import Imap from 'imap'
+import { simpleParser } from 'mailparser'
+import { db, storage } from '@/lib/firebase'
+import { collection, query, where, getDocs, updateDoc, doc, Timestamp } from 'firebase/firestore'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+
+// Configuration IMAP IONOS
+const IMAP_CONFIG = {
+  user: process.env.EMAIL_USER || 'rapports@solairenettoyage.fr',
+  password: process.env.EMAIL_PASSWORD || '',
+  host: 'imap.ionos.fr',
+  port: 993,
+  tls: true,
+  tlsOptions: { rejectUnauthorized: false }
+}
+
+// Expéditeur Praxedo
+const PRAXEDO_SENDER = 'solairenettoyage@3341146.brevosend.com'
+
+/**
+ * Normaliser un nom de site pour comparaison
+ */
+function normalizeSiteName(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Enlever accents
+}
+
+/**
+ * Extraire le nom du site du corps de l'email
+ * Format: "Bon d'intervention numéro GX0000003627 du site PUECH Dominique"
+ */
+function extractSiteNameFromEmail(emailBody: string): string | null {
+  const patterns = [
+    /du\s+site\s+([^\n]+)/i,
+    /site\s*:\s*([^\n]+)/i,
+    /centrale\s*:\s*([^\n]+)/i
+  ]
+  
+  for (const pattern of patterns) {
+    const match = emailBody.match(pattern)
+    if (match && match[1]) {
+      return match[1].trim()
+    }
+  }
+  
+  return null
+}
+
+/**
+ * Rechercher l'intervention par nom de site et date proche
+ */
+async function findInterventionBySiteName(nomSite: string, dateIntervention?: string) {
+  try {
+    const interventionsRef = collection(db, 'interventions_calendar')
+    
+    // Normaliser le nom du site recherché
+    const normalizedSearchName = normalizeSiteName(nomSite)
+    
+    // Récupérer toutes les interventions (on va filtrer manuellement)
+    const snapshot = await getDocs(interventionsRef)
+    
+    // Chercher une correspondance
+    for (const docSnapshot of snapshot.docs) {
+      const data = docSnapshot.data()
+      const siteName = data.siteName || ''
+      
+      // Normaliser le nom du site dans la base
+      const normalizedDbName = normalizeSiteName(siteName)
+      
+      // Vérifier si les noms correspondent (exactement ou partiellement)
+      if (
+        normalizedDbName === normalizedSearchName ||
+        normalizedDbName.includes(normalizedSearchName) ||
+        normalizedSearchName.includes(normalizedDbName)
+      ) {
+        // Si on a une date d'intervention, vérifier qu'elle est proche
+        if (dateIntervention && data.dateDebut) {
+          const diffDays = Math.abs(
+            (new Date(dateIntervention).getTime() - new Date(data.dateDebut).getTime()) / (1000 * 60 * 60 * 24)
+          )
+          
+          // Accepter si différence < 30 jours
+          if (diffDays > 30) {
+            continue
+          }
+        }
+        
+        return {
+          id: docSnapshot.id,
+          ...data
+        }
+      }
+    }
+    
+    return null
+  } catch (error) {
+    console.error('Erreur recherche intervention:', error)
+    return null
+  }
+}
+
+/**
+ * Traiter un email Praxedo
+ */
+async function processEmail(mail: any, results: any) {
+  try {
+    const parsed = await simpleParser(mail.body)
+    
+    // Vérifier expéditeur
+    const from = parsed.from?.value[0]?.address || ''
+    if (!from.includes(PRAXEDO_SENDER)) {
+      console.log('Email non Praxedo, ignoré:', from)
+      return
+    }
+    
+    const subject = parsed.subject || ''
+    const emailBody = parsed.text || ''
+    
+    // Chercher la pièce jointe PDF
+    const pdfAttachment = parsed.attachments?.find(
+      att => att.contentType === 'application/pdf'
+    )
+    
+    if (!pdfAttachment) {
+      console.log('Pas de PDF dans:', subject)
+      results.errors.push({
+        email: subject,
+        reason: 'Pas de PDF en pièce jointe'
+      })
+      return
+    }
+    
+    // Parser le PDF avec l'API existante
+    const formData = new FormData()
+    const blob = new Blob([pdfAttachment.content], { type: 'application/pdf' })
+    const fileName = pdfAttachment.filename || `rapport_${Date.now()}.pdf`
+    formData.append('file', blob, fileName)
+    
+    const parseResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/rapports/parse-pdf`, {
+      method: 'POST',
+      body: formData,
+    })
+    
+    const parseData = await parseResponse.json()
+    
+    if (!parseData.success) {
+      results.errors.push({
+        email: subject,
+        reason: 'Erreur parsing PDF'
+      })
+      return
+    }
+    
+    // Extraire le nom du site
+    let nomSite = parseData.data.nomSite || extractSiteNameFromEmail(emailBody)
+    
+    if (!nomSite) {
+      console.log('Nom de site introuvable dans:', subject)
+      results.errors.push({
+        email: subject,
+        reason: 'Nom de site introuvable dans le PDF ou l\'email'
+      })
+      return
+    }
+    
+    // Chercher l'intervention correspondante
+    const intervention = await findInterventionBySiteName(
+      nomSite,
+      parseData.data.dateIntervention
+    )
+    
+    if (!intervention) {
+      console.log('Intervention non trouvée pour le site:', nomSite)
+      results.errors.push({
+        email: subject,
+        reason: `Aucune intervention trouvée pour le site: ${nomSite}`
+      })
+      return
+    }
+    
+    // Upload PDF vers Firebase Storage (comme le système manuel)
+    const storageRef = ref(storage, `rapports/${intervention.id}/${fileName}`)
+    await uploadBytes(storageRef, pdfAttachment.content)
+    const pdfUrl = await getDownloadURL(storageRef)
+    
+    // Mettre à jour l'intervention (comme le système manuel)
+    await updateDoc(doc(db, 'interventions_calendar', intervention.id), {
+      rapport: {
+        ...parseData.data,
+        pdfUrl,
+        uploadedAt: new Date().toISOString(),
+        emailReceivedAt: parsed.date?.toISOString() || new Date().toISOString()
+      },
+      statut: 'Terminée',
+      updatedAt: new Date().toISOString()
+    })
+    
+    results.success.push({
+      site: nomSite,
+      intervention: intervention.siteName,
+      pdfUrl
+    })
+    
+    console.log('✅ Rapport traité:', nomSite)
+    
+  } catch (error: any) {
+    console.error('Erreur traitement email:', error)
+    results.errors.push({
+      email: 'Erreur parsing',
+      reason: error.message
+    })
+  }
+}
+
+/**
+ * API POST - Synchroniser les emails
+ */
+export async function POST(request: NextRequest) {
+  console.log('🔄 Démarrage synchronisation emails...')
+  
+  const results = {
+    success: [] as any[],
+    errors: [] as any[],
+    processed: 0
+  }
+  
+  return new Promise((resolve) => {
+    const imap = new Imap(IMAP_CONFIG)
+    
+    imap.once('ready', () => {
+      console.log('✅ Connexion IMAP établie')
+      
+      imap.openBox('INBOX', false, (err, box) => {
+        if (err) {
+          console.error('❌ Erreur ouverture INBOX:', err)
+          resolve(NextResponse.json({
+            success: false,
+            error: err.message
+          }, { status: 500 }))
+          return
+        }
+        
+        // Chercher emails non lus de Praxedo
+        imap.search(['UNSEEN', ['FROM', PRAXEDO_SENDER]], (err, results) => {
+          if (err) {
+            console.error('❌ Erreur recherche emails:', err)
+            imap.end()
+            resolve(NextResponse.json({
+              success: false,
+              error: err.message
+            }, { status: 500 }))
+            return
+          }
+          
+          if (!results || results.length === 0) {
+            console.log('ℹ️ Aucun nouvel email Praxedo')
+            imap.end()
+            resolve(NextResponse.json({
+              success: true,
+              message: 'Aucun nouvel email',
+              results
+            }))
+            return
+          }
+          
+          console.log(`📧 ${results.length} nouveaux emails trouvés`)
+          
+          const fetch = imap.fetch(results, {
+            bodies: '',
+            markSeen: true
+          })
+          
+          const emails: any[] = []
+          
+          fetch.on('message', (msg) => {
+            const mail: any = {}
+            
+            msg.on('body', (stream) => {
+              let buffer = ''
+              stream.on('data', (chunk) => {
+                buffer += chunk.toString('utf8')
+              })
+              stream.once('end', () => {
+                mail.body = buffer
+                emails.push(mail)
+              })
+            })
+          })
+          
+          fetch.once('error', (err) => {
+            console.error('❌ Erreur fetch:', err)
+            imap.end()
+            resolve(NextResponse.json({
+              success: false,
+              error: err.message
+            }, { status: 500 }))
+          })
+          
+          fetch.once('end', async () => {
+            console.log(`✅ ${emails.length} emails récupérés`)
+            
+            // Traiter chaque email
+            for (const mail of emails) {
+              await processEmail(mail, results)
+              results.processed++
+            }
+            
+            imap.end()
+            
+            resolve(NextResponse.json({
+              success: true,
+              message: `${results.success.length} rapports traités`,
+              results
+            }))
+          })
+        })
+      })
+    })
+    
+    imap.once('error', (err) => {
+      console.error('❌ Erreur connexion IMAP:', err)
+      resolve(NextResponse.json({
+        success: false,
+        error: err.message
+      }, { status: 500 }))
+    })
+    
+    imap.once('end', () => {
+      console.log('🔌 Connexion IMAP fermée')
+    })
+    
+    imap.connect()
+  })
+}
+
+/**
+ * API GET - Statut de synchronisation
+ */
+export async function GET(request: NextRequest) {
+  return NextResponse.json({
+    service: 'Synchronisation emails Praxedo',
+    status: 'ready',
+    config: {
+      server: IMAP_CONFIG.host,
+      email: IMAP_CONFIG.user,
+      sender: PRAXEDO_SENDER
+    },
+    method: 'Recherche par nom de site'
+  })
+}
