@@ -31,8 +31,80 @@ function normalizeSiteName(name: string): string {
 }
 
 /**
+ * Extraire les données du PDF directement (sans appel HTTP)
+ */
+async function extractDataFromPDF(pdfBuffer: Buffer): Promise<any> {
+  try {
+    const PDFParser = (await import('pdf2json')).default
+    const pdfParser = new PDFParser()
+
+    // Parser le PDF
+    const pdfData = await new Promise<any>((resolve, reject) => {
+      pdfParser.on('pdfParser_dataError', (err: any) => reject(err))
+      pdfParser.on('pdfParser_dataReady', (pdfData: any) => resolve(pdfData))
+      pdfParser.parseBuffer(pdfBuffer)
+    })
+
+    // Extraire le texte
+    let text = ''
+    if (pdfData.Pages) {
+      pdfData.Pages.forEach((page: any) => {
+        page.Texts.forEach((textItem: any) => {
+          textItem.R.forEach((r: any) => {
+            text += decodeURIComponent(r.T) + ' '
+          })
+        })
+      })
+    }
+
+    // Extraction du nom du site - PATTERN SIMPLE QUI MARCHE
+    let nomSite = ''
+    
+    // Pattern 1: tout entre "Site" et "Equipement"
+    let match = text.match(/Site\s+(.*?)\s+Equipement/i)
+    if (match && match[1].trim()) {
+      nomSite = match[1].trim()
+    }
+    
+    // Pattern 2: si pas trouvé, essayer avec "Description" et "Client"
+    if (!nomSite) {
+      match = text.match(/Description\s+(.*?)\s+Client/i)
+      if (match && match[1].trim()) {
+        nomSite = match[1].trim()
+      }
+    }
+
+    // Extraction des autres infos
+    const numeroIntervention = text.match(/Intervention\s+n[°º]\s*(GX\d+)/i)?.[1] || ''
+    const dateIntervention = text.match(/Intervention\s+du\s*:\s*(\d{2}\/\d{2}\/\d{4})/i)?.[1] || ''
+    const technicien = text.match(/Technicien\s+(.*?)(?:\s+Description|\s+Client)/i)?.[1]?.trim() || ''
+
+    return {
+      success: true,
+      data: {
+        numeroIntervention,
+        dateIntervention,
+        nomSite,
+        technicien,
+        typeIntervention: '',
+        materiel: ['Non spécifié'],
+        eauUtilisee: ['Non spécifié'],
+        niveauEncrassement: '',
+        typeEncrassement: ['Non spécifié'],
+        detailsEncrassement: ''
+      }
+    }
+  } catch (error: any) {
+    console.error('❌ Erreur extraction PDF:', error)
+    return {
+      success: false,
+      error: error.message
+    }
+  }
+}
+
+/**
  * Extraire le nom du site du corps de l'email
- * Format: "Bon d'intervention numéro GX0000003627 du site PUECH Dominique"
  */
 function extractSiteNameFromEmail(emailBody: string): string | null {
   const patterns = [
@@ -52,46 +124,27 @@ function extractSiteNameFromEmail(emailBody: string): string | null {
 }
 
 /**
- * Rechercher l'intervention par nom de site et date proche
+ * Chercher une intervention dans Firestore par nom de site
  */
-async function findInterventionBySiteName(nomSite: string, dateIntervention?: string): Promise<any | null> {
+async function findInterventionBySiteName(nomSite: string): Promise<any> {
   try {
+    const normalizedSearch = normalizeSiteName(nomSite)
+    
     const interventionsRef = collection(db, 'interventions_calendar')
+    const q = query(
+      interventionsRef,
+      where('statut', '==', 'Planifiée')
+    )
     
-    // Normaliser le nom du site recherché
-    const normalizedSearchName = normalizeSiteName(nomSite)
+    const snapshot = await getDocs(q)
     
-    // Récupérer toutes les interventions (on va filtrer manuellement)
-    const snapshot = await getDocs(interventionsRef)
-    
-    // Chercher une correspondance
-    for (const docSnapshot of snapshot.docs) {
-      const data = docSnapshot.data()
+    for (const docSnap of snapshot.docs) {
+      const data = docSnap.data()
       const siteName = data.siteName || ''
       
-      // Normaliser le nom du site dans la base
-      const normalizedDbName = normalizeSiteName(siteName)
-      
-      // Vérifier si les noms correspondent (exactement ou partiellement)
-      if (
-        normalizedDbName === normalizedSearchName ||
-        normalizedDbName.includes(normalizedSearchName) ||
-        normalizedSearchName.includes(normalizedDbName)
-      ) {
-        // Si on a une date d'intervention, vérifier qu'elle est proche
-        if (dateIntervention && data.dateDebut) {
-          const diffDays = Math.abs(
-            (new Date(dateIntervention).getTime() - new Date(data.dateDebut).getTime()) / (1000 * 60 * 60 * 24)
-          )
-          
-          // Accepter si différence < 30 jours
-          if (diffDays > 30) {
-            continue
-          }
-        }
-        
+      if (normalizeSiteName(siteName) === normalizedSearch) {
         return {
-          id: docSnapshot.id,
+          id: docSnap.id,
           ...data
         }
       }
@@ -135,38 +188,23 @@ async function processEmail(mail: any, results: any) {
       return
     }
     
-    // Parser le PDF avec la NOUVELLE API extract-site
-    const formData = new FormData()
-    const blob = new Blob([new Uint8Array(pdfAttachment.content)], { type: 'application/pdf' })
-    const fileName = pdfAttachment.filename || `rapport_${Date.now()}.pdf`
-    formData.append('file', blob, fileName)
+    // EXTRACTION DIRECTE DU PDF (sans appel HTTP)
+    const parseData = await extractDataFromPDF(Buffer.from(pdfAttachment.content))
     
-    const parseResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/rapports/extract-site`, {
-      method: 'POST',
-      body: formData,
-    })
-    
-    const parseData = await parseResponse.json()
-    
-    console.log('\n===== RÉSULTAT EXTRACT-SITE =====')
+    console.log('\n===== RÉSULTAT EXTRACTION PDF =====')
     console.log('Success:', parseData.success)
     if (parseData.data) {
       console.log('Nom du site:', parseData.data.nomSite || 'NON TROUVÉ')
       console.log('Numéro intervention:', parseData.data.numeroIntervention || 'NON TROUVÉ')
       console.log('Technicien:', parseData.data.technicien || 'NON TROUVÉ')
-      if (parseData.data._debug) {
-        console.log('\n🔍 DEBUG:')
-        console.log('Longueur texte:', parseData.data._debug.textLength)
-        console.log('Premiers 500 chars:', parseData.data._debug.first500chars)
-      }
     }
     console.log('===== FIN RÉSULTAT =====\n')
     
     if (!parseData.success) {
-      console.log('❌ Erreur extract-site:', parseData.error)
+      console.log('❌ Erreur extraction:', parseData.error)
       results.errors.push({
         email: subject,
-        reason: 'Erreur extraction site du PDF'
+        reason: 'Erreur extraction PDF'
       })
       return
     }
@@ -183,14 +221,13 @@ async function processEmail(mail: any, results: any) {
       return
     }
     
+    console.log('✅ Nom du site trouvé:', nomSite)
+    
     // Chercher l'intervention correspondante
-    const intervention = await findInterventionBySiteName(
-      nomSite,
-      parseData.data.dateIntervention
-    )
+    const intervention = await findInterventionBySiteName(nomSite)
     
     if (!intervention) {
-      console.log('Intervention non trouvée pour le site:', nomSite)
+      console.log('⚠️ Intervention non trouvée pour:', nomSite)
       results.errors.push({
         email: subject,
         reason: `Aucune intervention trouvée pour le site: ${nomSite}`
@@ -198,7 +235,7 @@ async function processEmail(mail: any, results: any) {
       return
     }
     
-    // Vérifier si l'intervention a déjà un rapport (éviter les doublons)
+    // Vérifier si l'intervention a déjà un rapport
     if ((intervention as any).rapport && (intervention as any).rapport.pdfUrl) {
       console.log('⏭️ Intervention déjà traitée, skip:', nomSite)
       results.errors.push({
@@ -208,12 +245,13 @@ async function processEmail(mail: any, results: any) {
       return
     }
     
-    // Upload PDF vers Firebase Storage (comme le système manuel)
+    // Upload PDF vers Firebase Storage
+    const fileName = pdfAttachment.filename || `rapport_${Date.now()}.pdf`
     const storageRef = ref(storage, `rapports/${intervention.id}/${fileName}`)
     await uploadBytes(storageRef, new Uint8Array(pdfAttachment.content))
     const pdfUrl = await getDownloadURL(storageRef)
     
-    // Mettre à jour l'intervention (comme le système manuel)
+    // Mettre à jour l'intervention
     await updateDoc(doc(db, 'interventions_calendar', intervention.id), {
       rapport: {
         ...parseData.data,
@@ -228,7 +266,7 @@ async function processEmail(mail: any, results: any) {
     results.success.push({
       site: nomSite,
       intervention: (intervention as any).siteName || nomSite,
-      pdfUrl
+      numeroIntervention: parseData.data.numeroIntervention
     })
     
     console.log('✅ Rapport traité:', nomSite)
@@ -236,7 +274,7 @@ async function processEmail(mail: any, results: any) {
   } catch (error: any) {
     console.error('Erreur traitement email:', error)
     results.errors.push({
-      email: 'Erreur parsing',
+      email: 'Erreur',
       reason: error.message
     })
   }
@@ -270,11 +308,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           return
         }
         
-        // Chercher emails Praxedo des 60 derniers jours (lus ou non lus)
+        // Chercher emails Praxedo des 60 derniers jours
         const sixtyDaysAgo = new Date()
         sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60)
         
-        // Format IMAP: DD-Mon-YYYY (ex: "27-Dec-2024")
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
         const sinceDate = `${sixtyDaysAgo.getDate()}-${months[sixtyDaysAgo.getMonth()]}-${sixtyDaysAgo.getFullYear()}`
         
@@ -290,11 +327,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           }
           
           if (!searchResults || searchResults.length === 0) {
-            console.log('ℹ️ Aucun email Praxedo trouvé')
+            console.log('📭 Aucun email Praxedo trouvé')
             imap.end()
             resolve(NextResponse.json({
               success: true,
-              message: 'Aucun email trouvé',
               results
             }))
             return
@@ -302,25 +338,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           
           console.log(`📧 ${searchResults.length} emails Praxedo trouvés (60 derniers jours)`)
           
-          const fetch = imap.fetch(searchResults, {
-            bodies: '',
-            markSeen: false // Ne pas marquer comme lu automatiquement
-          })
-          
+          const fetch = imap.fetch(searchResults, { bodies: '', markSeen: false })
           const emails: any[] = []
           
           fetch.on('message', (msg) => {
-            const mail: any = {}
+            let body = ''
             
             msg.on('body', (stream) => {
-              let buffer = ''
               stream.on('data', (chunk) => {
-                buffer += chunk.toString('utf8')
+                body += chunk.toString('utf8')
               })
-              stream.once('end', () => {
-                mail.body = buffer
-                emails.push(mail)
-              })
+            })
+            
+            msg.once('end', () => {
+              emails.push({ body })
             })
           })
           
@@ -336,7 +367,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           fetch.once('end', async () => {
             console.log(`✅ ${emails.length} emails récupérés`)
             
-            // Traiter chaque email
             for (const mail of emails) {
               await processEmail(mail, results)
               results.processed++
@@ -346,7 +376,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             
             resolve(NextResponse.json({
               success: true,
-              message: `${results.success.length} rapports traités`,
               results
             }))
           })
@@ -355,33 +384,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     })
     
     imap.once('error', (err) => {
-      console.error('❌ Erreur connexion IMAP:', err)
+      console.error('❌ Erreur IMAP:', err)
       resolve(NextResponse.json({
         success: false,
         error: err.message
       }, { status: 500 }))
     })
     
-    imap.once('end', () => {
-      console.log('🔌 Connexion IMAP fermée')
-    })
-    
     imap.connect()
-  })
-}
-
-/**
- * API GET - Statut de synchronisation
- */
-export async function GET(request: NextRequest): Promise<NextResponse> {
-  return NextResponse.json({
-    service: 'Synchronisation emails Praxedo',
-    status: 'ready',
-    config: {
-      server: IMAP_CONFIG.host,
-      email: IMAP_CONFIG.user,
-      sender: PRAXEDO_SENDER
-    },
-    method: 'Recherche par nom de site'
   })
 }
