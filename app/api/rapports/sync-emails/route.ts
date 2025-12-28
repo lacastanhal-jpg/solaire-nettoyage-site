@@ -135,23 +135,38 @@ async function processEmail(mail: any, results: any) {
       return
     }
     
-    // Parser le PDF avec l'API existante
+    // Parser le PDF avec la NOUVELLE API extract-site
     const formData = new FormData()
     const blob = new Blob([new Uint8Array(pdfAttachment.content)], { type: 'application/pdf' })
     const fileName = pdfAttachment.filename || `rapport_${Date.now()}.pdf`
     formData.append('file', blob, fileName)
     
-    const parseResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/rapports/parse-pdf`, {
+    const parseResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/rapports/extract-site`, {
       method: 'POST',
       body: formData,
     })
     
     const parseData = await parseResponse.json()
     
+    console.log('\n===== RÉSULTAT EXTRACT-SITE =====')
+    console.log('Success:', parseData.success)
+    if (parseData.data) {
+      console.log('Nom du site:', parseData.data.nomSite || 'NON TROUVÉ')
+      console.log('Numéro intervention:', parseData.data.numeroIntervention || 'NON TROUVÉ')
+      console.log('Technicien:', parseData.data.technicien || 'NON TROUVÉ')
+      if (parseData.data._debug) {
+        console.log('\n🔍 DEBUG:')
+        console.log('Longueur texte:', parseData.data._debug.textLength)
+        console.log('Premiers 500 chars:', parseData.data._debug.first500chars)
+      }
+    }
+    console.log('===== FIN RÉSULTAT =====\n')
+    
     if (!parseData.success) {
+      console.log('❌ Erreur extract-site:', parseData.error)
       results.errors.push({
         email: subject,
-        reason: 'Erreur parsing PDF'
+        reason: 'Erreur extraction site du PDF'
       })
       return
     }
@@ -160,7 +175,7 @@ async function processEmail(mail: any, results: any) {
     let nomSite = parseData.data.nomSite || extractSiteNameFromEmail(emailBody)
     
     if (!nomSite) {
-      console.log('Nom de site introuvable dans:', subject)
+      console.log('❌ Nom de site introuvable dans:', subject)
       results.errors.push({
         email: subject,
         reason: 'Nom de site introuvable dans le PDF ou l\'email'
@@ -255,13 +270,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           return
         }
         
-        // Chercher emails Praxedo des 30 derniers jours (lus ou non lus)
-        const thirtyDaysAgo = new Date()
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+        // Chercher emails Praxedo des 60 derniers jours (lus ou non lus)
+        const sixtyDaysAgo = new Date()
+        sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60)
         
         // Format IMAP: DD-Mon-YYYY (ex: "27-Dec-2024")
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-        const sinceDate = `${thirtyDaysAgo.getDate()}-${months[thirtyDaysAgo.getMonth()]}-${thirtyDaysAgo.getFullYear()}`
+        const sinceDate = `${sixtyDaysAgo.getDate()}-${months[sixtyDaysAgo.getMonth()]}-${sixtyDaysAgo.getFullYear()}`
         
         imap.search([['FROM', PRAXEDO_SENDER], ['SINCE', sinceDate]], (err, searchResults) => {
           if (err) {
@@ -285,7 +300,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             return
           }
           
-          console.log(`📧 ${searchResults.length} emails Praxedo trouvés (30 derniers jours)`)
+          console.log(`📧 ${searchResults.length} emails Praxedo trouvés (60 derniers jours)`)
           
           const fetch = imap.fetch(searchResults, {
             bodies: '',

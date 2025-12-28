@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
       niveauEncrassement: extractField(text, /Niveau\s+d'encrassement\s+(Fort|Moyen|Faible)/i),
       typeEncrassement: extractTypeEncrassement(text),
       detailsEncrassement: extractField(text, /Détailler\s*:\s*(.*?)(?:\s+Les\s+pyranomètres|\s+Compteurs)/i),
+      _rawText: text.substring(0, 1000) // RETOURNER le texte brut (premiers 1000 caractères) pour debug
     }
 
     return NextResponse.json({ success: true, data })
@@ -155,35 +156,16 @@ function extractNomSite(text: string): string {
   // Nettoyer le texte
   const cleanText = text.replace(/\s+/g, ' ').trim()
   
-  // Pattern 1: "Site: XXXX" ou "Site : XXXX"
-  let match = cleanText.match(/Site\s*:?\s+([A-ZÀÂÄÉÈÊËÏÎÔÙÛÜŸÇÆŒ][A-ZÀÂÄÉÈÊËÏÎÔÙÛÜŸÇÆŒa-zàâäéèêëïîôùûüÿçæœ\s\-']+?)(?:\s+(?:Equipement|Adresse|Ville|Contact|Client\s+[A-Z]|Description\s+[A-Z])|$)/i)
+  // Pattern ULTRA-SIMPLE qui MARCHE : tout entre "Site" et "Equipement"
+  const match = cleanText.match(/Site\s+(.*?)\s+Equipement/i)
   if (match && match[1].trim().length > 2) {
     return match[1].trim()
   }
   
-  // Pattern 2: Dans un tableau, chercher "Site" puis le nom (qui peut être après "Client")
-  // Ex: "Client MDB 4 Site PUECH Dominique Equipement"
-  match = cleanText.match(/Site\s+([A-ZÀÂÄÉÈÊËÏÎÔÙÛÜŸÇÆŒ][A-ZÀÂÄÉÈÊËÏÎÔÙÛÜŸÇÆŒa-zàâäéèêëïîôùûüÿçæœ\s\-']+?)(?:\s+(?:Equipement|Adresse|Ville|Contact|Description)|$)/i)
-  if (match && match[1].trim().length > 2) {
-    return match[1].trim()
-  }
-  
-  // Pattern 3: "Centrale: XXXX"
-  match = cleanText.match(/Centrale\s*:?\s+([A-ZÀÂÄÉÈÊËÏÎÔÙÛÜŸÇÆŒ][A-ZÀÂÄÉÈÊËÏÎÔÙÛÜŸÇÆŒa-zàâäéèêëïîôùûüÿçæœ\s\-']+?)(?:\s+(?:Equipement|Adresse|Ville|Contact)|$)/i)
-  if (match && match[1].trim().length > 2) {
-    return match[1].trim()
-  }
-  
-  // Pattern 4: "Localisation: XXXX"
-  match = cleanText.match(/Localisation\s*:?\s+([A-ZÀÂÄÉÈÊËÏÎÔÙÛÜŸÇÆŒ][A-ZÀÂÄÉÈÊËÏÎÔÙÛÜŸÇÆŒa-zàâäéèêëïîôùûüÿçæœ\s\-']+?)(?:\s+(?:Equipement|Adresse|Ville|Contact)|$)/i)
-  if (match && match[1].trim().length > 2) {
-    return match[1].trim()
-  }
-  
-  // Pattern 5: "Description: XXXX" (parfois le nom du site est dans la description)
-  match = cleanText.match(/Description\s*:?\s+([A-ZÀÂÄÉÈÊËÏÎÔÙÛÜŸÇÆŒ][A-ZÀÂÄÉÈÊËÏÎÔÙÛÜŸÇÆŒa-zàâäéèêëïîôùûüÿçæœ\s\-']+?)(?:\s+(?:Client|Equipement|Adresse|Ville|Contact)|$)/i)
-  if (match && match[1].trim().length > 2) {
-    return match[1].trim()
+  // Si pas trouvé, essayer avec "Description"
+  const match2 = cleanText.match(/Description\s+(.*?)\s+Client/i)
+  if (match2 && match2[1].trim().length > 2) {
+    return match2[1].trim()
   }
   
   return ''
