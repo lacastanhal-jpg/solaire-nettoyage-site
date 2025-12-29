@@ -378,6 +378,69 @@ export default function DashboardPage() {
               </Link>
             )}
 
+            {/* Paramètres Entreprise - ACTIF */}
+            {isAdmin && (
+              <Link
+                href="/admin/parametres-entreprise"
+                className="bg-white border-2 border-green-500 rounded-xl p-8 hover:shadow-lg transition-all relative overflow-hidden bg-gradient-to-br from-blue-50/50 to-white"
+              >
+                <span className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded text-xs font-semibold uppercase">
+                  Actif
+                </span>
+                <div className="text-4xl mb-4">⚙️</div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Paramètres Entreprise</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Infos légales, coordonnées bancaires, assurance RC Pro, mentions obligatoires
+                </p>
+                <div className="pt-4 border-t border-gray-200 flex items-center gap-4 text-xs text-gray-500">
+                  <span>🔐 Admins uniquement</span>
+                  <span>⚖️ Conformité</span>
+                </div>
+              </Link>
+            )}
+
+            {/* Articles / Catalogue - ACTIF */}
+            {isAdmin && (
+              <Link
+                href="/admin/articles"
+                className="bg-white border-2 border-green-500 rounded-xl p-8 hover:shadow-lg transition-all relative overflow-hidden bg-gradient-to-br from-green-50/50 to-white"
+              >
+                <span className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded text-xs font-semibold uppercase">
+                  Actif
+                </span>
+                <div className="text-4xl mb-4">📦</div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Articles / Catalogue</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Gérer les articles et tarifs pour les devis (m², forfait, etc.)
+                </p>
+                <div className="pt-4 border-t border-gray-200 flex items-center gap-4 text-xs text-gray-500">
+                  <span>🔐 Admins uniquement</span>
+                  <span>💰 Tarification</span>
+                </div>
+              </Link>
+            )}
+
+            {/* Gestion Devis - ACTIF */}
+            {isAdmin && (
+              <Link
+                href="/admin/devis"
+                className="bg-white border-2 border-green-500 rounded-xl p-8 hover:shadow-lg transition-all relative overflow-hidden bg-gradient-to-br from-blue-50/50 to-white"
+              >
+                <span className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded text-xs font-semibold uppercase">
+                  Actif
+                </span>
+                <div className="text-4xl mb-4">📄</div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Gestion Devis</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Créer, modifier et suivre les devis clients avec calculs automatiques
+                </p>
+                <div className="pt-4 border-t border-gray-200 flex items-center gap-4 text-xs text-gray-500">
+                  <span>🔐 Admins uniquement</span>
+                  <span>💼 Commercial</span>
+                </div>
+              </Link>
+            )}
+
             {/* Documents - BIENTÔT */}
             <div className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-8 opacity-60 cursor-not-allowed relative">
               <span className="absolute top-4 right-4 bg-gray-200 text-gray-600 px-3 py-1 rounded text-xs font-semibold uppercase">
@@ -554,6 +617,16 @@ export default function DashboardPage() {
               >
                 <div className="text-2xl mb-2">🏢</div>
                 <div className="font-semibold text-gray-900 text-sm">Groupe GELY</div>
+              </Link>
+            )}
+
+            {isAdmin && (
+              <Link
+                href="/admin/parametres-entreprise"
+                className="bg-white border border-gray-200 rounded-lg p-4 hover:border-blue-500 hover:shadow-md transition-all text-left block"
+              >
+                <div className="text-2xl mb-2">⚙️</div>
+                <div className="font-semibold text-gray-900 text-sm">Paramètres Entreprise</div>
               </Link>
             )}
           </div>

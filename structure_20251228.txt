@@ -1,0 +1,199 @@
+.
+├── app
+│   ├── admin
+│   │   ├── affectation-masse
+│   │   ├── articles
+│   │   ├── calendrier
+│   │   ├── demandes-modifications
+│   │   ├── devis
+│   │   ├── gely
+│   │   ├── gestion-clients
+│   │   ├── gestion-equipes
+│   │   ├── gestion-groupes
+│   │   ├── gestion-operateurs
+│   │   ├── gestion-sites
+│   │   ├── gestion-techniciens
+│   │   ├── import-sites
+│   │   ├── init-equipes
+│   │   ├── init-operateurs
+│   │   ├── interventions
+│   │   ├── layout.tsx
+│   │   ├── nouvelle-intervention
+│   │   ├── parametres-entreprise
+│   │   └── upload-rapport
+│   ├── api
+│   │   ├── interventions
+│   │   └── rapports
+│   ├── client
+│   │   ├── dashboard
+│   │   ├── demande-acces
+│   │   ├── interventions
+│   │   ├── login
+│   │   └── page.tsx
+│   ├── components
+│   │   ├── api
+│   │   ├── Clients.tsx
+│   │   ├── DevisCTA.tsx
+│   │   ├── DevisForm.tsx
+│   │   ├── DevisModal.tsx
+│   │   ├── Footer.tsx
+│   │   ├── Header.tsx
+│   │   ├── Hero.tsx
+│   │   ├── Services.tsx
+│   │   ├── ServicesDetailed.tsx
+│   │   └── Stats.tsx
+│   ├── entreprise
+│   │   ├── a-propos
+│   │   ├── carrieres
+│   │   ├── certifications
+│   │   ├── layout.tsx
+│   │   └── references
+│   ├── globals.css
+│   ├── intranet
+│   │   ├── certifications
+│   │   ├── components
+│   │   ├── dashboard
+│   │   ├── extincteurs
+│   │   ├── login
+│   │   ├── page copie.tsx
+│   │   └── page.tsx
+│   ├── layout.tsx
+│   ├── notre-histoire
+│   │   ├── page 2.tsx
+│   │   └── page.tsx
+│   ├── page.tsx
+│   ├── services
+│   │   ├── centrales-sol
+│   │   ├── layout.tsx
+│   │   ├── ombrieres
+│   │   ├── seveso
+│   │   └── toitures
+│   └── technicien
+│       ├── extincteurs
+│       └── login
+├── arborescence_solaire site 19122025.txt
+├── arborescence-complete 261225.txt
+├── components
+│   ├── gely
+│   │   ├── CalendrierFinancier.tsx
+│   │   ├── Dashboard copie.tsx
+│   │   ├── Dashboard.tsx
+│   │   ├── DashboardGroupe.tsx
+│   │   ├── DocumentsList.tsx
+│   │   ├── DocumentsProjet.tsx
+│   │   ├── ExportDonnees.tsx
+│   │   ├── KPICard.tsx
+│   │   ├── ModalAjoutLigne.tsx
+│   │   ├── ModalCreationProjet.tsx
+│   │   ├── ModalModificationProjet.tsx
+│   │   ├── PageActionnaires.tsx
+│   │   ├── PageLexa.tsx
+│   │   ├── PageLexa2.tsx
+│   │   ├── PageProjets.tsx
+│   │   ├── PageSciGely.tsx
+│   │   ├── PageSolaireNettoyage.tsx
+│   │   ├── PDFViewer.tsx
+│   │   ├── PlanPrevisionnel20ans.tsx
+│   │   ├── PlanPrevisionnelGroupe.tsx
+│   │   ├── ProjetDetail.tsx
+│   │   ├── SimulateurImpact.tsx
+│   │   ├── SocieteCard.tsx
+│   │   ├── UploadDocument.tsx
+│   │   └── VueEnsembleProjet.tsx
+│   ├── ImportInterventionsModal.tsx
+│   ├── MapView copie.tsx
+│   ├── MapView.tsx
+│   └── SyncRapportsButton.tsx
+├── copie next.config.js
+├── data
+│   └── clients.json
+├── docs infos site
+│   ├── ARBORESCENCE-COMPLETE-SITE.txt
+│   ├── ARBORESCENCE-COMPLETE.txt
+│   ├── ARBORESCENCE-REELLE-COMPLETE.txt
+│   ├── arborescence-site-2025.txt
+│   ├── cles ionos https vps
+│   │   ├── _.solairenettoyage.com_private_key.key
+│   │   ├── _.solairenettoyage.com_ssl_certificate_INTERMEDIATE
+│   │   ├── _.solairenettoyage.com_ssl_certificate_INTERMEDIATE.zip
+│   │   ├── CA-BUNDLE.txt
+│   │   ├── CERTIFICAT.txt
+│   │   ├── CLE-PRIVEE.txt
+│   │   ├── INSTRUCTIONS-PLESK.md
+│   │   └── solairenettoyage.com_ssl_certificate.cer
+│   ├── DEPLOIEMENT.md
+│   ├── GUIDE_INSTALLATION_RAPPORTS.md
+│   ├── GUIDE-version vps-GESTION-SOLAIRENETTOYAGE.md
+│   ├── IDENTIFIANTS-INTRANET-SOLAIRE-NETTOYAGE.txt
+│   ├── MEMO_INSTALLATION_SSL_SECTIGO.md
+│   ├── MEMO-DEPLACER-SITE-NOUVEL-ORDINATEUR.md
+│   ├── MEMO-DEPLOIEMENT-SOLAIRE-NETTOYAGE.md
+│   ├── MEMO-DEPLOYER-VPS.md
+│   ├── MEMO-SESSION-26-12-2024.md
+│   ├── projet-solaire.tar.gz
+│   ├── RECAPITULATIF-VPS-COMPLET.md
+│   ├── site-complet-20251219.txt
+│   └── STATISTIQUES-PROJET.txt
+├── gely.zip
+├── lib
+│   ├── certifications-data.ts
+│   ├── firebase
+│   │   ├── articles.ts
+│   │   ├── certifications.ts
+│   │   ├── clients.ts
+│   │   ├── config.ts
+│   │   ├── demandes.ts
+│   │   ├── devis.ts
+│   │   ├── documents.ts
+│   │   ├── entreprise.ts
+│   │   ├── extincteurs.ts
+│   │   ├── groupes.ts
+│   │   ├── import-sites.ts
+│   │   ├── index.ts
+│   │   ├── interventions-calendar.ts
+│   │   ├── interventions.ts
+│   │   ├── operateurs.ts
+│   │   ├── sites.ts
+│   │   └── storage.ts
+│   └── gely
+│       ├── mockData.ts
+│       ├── types.ts
+│       └── useFirestore.ts
+├── next-env.d.ts
+├── next.config.js
+├── package-lock.json
+├── package.json
+├── postcss.config.js
+├── public
+│   ├── documents
+│   │   ├── certifications
+│   │   ├── vgp
+│   │   └── visites
+│   ├── images
+│   │   └── services
+│   ├── logo.png
+│   ├── rapports
+│   │   └── clients
+│   └── test-pdf.html
+├── README.md
+├── scripts
+│   ├── import-firebase-FINAL.js
+│   ├── import-firebase-vrais-chiffres.js
+│   ├── import-gely-firebase.js
+│   └── nettoyer-firebase.js
+├── site-complet.tar.gz
+├── site-complet.zip
+├── site-deploy-20251216-172047.tar.gz
+├── site-structure-20251216-145709.txt
+├── site-vps.tar.gz
+├── structure_20251228.txt
+├── tailwind.config.ts
+├── test-projets
+│   ├── mockData.ts
+│   ├── PageProjets.tsx
+│   ├── ProjetDetail.tsx
+│   ├── README.md
+│   └── types.ts
+└── tsconfig.json
+
+72 directories, 125 files
