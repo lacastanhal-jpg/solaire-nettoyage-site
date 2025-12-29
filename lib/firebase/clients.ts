@@ -32,6 +32,7 @@ export interface Client {
   contactName: string
   phone: string
   groupeId?: string
+  groupeNom?: string  // Nom du groupe (pour affichage)
   createdAt: string
   active: boolean
   
