@@ -15,6 +15,8 @@ export interface Site {
   id: string
   clientId: string
   nom: string
+  nomSite?: string  // Nom du site (import Excel)
+  complementNom?: string  // ID unique site
   adresse: string
   ville: string
   codePostal: string

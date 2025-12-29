@@ -142,7 +142,7 @@ export default function ModifierDevisPage() {
       const site = sites.find(s => s.id === value)
       if (site) {
         ligne.siteId = site.id
-        ligne.siteNom = site.nom
+        ligne.siteNom = site.nomSite || site.complementNom || site.nom
         ligne.surfaceM2 = site.surface || 0
         ligne.quantite = (site.surface || 0).toString()
       }
@@ -353,7 +353,7 @@ export default function ModifierDevisPage() {
                             <option value="" className="text-black font-semibold" style={{ color: '#000000' }}>Sélectionner un site</option>
                             {sites.map(site => (
                               <option key={site.id} value={site.id} className="text-black font-semibold" style={{ color: '#000000', backgroundColor: '#ffffff' }}>
-                                {site.nom} ({site.surface ? site.surface : 0} m²)
+                                {site.nomSite || site.complementNom || site.nom} ({site.surface ? site.surface : 0} m²)
                               </option>
                             ))}
                           </select>
