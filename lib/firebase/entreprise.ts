@@ -2,6 +2,9 @@ import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { db } from './config'
 import { Adresse } from './clients'
 
+// Ré-exporter Adresse pour que les pages puissent l'utiliser
+export type { Adresse }
+
 // Interface pour les informations bancaires
 export interface InformationsBancaires {
   titulaire: string
