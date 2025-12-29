@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { getDevisById, updateDevisStatut, type Devis } from '@/lib/firebase/devis'
+import { getEmailsHistorique, type EmailHistorique } from '@/lib/firebase/emails'
 
 const STATUT_LABELS = {
   brouillon: { label: 'Brouillon', color: 'bg-gray-100 text-gray-800' },
@@ -19,9 +20,17 @@ export default function VoirDevisPage() {
   const [loading, setLoading] = useState(true)
   const [devis, setDevis] = useState<Devis | null>(null)
   const [changingStatut, setChangingStatut] = useState(false)
+  const [emailsHistorique, setEmailsHistorique] = useState<EmailHistorique[]>([])
+  
+  // Modal email
+  const [showEmailModal, setShowEmailModal] = useState(false)
+  const [emailDestinataire, setEmailDestinataire] = useState('')
+  const [emailMessage, setEmailMessage] = useState('')
+  const [sendingEmail, setSendingEmail] = useState(false)
 
   useEffect(() => {
     loadDevis()
+    loadEmailsHistorique()
   }, [devisId])
 
   async function loadDevis() {
@@ -44,6 +53,15 @@ export default function VoirDevisPage() {
     }
   }
 
+  async function loadEmailsHistorique() {
+    try {
+      const historique = await getEmailsHistorique(devisId)
+      setEmailsHistorique(historique)
+    } catch (error) {
+      console.error('Erreur chargement historique:', error)
+    }
+  }
+
   async function handleChangeStatut(newStatut: 'brouillon' | 'envoyé' | 'accepté' | 'refusé') {
     if (!devis) return
 
@@ -57,6 +75,62 @@ export default function VoirDevisPage() {
       alert('Erreur lors du changement de statut')
     } finally {
       setChangingStatut(false)
+    }
+  }
+
+  function handleDownloadPDF() {
+    // Créer un lien temporaire et le cliquer
+    const link = document.createElement('a')
+    link.href = `/api/devis/${devisId}/pdf`
+    link.target = '_blank'
+    link.rel = 'noopener noreferrer'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  function openEmailModal() {
+    setEmailDestinataire('')
+    setEmailMessage('')
+    setShowEmailModal(true)
+  }
+
+  async function handleSendEmail() {
+    if (!emailDestinataire) {
+      alert('Veuillez saisir une adresse email')
+      return
+    }
+
+    try {
+      setSendingEmail(true)
+      
+      const response = await fetch(`/api/devis/${devisId}/send-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          destinataire: emailDestinataire,
+          message: emailMessage
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Erreur envoi email')
+      }
+
+      alert('Email envoyé avec succès !')
+      setShowEmailModal(false)
+      await loadEmailsHistorique()
+      
+      // Changer le statut en "envoyé" si c'est un brouillon
+      if (devis?.statut === 'brouillon') {
+        await handleChangeStatut('envoyé')
+      }
+      
+    } catch (error) {
+      console.error('Erreur envoi email:', error)
+      alert('Erreur lors de l\'envoi de l\'email')
+    } finally {
+      setSendingEmail(false)
     }
   }
 
@@ -92,6 +166,18 @@ export default function VoirDevisPage() {
             </div>
             <div className="flex gap-2">
               <button
+                onClick={handleDownloadPDF}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center gap-2"
+              >
+                📄 Télécharger PDF
+              </button>
+              <button
+                onClick={openEmailModal}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center gap-2"
+              >
+                📧 Envoyer par email
+              </button>
+              <button
                 onClick={() => router.push(`/admin/devis/${devisId}/modifier`)}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
               >
@@ -100,6 +186,28 @@ export default function VoirDevisPage() {
             </div>
           </div>
         </div>
+
+        {/* Historique des envois */}
+        {emailsHistorique.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Historique des envois</h2>
+            <div className="space-y-2">
+              {emailsHistorique.map((email) => (
+                <div key={email.id} className="flex items-center gap-3 text-sm">
+                  <span className={`w-2 h-2 rounded-full ${email.statut === 'envoyé' ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                  <span className="text-gray-900 font-medium">
+                    {new Date(email.date).toLocaleString('fr-FR')}
+                  </span>
+                  <span className="text-gray-700">→</span>
+                  <span className="text-gray-900">{email.destinataire}</span>
+                  {email.statut === 'erreur' && email.erreur && (
+                    <span className="text-red-600 text-xs">({email.erreur})</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Statut et actions */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
@@ -242,6 +350,71 @@ export default function VoirDevisPage() {
           <div>Dernière modification : {new Date(devis.updatedAt).toLocaleString('fr-FR')}</div>
         </div>
       </div>
+
+      {/* Modal Email */}
+      {showEmailModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Envoyer le devis par email</h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  Adresse email du destinataire *
+                </label>
+                <input
+                  type="email"
+                  value={emailDestinataire}
+                  onChange={(e) => setEmailDestinataire(e.target.value)}
+                  placeholder="contact@exemple.fr"
+                  className="w-full px-4 py-3 border-2 border-gray-900 rounded-lg text-black font-semibold"
+                  style={{ color: '#000000' }}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  Message personnalisé (optionnel)
+                </label>
+                <textarea
+                  value={emailMessage}
+                  onChange={(e) => setEmailMessage(e.target.value)}
+                  rows={4}
+                  placeholder="Message qui sera ajouté dans l'email..."
+                  className="w-full px-4 py-3 border-2 border-gray-900 rounded-lg text-black font-semibold"
+                  style={{ color: '#000000' }}
+                />
+                <p className="text-sm text-gray-700 mt-1">
+                  Si vide, un message par défaut sera utilisé
+                </p>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-900">
+                  📎 Le PDF du devis sera automatiquement joint à l'email
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={handleSendEmail}
+                disabled={sendingEmail || !emailDestinataire}
+                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                {sendingEmail ? 'Envoi en cours...' : '📧 Envoyer'}
+              </button>
+              <button
+                onClick={() => setShowEmailModal(false)}
+                disabled={sendingEmail}
+                className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-medium transition-colors disabled:opacity-50"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
