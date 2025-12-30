@@ -1,0 +1,105 @@
+TEMPLATE POUR NOUVELLE CONVERSATION CLAUDE
+==========================================
+
+Copie-colle ce texte pour démarrer une nouvelle conversation :
+
+---
+
+Bonjour Claude,
+
+CONTEXTE GLOBAL :
+Je suis Jerome, propriétaire de SAS Solaire Nettoyage (SIRET 820 504 421), leader français du nettoyage de panneaux photovoltaïques depuis 2016. 
+- 3 équipes professionnelles, équipements spécialisés
+- 3600+ sites/an
+- Clients majeurs : EDF Solutions Solaires, ENGIE Green France, TotalEnergies, CGN Europe Energy
+
+OBJECTIF STRATÉGIQUE :
+Remplacer progressivement Everwin (ERP lourd) et optimiser l'utilisation de Praxedo (interventions terrain).
+Créer une solution moderne, sur-mesure, adaptée à nos besoins métier spécifiques.
+
+PROJET TECHNIQUE ACTUEL :
+Site professionnel Next.js 14 + Firebase Firestore + Vercel
+Stack : TypeScript, Tailwind CSS, jsPDF, Nodemailer SMTP IONOS
+Architecture : Hiérarchie GROUPE → CLIENT → SITE → DEVIS/FACTURES
+
+MODULES DÉJÀ OPÉRATIONNELS :
+
+✅ GELY Management
+   - Finances multi-sociétés (GELY INVESTISSEMENT HOLDING, LEXA, LEXA 2, SCI GELY)
+   - Plans prévisionnels 20 ans avec flux inter-sociétés
+   - Calculs automatiques d'investissements
+   - Interface complète de gestion
+
+✅ Interventions & Rapports
+   - Calendrier complet avec affectation équipes
+   - Synchronisation automatique rapports Praxedo (email IMAP)
+   - Extraction automatique PDF + parsing intelligent
+   - Matching interventions par nom de site
+   - Email : rapports@solairenettoyage.fr
+
+✅ Gestion Clients/Sites/Groupes
+   - Hiérarchie complète : Groupe → Client → Sites
+   - Import Excel massif avec détection doublons
+   - Interface gestion complète
+   - Champs Firebase : nomSite, complementNom, surface, lat, lng, etc.
+
+✅ Catalogue Articles
+   - Articles de facturation (NM04, NM05, NM06, NM07, NMFT, NMMA, NMSOR)
+   - Prix unitaires, TVA, descriptions
+   - Gestion complète
+
+✅ Module Devis COMPLET
+   - Création/modification devis multi-lignes
+   - Calculs automatiques HT/TVA/TTC
+   - Génération PDF professionnelle (jsPDF + autotable)
+   - Envoi email avec PDF en pièce jointe (SMTP IONOS)
+   - Historique des envois dans Firebase
+   - Email : contact@solairenettoyage.fr
+   - Interface complète : brouillon, en attente, validé, refusé
+
+ARCHITECTURE DONNÉES :
+- Collections Firebase : groupes, clients, sites, articles, devis, interventions, emails_historique
+- Hiérarchie métier : GROUPE → CLIENT → SITE → DEVIS
+- Champs sites critiques : nomSite (import), complementNom (ID unique), surface
+- Emails configurés : contact@ (envoi), rapports@ (réception Praxedo)
+- Variables Vercel : SMTP_*, EMAIL_*, NEXT_PUBLIC_*
+
+CONFIGURATION SMTP IONOS :
+- Host : smtp.ionos.fr
+- Port : 465 (SSL/TLS)
+- User contact@ : contact@solairenettoyage.fr / lexa130173
+- User rapports@ : rapports@solairenettoyage.fr / Lexa-130173!
+
+PROCHAINES ÉTAPES PRÉVUES :
+
+COURT TERME :
+1. Module Factures (template similaire devis, numérotation automatique)
+2. Workflow Devis → Intervention (devis accepté = créer intervention auto)
+
+MOYEN TERME :
+3. Module CRM COMPLET PROFESSIONNEL
+   - Gestion complète pipeline commercial
+   - Historique contacts clients
+   - Suivi opportunités
+   - Relances automatiques
+   - Statistiques commerciales avancées
+   - Intégration email/téléphone
+
+4. Tableaux de bord analytiques avancés
+5. Gestion complète des certifications (CACES, visites médicales, VGP équipements)
+
+LONG TERME :
+6. Déploiement VPS final (si besoin performance supérieure)
+7. API REST pour intégrations tierces
+8. Application mobile terrain
+
+---
+
+Ma question/besoin du jour : [DÉCRIS TON BESOIN ICI]
+
+---
+
+IMPORTANT : 
+- Tous les fichiers sources sont dans l'archive projet-solaire-nettoyage.tar.gz
+- La structure complète est documentée dans STRUCTURE-PROJET.txt
+- Les corrections précédentes sont documentées dans les transcripts

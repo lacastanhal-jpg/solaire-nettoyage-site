@@ -58,3 +58,21 @@ export async function getEmailsHistorique(devisId: string): Promise<EmailHistori
     return []
   }
 }
+
+export async function logEmail(data: {
+  destinataire: string
+  sujet: string
+  type: string
+  referenceId: string
+}): Promise<void> {
+  try {
+    const emailRef = doc(collection(db, 'emails_log'))
+    await setDoc(emailRef, {
+      ...data,
+      date: new Date().toISOString(),
+      statut: 'envoye'
+    })
+  } catch (error) {
+    console.error('Erreur log email:', error)
+  }
+}

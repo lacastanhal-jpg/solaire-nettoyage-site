@@ -6,6 +6,7 @@ import { createDevis, calculateLigneDevis, type LigneDevis } from '@/lib/firebas
 import { getAllClients, type Client } from '@/lib/firebase/clients'
 import { getSitesByClient, type Site } from '@/lib/firebase/sites'
 import { getAllArticles, type Article } from '@/lib/firebase/articles'
+import { SelectSociete } from '@/components/finances/SelectSociete'
 
 interface LigneFormData {
   siteId: string
@@ -30,6 +31,7 @@ export default function NouveauDevisPage() {
   const [sites, setSites] = useState<Site[]>([])
   const [articles, setArticles] = useState<Article[]>([])
   
+  const [societeId, setSocieteId] = useState('')
   const [selectedClientId, setSelectedClientId] = useState('')
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
   const [lignes, setLignes] = useState<LigneFormData[]>([])
@@ -54,7 +56,7 @@ export default function NouveauDevisPage() {
         getAllClients(),
         getAllArticles()
       ])
-      setClients(clientsData.filter(c => c.active !== false)) // Affiche tous sauf ceux explicitement désactivés
+      setClients(clientsData.filter(c => c.active !== false))
       setArticles(articlesData.filter(a => a.actif))
     } catch (error) {
       console.error('Erreur chargement données:', error)
@@ -109,7 +111,6 @@ export default function NouveauDevisPage() {
         ligne.siteId = site.id
         ligne.siteNom = site.nomSite || site.complementNom || site.nom
         ligne.surfaceM2 = site.surface || 0
-        // Pré-remplir la quantité avec les m² du site
         ligne.quantite = (site.surface || 0).toString()
       }
     } else if (field === 'articleId') {
@@ -126,7 +127,6 @@ export default function NouveauDevisPage() {
       ligne.quantite = value
     }
     
-    // Recalculer les totaux
     const quantite = parseFloat(ligne.quantite) || 0
     if (quantite > 0 && ligne.prixUnitaire > 0) {
       const totaux = calculateLigneDevis(quantite, ligne.prixUnitaire, ligne.tva)
@@ -150,7 +150,11 @@ export default function NouveauDevisPage() {
   }
 
   async function handleSubmit(statut: 'brouillon' | 'envoyé') {
-    // Validation
+    if (!societeId) {
+      alert('Veuillez sélectionner une société')
+      return
+    }
+
     if (!selectedClientId) {
       alert('Veuillez sélectionner un client')
       return
@@ -161,7 +165,6 @@ export default function NouveauDevisPage() {
       return
     }
 
-    // Vérifier que toutes les lignes sont complètes
     const incomplete = lignes.some(l => !l.siteId || !l.articleId || !l.quantite || parseFloat(l.quantite) <= 0)
     if (incomplete) {
       alert('Toutes les lignes doivent avoir un site, un article et une quantité valide')
@@ -187,6 +190,7 @@ export default function NouveauDevisPage() {
       }))
 
       await createDevis({
+        societeId,
         clientId: selectedClientId,
         clientNom: selectedClient!.company,
         groupeNom: selectedClient!.groupeNom,
@@ -224,23 +228,40 @@ export default function NouveauDevisPage() {
 
         {/* Formulaire */}
         <div className="space-y-6">
-          {/* Sélection client */}
+          {/* Société et Client */}
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Client</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Informations</h2>
             
-            <select
-              value={selectedClientId}
-              onChange={(e) => setSelectedClientId(e.target.value)}
-              className="w-full px-4 py-3 border-2 border-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-600 text-black font-semibold bg-white"
-              style={{ color: '#000000' }}
-            >
-              <option value="" className="text-black font-semibold" style={{ color: '#000000' }}>Sélectionner un client</option>
-              {clients.map(client => (
-                <option key={client.id} value={client.id} className="text-black font-semibold" style={{ color: '#000000', backgroundColor: '#ffffff' }}>
-                  {client.company} {client.groupeNom && `(${client.groupeNom})`}
-                </option>
-              ))}
-            </select>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              {/* SELECT SOCIÉTÉ - NOUVEAU */}
+              <div>
+                <SelectSociete
+                  value={societeId}
+                  onValueChange={setSocieteId}
+                  required
+                  label="Société émettrice"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-bold text-gray-900 mb-2">
+                  Client <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={selectedClientId}
+                  onChange={(e) => setSelectedClientId(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-600 text-black font-semibold bg-white"
+                  style={{ color: '#000000' }}
+                >
+                  <option value="" className="text-black font-semibold" style={{ color: '#000000' }}>Sélectionner un client</option>
+                  {clients.map(client => (
+                    <option key={client.id} value={client.id} className="text-black font-semibold" style={{ color: '#000000', backgroundColor: '#ffffff' }}>
+                      {client.company} {client.groupeNom && `(${client.groupeNom})`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
             {selectedClient && (
               <div className="mt-4 p-4 bg-blue-50 rounded-lg">
@@ -285,7 +306,6 @@ export default function NouveauDevisPage() {
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Site */}
                         <div>
                           <label className="block text-sm font-medium text-gray-900 mb-2">
                             Site <span className="text-red-500">*</span>
@@ -305,7 +325,6 @@ export default function NouveauDevisPage() {
                           </select>
                         </div>
 
-                        {/* Article */}
                         <div>
                           <label className="block text-sm font-medium text-gray-900 mb-2">
                             Article <span className="text-red-500">*</span>
@@ -325,7 +344,6 @@ export default function NouveauDevisPage() {
                           </select>
                         </div>
 
-                        {/* Quantité */}
                         <div>
                           <label className="block text-sm font-medium text-gray-900 mb-2">
                             Quantité <span className="text-red-500">*</span>
@@ -340,7 +358,6 @@ export default function NouveauDevisPage() {
                           />
                         </div>
 
-                        {/* Prix unitaire (lecture seule) */}
                         <div>
                           <label className="block text-sm font-medium text-gray-900 mb-2">
                             Prix unitaire HT
@@ -354,7 +371,6 @@ export default function NouveauDevisPage() {
                         </div>
                       </div>
 
-                      {/* Totaux ligne */}
                       {ligne.totalHT > 0 && (
                         <div className="mt-4 p-4 bg-blue-50 rounded-lg">
                           <div className="grid grid-cols-3 gap-4 text-sm text-gray-900">

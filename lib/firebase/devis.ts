@@ -31,6 +31,7 @@ export interface LigneDevis {
 export interface Devis {
   id: string
   numero: string
+  societeId: string  // AJOUT : Société émettrice
   date: string
   dateValidite?: string  // Date limite de validité du devis
   
@@ -68,6 +69,7 @@ export interface Devis {
 }
 
 export interface DevisInput {
+  societeId: string  // AJOUT : Société émettrice
   clientId: string
   clientNom: string
   groupeNom?: string
@@ -226,6 +228,7 @@ export async function createDevis(devisData: DevisInput): Promise<string> {
     // Créer l'objet devis sans les champs undefined
     const devis: any = {
       numero,
+      societeId: devisData.societeId,  // AJOUT : Société émettrice
       date: new Date().toISOString(),
       clientId: devisData.clientId,
       clientNom: devisData.clientNom,
@@ -270,6 +273,7 @@ export async function updateDevis(id: string, devisData: Partial<DevisInput>): P
     }
     
     // Ajouter seulement les champs définis
+    if (devisData.societeId !== undefined) updates.societeId = devisData.societeId
     if (devisData.clientId !== undefined) updates.clientId = devisData.clientId
     if (devisData.clientNom !== undefined) updates.clientNom = devisData.clientNom
     if (devisData.groupeNom !== undefined) updates.groupeNom = devisData.groupeNom

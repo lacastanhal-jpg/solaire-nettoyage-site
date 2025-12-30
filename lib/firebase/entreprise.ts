@@ -160,3 +160,6 @@ export function getMentionsLegalesFacture(entreprise: Entreprise): string[] {
     `- une indemnité forfaitaire pour frais de recouvrement de ${entreprise.indemniteForfaitaire.toFixed(2)} €`
   ]
 }
+
+// Alias pour compatibilité avec les routes API
+export const getEntrepriseInfo = getEntreprise
