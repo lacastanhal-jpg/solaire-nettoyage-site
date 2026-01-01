@@ -222,7 +222,8 @@ function NouvelleInterventionForm() {
       // Si NaN ou vide, mettre 1 par défaut
       nouveaux[index] = { ...nouveaux[index], quantite: isNaN(qty) ? 1 : Math.max(1, qty) }
     } else {
-      nouveaux[index] = { ...nouveaux[index], [field]: value }
+      // articleId doit être string
+      nouveaux[index] = { ...nouveaux[index], articleId: String(value) }
     }
     
     setArticlesSelectionnes(nouveaux)
@@ -771,6 +772,7 @@ function NouvelleInterventionForm() {
         />
       )}
     </div>
+  )
 }
 
 export default function NouvelleInterventionPage() {

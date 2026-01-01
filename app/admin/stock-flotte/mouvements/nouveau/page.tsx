@@ -46,7 +46,8 @@ function NouveauMouvementForm() {
   function getArticleStock(articleId: string, depot: string): number {
     const article = articles.find(a => a.id === articleId)
     if (!article) return 0
-    return article.stockParDepot[depot] || 0
+    // TypeScript: depot est validé par le select, on peut l'utiliser comme clé
+    return article.stockParDepot[depot as keyof typeof article.stockParDepot] || 0
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -103,12 +104,24 @@ function NouveauMouvementForm() {
     try {
       setLoading(true)
 
+      // Récupérer les infos de l'article
+      const article = articles.find(a => a.id === formData.articleId)
+      if (!article) {
+        alert('Article non trouvé')
+        setLoading(false)
+        return
+      }
+
       await createMouvementStock({
         type: formData.type,
         articleId: formData.articleId,
+        articleCode: article.code || 'N/A',
+        articleDescription: article.description || 'Article',
         quantite,
         date: new Date().toISOString(),
         raison: formData.raison || 'Mouvement manuel',
+        coutUnitaire: article.prixUnitaire,
+        coutTotal: article.prixUnitaire * quantite,
         depotSource: formData.depotSource || undefined,
         depotDestination: formData.depotDestination || undefined,
         operateur: formData.operateur,
@@ -471,6 +484,7 @@ function NouveauMouvementForm() {
         </div>
       </form>
     </div>
+  )
 }
 
 export default function NouveauMouvementPage() {
