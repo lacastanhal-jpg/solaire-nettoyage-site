@@ -1,0 +1,297 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { getAllArticlesStock, desactiverArticleStock } from '@/lib/firebase'
+import type { ArticleStock } from '@/lib/types/stock-flotte'
+
+export default function ArticlesStockPage() {
+  const [articles, setArticles] = useState<ArticleStock[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filterFournisseur, setFilterFournisseur] = useState<string>('all')
+  const [showInactifs, setShowInactifs] = useState(false)
+
+  useEffect(() => {
+    loadArticles()
+  }, [])
+
+  async function loadArticles() {
+    try {
+      setLoading(true)
+      const data = await getAllArticlesStock()
+      setArticles(data)
+    } catch (error) {
+      console.error('Erreur chargement articles:', error)
+      alert('Erreur lors du chargement des articles')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fournisseurs = Array.from(new Set(articles.map(a => a.fournisseur)))
+
+  const articlesFiltres = articles.filter(article => {
+    // Filtre actif/inactif
+    if (!showInactifs && !article.actif) return false
+
+    // Filtre recherche
+    const matchSearch = !searchTerm || 
+      article.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      article.description.toLowerCase().includes(searchTerm.toLowerCase())
+
+    // Filtre fournisseur
+    const matchFournisseur = filterFournisseur === 'all' || article.fournisseur === filterFournisseur
+
+    return matchSearch && matchFournisseur
+  })
+
+  async function handleDesactiver(id: string, code: string) {
+    if (!confirm(`Désactiver l'article ${code} ?`)) return
+
+    try {
+      await desactiverArticleStock(id)
+      alert('Article désactivé avec succès')
+      loadArticles()
+    } catch (error) {
+      console.error('Erreur désactivation:', error)
+      alert('Erreur lors de la désactivation')
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Chargement des articles...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Articles Stock</h1>
+          <p className="text-gray-600 mt-1">
+            {articlesFiltres.length} article{articlesFiltres.length > 1 ? 's' : ''} trouvé{articlesFiltres.length > 1 ? 's' : ''}
+          </p>
+        </div>
+        <Link
+          href="/admin/stock-flotte/articles/nouveau"
+          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold"
+        >
+          + Nouvel Article
+        </Link>
+      </div>
+
+      {/* Filtres */}
+      <div className="bg-white rounded-lg shadow p-4 mb-6 border border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Recherche */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Rechercher
+            </label>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Code ou description..."
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Fournisseur */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Fournisseur
+            </label>
+            <select
+              value={filterFournisseur}
+              onChange={(e) => setFilterFournisseur(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">Tous les fournisseurs</option>
+              {fournisseurs.map(f => (
+                <option key={f} value={f}>{f}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Afficher inactifs */}
+          <div className="flex items-end">
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={showInactifs}
+                onChange={(e) => setShowInactifs(e.target.checked)}
+                className="mr-2"
+              />
+              <span className="text-sm text-gray-700">Afficher les articles inactifs</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      {/* Tableau */}
+      {articlesFiltres.length === 0 ? (
+        <div className="bg-white rounded-lg shadow p-12 text-center border border-gray-200">
+          <p className="text-gray-500 text-lg">Aucun article trouvé</p>
+          <Link
+            href="/admin/stock-flotte/articles/nouveau"
+            className="inline-block mt-4 text-blue-600 hover:text-blue-800"
+          >
+            Créer le premier article →
+          </Link>
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Code
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Description
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Fournisseur
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Prix Unit.
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Stock Total
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Stock Min
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Statut
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {articlesFiltres.map((article) => (
+                  <tr key={article.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Link
+                        href={`/admin/stock-flotte/articles/${article.id}`}
+                        className="text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        {article.code}
+                      </Link>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900">{article.description}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-700">{article.fournisseur}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <div className="text-sm text-gray-900">
+                        {article.prixUnitaire.toLocaleString('fr-FR', { 
+                          style: 'currency', 
+                          currency: 'EUR' 
+                        })}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <div className={`text-sm font-semibold ${
+                        article.stockTotal < article.stockMin
+                          ? 'text-red-600'
+                          : 'text-green-600'
+                      }`}>
+                        {article.stockTotal}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <div className="text-sm text-gray-700">{article.stockMin}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      {article.actif ? (
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                          Actif
+                        </span>
+                      ) : (
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                          Inactif
+                        </span>
+                      )}
+                      {article.stockTotal < article.stockMin && (
+                        <span className="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                          Alerte
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                      <Link
+                        href={`/admin/stock-flotte/articles/${article.id}`}
+                        className="text-blue-600 hover:text-blue-900 mr-4"
+                      >
+                        Voir
+                      </Link>
+                      <Link
+                        href={`/admin/stock-flotte/articles/${article.id}/modifier`}
+                        className="text-green-600 hover:text-green-900 mr-4"
+                      >
+                        Modifier
+                      </Link>
+                      {article.actif && (
+                        <button
+                          onClick={() => handleDesactiver(article.id, article.code)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          Désactiver
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Statistiques rapides */}
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white p-4 rounded-lg shadow border border-gray-200">
+          <div className="text-sm text-gray-600">Articles actifs</div>
+          <div className="text-2xl font-bold text-gray-900">
+            {articles.filter(a => a.actif).length}
+          </div>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow border border-gray-200">
+          <div className="text-sm text-gray-600">Valeur totale stock</div>
+          <div className="text-2xl font-bold text-gray-900">
+            {articles
+              .reduce((sum, a) => sum + (a.stockTotal * a.prixUnitaire), 0)
+              .toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+          </div>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow border border-gray-200">
+          <div className="text-sm text-gray-600">Alertes stock</div>
+          <div className="text-2xl font-bold text-red-600">
+            {articles.filter(a => a.stockTotal < a.stockMin && a.actif).length}
+          </div>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow border border-gray-200">
+          <div className="text-sm text-gray-600">Fournisseurs</div>
+          <div className="text-2xl font-bold text-gray-900">
+            {fournisseurs.length}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

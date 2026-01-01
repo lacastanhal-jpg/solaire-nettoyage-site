@@ -42,9 +42,9 @@ export default function AvoirsPage() {
 
   const stats = {
     total: avoirs.length,
-    montantTotal: Math.abs(avoirs.reduce((sum, a) => sum + a.montant, 0)),
+    montantTotal: Math.abs(avoirs.reduce((sum, a) => sum + a.totalTTC, 0)),
     enAttente: avoirs.filter(a => a.statut === 'envoye').length,
-    montantEnAttente: Math.abs(avoirs.filter(a => a.statut === 'envoye').reduce((sum, a) => sum + a.montant, 0))
+    montantEnAttente: Math.abs(avoirs.filter(a => a.statut === 'envoye').reduce((sum, a) => sum + a.totalTTC, 0))
   }
 
   function getStatutBadge(statut: Avoir['statut']) {
@@ -196,13 +196,13 @@ export default function AvoirsPage() {
                     {avoir.clientNom}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-gray-800">
-                    {avoir.factureOrigineNumero || '-'}
+                    {avoir.factureNumero || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap font-bold text-red-700">
                     {Math.abs(avoir.totalTTC).toLocaleString('fr-FR')} €
                   </td>
                   <td className="px-6 py-4 text-gray-800">
-                    {avoir.typeUtilisation === 'deduction' ? 'Déduction' : 'Remboursement'}
+                    {avoir.utilisationType === 'deduction' ? 'Déduction' : 'Remboursement'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {getStatutBadge(avoir.statut)}
@@ -218,7 +218,7 @@ export default function AvoirsPage() {
                       href={`/admin/finances/avoirs/${avoir.id}/modifier`}
                       className="text-orange-700 hover:text-orange-900 font-semibold"
                     >
-                      📝 Modifier
+                      ✏️ Modifier
                     </Link>
                   </td>
                 </tr>

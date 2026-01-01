@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getFactureById } from '@/lib/firebase/factures'
+import { getClientById } from '@/lib/firebase/clients'
 import { getEntrepriseInfo } from '@/lib/firebase/entreprise'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
@@ -16,6 +17,7 @@ export async function GET(
     }
 
     const entreprise = await getEntrepriseInfo()
+    const client = facture.clientId ? await getClientById(facture.clientId) : null
     
     // Créer le PDF
     const doc = new jsPDF()
@@ -23,12 +25,12 @@ export async function GET(
     // HEADER ENTREPRISE
     doc.setFontSize(20)
     doc.setFont('helvetica', 'bold')
-    doc.text(entreprise?.nom || 'SAS Solaire Nettoyage', 20, 20)
+    doc.text(entreprise?.nomCommercial || entreprise?.raisonSociale || 'SAS Solaire Nettoyage', 20, 20)
     
     doc.setFontSize(10)
     doc.setFont('helvetica', 'normal')
-    doc.text(entreprise?.adresse || '', 20, 28)
-    doc.text(`${entreprise?.codePostal || ''} ${entreprise?.ville || ''}`, 20, 33)
+    doc.text(entreprise?.siegeSocial?.rue || '', 20, 28)
+    doc.text(`${entreprise?.siegeSocial?.codePostal || ''} ${entreprise?.siegeSocial?.ville || ''}`, 20, 33)
     doc.text(`Siret : ${entreprise?.siret || '820 504 421'}`, 20, 38)
     doc.text(`Email : ${entreprise?.email || 'contact@solairenettoyage.fr'}`, 20, 43)
     doc.text(`Tel : ${entreprise?.telephone || ''}`, 20, 48)
@@ -51,8 +53,14 @@ export async function GET(
     
     doc.setFont('helvetica', 'normal')
     doc.text(facture.clientNom, 20, 77)
-    if (facture.clientAdresse) {
-      doc.text(facture.clientAdresse, 20, 84)
+    
+    if (client?.adresseFacturation) {
+      doc.text(client.adresseFacturation.rue || '', 20, 84)
+      doc.text(
+        `${client.adresseFacturation.codePostal || ''} ${client.adresseFacturation.ville || ''}`,
+        20,
+        91
+      )
     }
     
     // TABLEAU LIGNES
@@ -134,7 +142,7 @@ export async function GET(
     doc.setFontSize(8)
     doc.setTextColor(100, 100, 100)
     doc.text(
-      `${entreprise?.nom || 'SAS Solaire Nettoyage'} - SIRET ${entreprise?.siret || '820 504 421'} - TVA ${entreprise?.tva || 'FR82820504421'}`,
+      `${entreprise?.nomCommercial || entreprise?.raisonSociale || 'SAS Solaire Nettoyage'} - SIRET ${entreprise?.siret || '820 504 421'} - TVA ${entreprise?.numeroTVA || 'FR82820504421'}`,
       105,
       280,
       { align: 'center' }

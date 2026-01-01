@@ -31,12 +31,12 @@ export async function POST(
     
     doc.setFontSize(20)
     doc.setFont('helvetica', 'bold')
-    doc.text(entreprise?.nom || 'SAS Solaire Nettoyage', 20, 20)
+    doc.text(entreprise?.nomCommercial || entreprise?.raisonSociale || 'SAS Solaire Nettoyage', 20, 20)
     
     doc.setFontSize(10)
     doc.setFont('helvetica', 'normal')
-    doc.text(entreprise?.adresse || '', 20, 28)
-    doc.text(`${entreprise?.codePostal || ''} ${entreprise?.ville || ''}`, 20, 33)
+    doc.text(entreprise?.siegeSocial?.rue || '', 20, 28)
+    doc.text(`${entreprise?.siegeSocial?.codePostal || ''} ${entreprise?.siegeSocial?.ville || ''}`, 20, 33)
     doc.text(`Siret : ${entreprise?.siret || '820 504 421'}`, 20, 38)
     doc.text(`Email : ${entreprise?.email || 'contact@solairenettoyage.fr'}`, 20, 43)
     
@@ -121,7 +121,7 @@ export async function POST(
     doc.setFontSize(8)
     doc.setTextColor(100, 100, 100)
     doc.text(
-      `${entreprise?.nom || 'SAS Solaire Nettoyage'} - SIRET ${entreprise?.siret || '820 504 421'}`,
+      `${entreprise?.nomCommercial || entreprise?.raisonSociale || 'SAS Solaire Nettoyage'} - SIRET ${entreprise?.siret || '820 504 421'}`,
       105,
       280,
       { align: 'center' }
@@ -142,9 +142,9 @@ export async function POST(
     
     // Envoi email
     await transporter.sendMail({
-      from: `"${entreprise?.nom || 'Solaire Nettoyage'}" <${process.env.SMTP_USER || 'contact@solairenettoyage.fr'}>`,
+      from: `"${entreprise?.nomCommercial || entreprise?.raisonSociale || 'Solaire Nettoyage'}" <${process.env.SMTP_USER || 'contact@solairenettoyage.fr'}>`,
       to: emailDestinataire,
-      subject: `Facture ${facture.numero} - ${entreprise?.nom || 'Solaire Nettoyage'}`,
+      subject: `Facture ${facture.numero} - ${entreprise?.nomCommercial || entreprise?.raisonSociale || 'Solaire Nettoyage'}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #2563EB;">Facture ${facture.numero}</h2>
@@ -179,9 +179,9 @@ export async function POST(
           <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
           
           <p style="color: #6b7280; font-size: 12px;">
-            ${entreprise?.nom || 'SAS Solaire Nettoyage'}<br>
-            ${entreprise?.adresse || ''}<br>
-            ${entreprise?.codePostal || ''} ${entreprise?.ville || ''}<br>
+            ${entreprise?.nomCommercial || entreprise?.raisonSociale || 'SAS Solaire Nettoyage'}<br>
+            ${entreprise?.siegeSocial?.rue || ''}<br>
+            ${entreprise?.siegeSocial?.codePostal || ''} ${entreprise?.siegeSocial?.ville || ''}<br>
             SIRET : ${entreprise?.siret || '820 504 421'}<br>
             Email : ${entreprise?.email || 'contact@solairenettoyage.fr'}
           </p>

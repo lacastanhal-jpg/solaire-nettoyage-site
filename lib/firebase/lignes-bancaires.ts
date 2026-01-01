@@ -1,4 +1,6 @@
 import { db } from './config'
+import { Facture } from './factures'
+import { FactureFournisseur } from './factures-fournisseurs'
 import { 
   collection, 
   doc, 
@@ -380,7 +382,7 @@ export async function findMatchingFacturesClients(ligne: LigneBancaire): Promise
     const matches: any[] = []
     
     snapshot.docs.forEach(doc => {
-      const facture = { id: doc.id, ...doc.data() }
+      const facture = { id: doc.id, ...doc.data() } as Facture
       
       // Matching par montant (tolérance ±5€)
       const diff = Math.abs(facture.resteAPayer - ligne.montant)
@@ -438,7 +440,7 @@ export async function findMatchingFacturesFournisseurs(ligne: LigneBancaire): Pr
     const matches: any[] = []
     
     snapshot.docs.forEach(doc => {
-      const facture = { id: doc.id, ...doc.data() }
+      const facture = { id: doc.id, ...doc.data() } as FactureFournisseur
       
       // Matching par montant (tolérance ±5€)
       const diff = Math.abs(facture.montantTTC - montantAbsolu)

@@ -94,7 +94,7 @@ export default function NouvelAvoirPage() {
 
   function modifierLigne(index: number, field: string, value: any) {
     const nouvellesLignes = [...lignes]
-    const ligne = { ...nouvellesLignes[index] }
+    const ligne: any = { ...nouvellesLignes[index] }
     
     ligne[field] = value
     
@@ -150,8 +150,8 @@ export default function NouvelAvoirPage() {
         societeId: formData.societeId,
         clientId: formData.clientId,
         clientNom: formData.clientNom,
-        factureOrigineId: formData.factureOrigineId || undefined,
-        factureOrigineNumero: formData.factureOrigineNumero || undefined,
+        //         factureOrigineId: formData.factureOrigineId || undefined,
+        //         factureOrigineNumero: formData.factureOrigineNumero || undefined,
         lignes,
         motif: formData.motif,
         notes: formData.notes,

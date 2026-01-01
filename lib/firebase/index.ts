@@ -114,7 +114,7 @@ export {
   updateGroupe,
   deleteGroupe,
   countGroupesActifs,
-  verifyGroupeCredentials  // ✅ AJOUTÉ !
+  verifyGroupeCredentials
 } from './groupes'
 export type { Groupe } from './groupes'
 
@@ -164,3 +164,131 @@ export {
   getAlertesExtincteurs
 } from './extincteurs'
 export type { Extincteur, VerificationExtincteur, TechnicienExtincteur } from './extincteurs'
+
+// ===================================
+// STOCK & FLOTTE
+// ===================================
+
+// Export Articles Stock functions
+export {
+  createArticleStock,
+  getAllArticlesStock,
+  getArticleStockById as getArticleStock,
+  getArticlesEnAlerte,
+  getArticlesParFournisseur,
+  updateArticleStock,
+  updateStockDepot,
+  ajusterStock,
+  affecterArticleEquipement,
+  retirerAffectationArticle,
+  deleteArticleStock,
+  desactiverArticleStock,
+  articleStockCodeExists,
+  getStatistiquesStock
+} from './stock-articles'
+
+// Export Mouvements Stock functions
+export {
+  createMouvementStock,
+  getAllMouvementsStock,
+  getMouvementStockById,
+  getMouvementsParArticle as getMouvementsStockByArticle,
+  getMouvementsParType,
+  getDerniersMouvements,
+  getMouvementsPeriode,
+  getMouvementsParEquipement,
+  getStatistiquesMouvementsMois,
+  annulerMouvement as annulerMouvementStock
+} from './stock-mouvements'
+
+// Export Équipements functions
+export {
+  createEquipement,
+  getAllEquipements,
+  getEquipement,
+  getEquipementById,
+  getVehicules,
+  getVehiculesUniquement,
+  getAllVehicules,
+  getAccessoires,
+  getAccessoiresParent,
+  getAccessoiresEquipement,
+  getEquipementsParStatut,
+  getEquipementsEnMaintenance,
+  getStatistiquesEquipements,
+  getStatistiquesFlotte,
+  updateEquipement,
+  updateKmHeures
+} from './stock-equipements'
+
+// Export Interventions Maintenance functions
+export {
+  createInterventionMaintenance,
+  finaliserIntervention as terminerIntervention,
+  getAllInterventionsMaintenance,
+  getInterventionMaintenanceById as getInterventionMaintenance,
+  getInterventionsParEquipement as getInterventionsMaintenanceByEquipement,
+  getInterventionsParType,
+  getInterventionsPlanifiees,
+  getDernieresInterventions,
+  getInterventionsPeriode,
+  updateInterventionMaintenance,
+  ajouterPhotoIntervention,
+  deleteInterventionMaintenance,
+  getCoutMaintenanceEquipement,
+  getStatistiquesMaintenanceMois
+} from './stock-interventions'
+
+// Export Factures Fournisseurs functions
+export {
+  createFactureFournisseur,
+  genererMouvementsStockFacture,
+  getAllFacturesFournisseurs,
+  getFactureFournisseurById as getFactureFournisseur,
+  getFacturesParFournisseur,
+  getFacturesParStatut,
+  getFacturesEnAttente,
+  getFacturesPeriode,
+  marquerFacturePayee,
+  updateFactureFournisseur,
+  deleteFactureFournisseur,
+  factureNumeroExists,
+  getStatistiquesFacturesFournisseurs,
+  getAchatsParFournisseur
+} from './stock-factures-fournisseurs'
+
+// Export Gestion Interventions (suppression, annulation)
+export { 
+  supprimerIntervention,
+  annulerFinalisation,
+  compterMouvementsIntervention,
+  annulerMouvementsIntervention,
+  interventionAMouvements
+} from './interventions-gestion-stock'
+
+// Export Stock Affectations functions
+export {
+  createAffectation,
+  getAllAffectations,
+  getAffectationsByEquipement,
+  getAffectationsByArticle,
+  getAffectationById,
+  updateAffectation,
+  deleteAffectation,
+  getStockEmbarqueArticle,
+  articleDejaAffecte
+} from './stock-affectations'
+export type { AffectationEquipement, AffectationEquipementInput } from './stock-affectations'
+
+// Export Stock Affectations Accessoires functions
+export {
+  createAffectationAccessoire,
+  getAllAffectationsAccessoires,
+  getAffectationsAccessoiresParVehicule,
+  getAffectationAccessoire,
+  getAffectationAccessoireById,
+  updateAffectationAccessoire,
+  deleteAffectationAccessoire,
+  accessoireDejaAffecte
+} from './stock-affectations-accessoires'
+export type { AffectationAccessoire, AffectationAccessoireInput } from './stock-affectations-accessoires'

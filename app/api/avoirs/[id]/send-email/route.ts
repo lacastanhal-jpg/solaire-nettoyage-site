@@ -123,7 +123,7 @@ export async function POST(
     doc.setFont('helvetica', 'bold')
     doc.text('Type d\'utilisation :', 20, utilisationY)
     doc.setFont('helvetica', 'normal')
-    const typeText = avoir.typeUtilisation === 'deduction' 
+    const typeText = avoir.utilisationType === 'deduction' 
       ? 'Déduction sur prochaine facture' 
       : 'Remboursement au client'
     doc.text(typeText, 20, utilisationY + 5)

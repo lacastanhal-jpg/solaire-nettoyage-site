@@ -82,7 +82,7 @@ export default function NouvelleFacturePage() {
         ligne.prixUnitaire = article.prixUnitaire || 0
       }
     } else {
-      ligne[field] = value
+      (ligne as any)[field] = value
     }
     
     // Recalculer totaux

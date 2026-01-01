@@ -86,7 +86,7 @@ export default function ModifierFacturePage() {
         ligne.prixUnitaire = article.prixUnitaire || 0
       }
     } else {
-      ligne[field] = value
+      (ligne as any)[field] = value
     }
     
     if (field === 'quantite' || field === 'prixUnitaire' || field === 'tva') {

@@ -388,7 +388,7 @@ export async function getNotesDeFraisEnAttente(): Promise<NoteDeFrais[]> {
 /**
  * Récupérer les notes de frais validées non remboursées
  */
-export async function getNotesDeFraisARembo urser(): Promise<NoteDeFrais[]> {
+export async function getNotesDeFraisARembourser(): Promise<NoteDeFrais[]> {
   try {
     const notesRef = collection(db, 'notes_de_frais')
     const q = query(

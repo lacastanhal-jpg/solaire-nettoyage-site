@@ -12,6 +12,7 @@ export default function IntranetHeader() {
   // États pour les menus déroulants
   const [crmOpen, setCrmOpen] = useState(false)
   const [financesOpen, setFinancesOpen] = useState(false)
+  const [stockFlotteOpen, setStockFlotteOpen] = useState(false)
   const [operationsOpen, setOperationsOpen] = useState(false)
   const [conformiteOpen, setConformiteOpen] = useState(false)
   const [adminMenuOpen, setAdminMenuOpen] = useState(false)
@@ -34,6 +35,7 @@ export default function IntranetHeader() {
   const closeAllMenus = () => {
     setCrmOpen(false)
     setFinancesOpen(false)
+    setStockFlotteOpen(false)
     setOperationsOpen(false)
     setConformiteOpen(false)
     setAdminMenuOpen(false)
@@ -73,6 +75,7 @@ export default function IntranetHeader() {
                 onClick={() => {
                   setCrmOpen(!crmOpen)
                   setFinancesOpen(false)
+                  setStockFlotteOpen(false)
                   setOperationsOpen(false)
                   setConformiteOpen(false)
                   setAdminMenuOpen(false)
@@ -115,6 +118,7 @@ export default function IntranetHeader() {
                 onClick={() => {
                   setFinancesOpen(!financesOpen)
                   setCrmOpen(false)
+                  setStockFlotteOpen(false)
                   setOperationsOpen(false)
                   setConformiteOpen(false)
                   setAdminMenuOpen(false)
@@ -160,6 +164,63 @@ export default function IntranetHeader() {
             </div>
           )}
 
+          {/* 📦 STOCK & FLOTTE - ADMIN UNIQUEMENT */}
+          {isAdmin && (
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setStockFlotteOpen(!stockFlotteOpen)
+                  setCrmOpen(false)
+                  setFinancesOpen(false)
+                  setOperationsOpen(false)
+                  setConformiteOpen(false)
+                  setAdminMenuOpen(false)
+                }}
+                className="flex items-center gap-1 text-sm font-medium text-gray-300 hover:text-white transition-colors"
+              >
+                📦 Stock & Flotte
+                <svg className={`w-4 h-4 transition-transform ${stockFlotteOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              {stockFlotteOpen && (
+                <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-lg shadow-xl py-2 border border-gray-200">
+                  <Link href="/admin/stock-flotte" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
+                    📊 Dashboard
+                  </Link>
+                  <Link href="/admin/stock-flotte/alertes" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
+                    🚨 Alertes
+                  </Link>
+                  <div className="border-t border-gray-200 my-1"></div>
+                  <Link href="/admin/stock-flotte/articles" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
+                    📦 Articles
+                  </Link>
+                  <Link href="/admin/stock-flotte/mouvements" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
+                    🔄 Mouvements Stock
+                  </Link>
+                  <Link href="/admin/stock-flotte/affectations" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
+                    🔗 Affectations (Stock Embarqué)
+                  </Link>
+                  <div className="border-t border-gray-200 my-1"></div>
+                  <Link href="/admin/stock-flotte/equipements" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
+                    🚗 Équipements
+                  </Link>
+                  <Link href="/admin/stock-flotte/interventions" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
+                    🔧 Interventions Maintenance
+                  </Link>
+                  <div className="border-t border-gray-200 my-1"></div>
+                  <Link href="/admin/stock-flotte/bons-commande" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
+                    📋 Bons Commande
+                  </Link>
+                  <Link href="/admin/stock-flotte/factures-fournisseurs" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
+                    📄 Factures Fournisseurs
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* 🚀 OPÉRATIONS - TOUS */}
           <div className="relative">
             <button
@@ -167,6 +228,7 @@ export default function IntranetHeader() {
                 setOperationsOpen(!operationsOpen)
                 setCrmOpen(false)
                 setFinancesOpen(false)
+                setStockFlotteOpen(false)
                 setConformiteOpen(false)
                 setAdminMenuOpen(false)
               }}
@@ -208,6 +270,7 @@ export default function IntranetHeader() {
                 setConformiteOpen(!conformiteOpen)
                 setCrmOpen(false)
                 setFinancesOpen(false)
+                setStockFlotteOpen(false)
                 setOperationsOpen(false)
                 setAdminMenuOpen(false)
               }}
@@ -242,6 +305,7 @@ export default function IntranetHeader() {
                   setAdminMenuOpen(!adminMenuOpen)
                   setCrmOpen(false)
                   setFinancesOpen(false)
+                  setStockFlotteOpen(false)
                   setOperationsOpen(false)
                   setConformiteOpen(false)
                 }}
@@ -257,6 +321,9 @@ export default function IntranetHeader() {
                 <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-lg shadow-xl py-2 border border-gray-200">
                   <Link href="/admin/gely" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
                     🏢 GELY Management
+                  </Link>
+                  <Link href="/admin/administration/societes" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
+                    🏛️ Sociétés
                   </Link>
                   <Link href="/admin/parametres-entreprise" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
                     🏢 Paramètres Entreprise

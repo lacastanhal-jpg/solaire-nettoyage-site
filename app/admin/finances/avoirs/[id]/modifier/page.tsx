@@ -24,6 +24,10 @@ export default function ModifierAvoirPage() {
   async function loadAvoir() {
     try {
       const data = await getAvoirById(params.id as string)
+      if (!data) {
+        router.push('/admin/finances/avoirs')
+        return
+      }
       setAvoir(data)
       setFormData({
         motif: data.motif,

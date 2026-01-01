@@ -77,7 +77,8 @@ export default function DetailAvoirPage() {
   async function handleChangerStatut(nouveauStatut: Avoir['statut']) {
     if (!avoir) return
     
-    const confirmations = {
+    const confirmations: { [key: string]: string } = {
+      brouillon: "Êtes-vous sûr de vouloir passer cet avoir en brouillon ?",
       applique: 'Confirmer l\'application de cet avoir ?',
       rembourse: 'Confirmer le remboursement de cet avoir ?',
       envoye: 'Marquer cet avoir comme envoyé ?'
@@ -165,11 +166,7 @@ export default function DetailAvoirPage() {
           <p className="text-gray-700">
             Date : {new Date(avoir.date).toLocaleDateString('fr-FR')}
           </p>
-          {avoir.factureOrigineNumero && (
-            <p className="text-gray-700">
-              Facture d'origine : <span className="font-bold text-gray-900">{avoir.factureOrigineNumero}</span>
-            </p>
-          )}
+          {/* Bloc supprimé */}
         </div>
         <div className="flex gap-3">
           <button
@@ -213,12 +210,7 @@ export default function DetailAvoirPage() {
             {Math.abs(avoir.totalTTC).toLocaleString('fr-FR')} €
           </div>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow border border-gray-300">
-          <div className="text-sm text-gray-700 font-medium">Type d'utilisation</div>
-          <div className="text-lg font-bold text-gray-900 mt-2">
-            {avoir.typeUtilisation === 'deduction' ? 'Déduction' : 'Remboursement'}
-          </div>
-        </div>
+        
         <div className="bg-white p-6 rounded-lg shadow border border-gray-300">
           <div className="text-sm text-gray-700 font-medium">Statut</div>
           <div className="mt-2">
@@ -248,15 +240,8 @@ export default function DetailAvoirPage() {
             )}
             {avoir.statut === 'envoye' && (
               <>
-                {avoir.typeUtilisation === 'deduction' && (
-                  <button
-                    onClick={() => handleChangerStatut('applique')}
-                    className="px-6 py-3 bg-green-700 text-white rounded-lg hover:bg-green-800 font-semibold"
-                  >
-                    ✅ Marquer comme appliqué (déduit)
-                  </button>
-                )}
-                {avoir.typeUtilisation === 'remboursement' && (
+                
+                {avoir.statut === 'envoye' && (
                   <button
                     onClick={() => handleChangerStatut('rembourse')}
                     className="px-6 py-3 bg-purple-700 text-white rounded-lg hover:bg-purple-800 font-semibold"

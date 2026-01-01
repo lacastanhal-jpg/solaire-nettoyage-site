@@ -127,16 +127,16 @@ export async function GET(
     doc.text('Type d\'utilisation :', 20, utilisationY)
     
     doc.setFont('helvetica', 'normal')
-    const typeText = avoir.typeUtilisation === 'deduction' 
+    const typeText = avoir.utilisationType === 'deduction' 
       ? 'Déduction sur prochaine facture' 
       : 'Remboursement au client'
     doc.text(typeText, 20, utilisationY + 5)
     
-    if (avoir.factureOrigineNumero) {
+    if (avoir.factureNumero) {
       doc.setFont('helvetica', 'bold')
       doc.text('Facture d\'origine :', 20, utilisationY + 15)
       doc.setFont('helvetica', 'normal')
-      doc.text(avoir.factureOrigineNumero, 20, utilisationY + 20)
+      doc.text(avoir.factureNumero, 20, utilisationY + 20)
     }
     
     // FOOTER
