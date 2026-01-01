@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { Suspense, useState, useEffect, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { getAllEquipements, getAllArticlesStock } from '@/lib/firebase'
@@ -21,7 +21,7 @@ type StatutStock = {
   couleur: 'green' | 'orange' | 'red'
 }
 
-export default function NouvelleInterventionPage() {
+function NouvelleInterventionForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
@@ -222,8 +222,7 @@ export default function NouvelleInterventionPage() {
       // Si NaN ou vide, mettre 1 par défaut
       nouveaux[index] = { ...nouveaux[index], quantite: isNaN(qty) ? 1 : Math.max(1, qty) }
     } else {
-      // field est 'articleId', donc value est forcément un string
-      nouveaux[index] = { ...nouveaux[index], [field]: value as string }
+      nouveaux[index] = { ...nouveaux[index], [field]: value }
     }
     
     setArticlesSelectionnes(nouveaux)
@@ -772,5 +771,18 @@ export default function NouvelleInterventionPage() {
         />
       )}
     </div>
+}
+
+export default function NouvelleInterventionPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 p-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center">Chargement...</div>
+        </div>
+      </div>
+    }>
+      <NouvelleInterventionForm />
+    </Suspense>
   )
 }

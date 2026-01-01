@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createMouvementStock, getAllArticlesStock, getAllEquipements } from '@/lib/firebase'
 import type { ArticleStock, Equipement } from '@/lib/types/stock-flotte'
 import { DEPOTS, OPERATEURS } from '@/lib/types/stock-flotte'
 
-export default function NouveauMouvementPage() {
+function NouveauMouvementForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
@@ -46,7 +46,7 @@ export default function NouveauMouvementPage() {
   function getArticleStock(articleId: string, depot: string): number {
     const article = articles.find(a => a.id === articleId)
     if (!article) return 0
-    return article.stockParDepot[depot as keyof typeof article.stockParDepot] || 0
+    return article.stockParDepot[depot] || 0
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -103,23 +103,12 @@ export default function NouveauMouvementPage() {
     try {
       setLoading(true)
 
-      const article = articles.find(a => a.id === formData.articleId)
-      if (!article) {
-        alert('Article introuvable')
-        setLoading(false)
-        return
-      }
-
       await createMouvementStock({
         type: formData.type,
         articleId: formData.articleId,
-        articleCode: article.code,
-        articleDescription: article.description,
         quantite,
         date: new Date().toISOString(),
         raison: formData.raison || 'Mouvement manuel',
-        coutUnitaire: article.prixUnitaire || 0,
-        coutTotal: (article.prixUnitaire || 0) * quantite,
         depotSource: formData.depotSource || undefined,
         depotDestination: formData.depotDestination || undefined,
         operateur: formData.operateur,
@@ -482,5 +471,18 @@ export default function NouveauMouvementPage() {
         </div>
       </form>
     </div>
+}
+
+export default function NouveauMouvementPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 p-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center">Chargement...</div>
+        </div>
+      </div>
+    }>
+      <NouveauMouvementForm />
+    </Suspense>
   )
 }
