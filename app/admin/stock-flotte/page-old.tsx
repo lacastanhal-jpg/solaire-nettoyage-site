@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import dynamic from 'next/dynamic'
 import { 
   getStatistiquesStock,
   getStatistiquesFlotte,
@@ -12,22 +11,6 @@ import {
 } from '@/lib/firebase'
 import type { ArticleStock, MouvementStock } from '@/lib/types/stock-flotte'
 
-// Import dynamique des composants graphiques (client-side only)
-const GraphiqueConsommation = dynamic(() => import('@/components/stock-flotte/GraphiqueConsommation'), {
-  ssr: false,
-  loading: () => <div className="h-80 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900"></div></div>
-})
-
-const GraphiqueCoutsMaintenance = dynamic(() => import('@/components/stock-flotte/GraphiqueCoutsMaintenance'), {
-  ssr: false,
-  loading: () => <div className="h-80 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900"></div></div>
-})
-
-const PrevisionsReapprovisionnement = dynamic(() => import('@/components/stock-flotte/PrevisionsReapprovisionnement'), {
-  ssr: false,
-  loading: () => <div className="h-40 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900"></div></div>
-})
-
 export default function StockFlotteDashboard() {
   const [loading, setLoading] = useState(true)
   const [statsStock, setStatsStock] = useState<any>(null)
@@ -35,7 +18,6 @@ export default function StockFlotteDashboard() {
   const [statsMaintenance, setStatsMaintenance] = useState<any>(null)
   const [alertes, setAlertes] = useState<ArticleStock[]>([])
   const [derniersMouvements, setDerniersMouvements] = useState<MouvementStock[]>([])
-  const [ongletActif, setOngletActif] = useState<'overview' | 'consommation' | 'maintenance' | 'previsions'>('overview')
 
   useEffect(() => {
     loadDashboardData()
@@ -70,7 +52,7 @@ export default function StockFlotteDashboard() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Chargement du dashboard...</p>
+          <p className="mt-4 text-gray-600">Chargement...</p>
         </div>
       </div>
     )
@@ -84,7 +66,7 @@ export default function StockFlotteDashboard() {
         <p className="text-gray-600 mt-2">Gestion du stock et de la flotte d'équipements</p>
       </div>
 
-      {/* KPIs principaux */}
+      {/* Cartes statistiques principales */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {/* Valeur stock */}
         <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
@@ -124,7 +106,7 @@ export default function StockFlotteDashboard() {
               </svg>
             </div>
           </div>
-          <Link href="/admin/stock-flotte/alertes" className="text-sm text-red-600 hover:text-red-800 mt-4 inline-block">
+          <Link href="/admin/stock-flotte/articles" className="text-sm text-red-600 hover:text-red-800 mt-4 inline-block">
             Voir les alertes →
           </Link>
         </div>
@@ -226,148 +208,71 @@ export default function StockFlotteDashboard() {
         </div>
       </div>
 
-      {/* Onglets */}
-      <div className="bg-white rounded-lg shadow border border-gray-200 mb-8">
-        <div className="border-b border-gray-200">
-          <nav className="flex -mb-px">
-            <button
-              onClick={() => setOngletActif('overview')}
-              className={`px-6 py-3 text-sm font-medium border-b-2 transition ${
-                ongletActif === 'overview'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Vue d'ensemble
-            </button>
-            <button
-              onClick={() => setOngletActif('consommation')}
-              className={`px-6 py-3 text-sm font-medium border-b-2 transition ${
-                ongletActif === 'consommation'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              📊 Consommation
-            </button>
-            <button
-              onClick={() => setOngletActif('maintenance')}
-              className={`px-6 py-3 text-sm font-medium border-b-2 transition ${
-                ongletActif === 'maintenance'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              🔧 Maintenance
-            </button>
-            <button
-              onClick={() => setOngletActif('previsions')}
-              className={`px-6 py-3 text-sm font-medium border-b-2 transition ${
-                ongletActif === 'previsions'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              🔮 Prévisions
-            </button>
-          </nav>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Alertes stock */}
+        <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Alertes Stock</h2>
+            <Link href="/admin/stock-flotte/articles" className="text-sm text-blue-600 hover:text-blue-800">
+              Tout voir →
+            </Link>
+          </div>
+          {alertes.length === 0 ? (
+            <p className="text-sm text-gray-500 text-center py-4">✅ Aucune alerte</p>
+          ) : (
+            <div className="space-y-3">
+              {alertes.slice(0, 5).map(article => (
+                <div key={article.id} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                  <div className="flex-1">
+                    <p className="font-medium text-sm text-gray-900">{article.code}</p>
+                    <p className="text-xs text-gray-600">{article.description}</p>
+                    <p className="text-xs text-red-600 mt-1">
+                      Stock: {article.stockTotal} / Min: {article.stockMin}
+                    </p>
+                  </div>
+                  <Link 
+                    href={`/admin/stock-flotte/articles/${article.id}`}
+                    className="text-sm text-blue-600 hover:text-blue-800 ml-4"
+                  >
+                    Voir
+                  </Link>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        <div className="p-6">
-          {/* Onglet Vue d'ensemble */}
-          {ongletActif === 'overview' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Alertes stock */}
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900">Alertes Stock</h2>
-                  <Link href="/admin/stock-flotte/alertes" className="text-sm text-blue-600 hover:text-blue-800">
-                    Tout voir →
-                  </Link>
-                </div>
-                {alertes.length === 0 ? (
-                  <p className="text-sm text-gray-500 text-center py-4">✅ Aucune alerte</p>
-                ) : (
-                  <div className="space-y-3">
-                    {alertes.slice(0, 5).map(article => (
-                      <div key={article.id} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-                        <div className="flex-1">
-                          <p className="font-medium text-sm text-gray-900">{article.code}</p>
-                          <p className="text-xs text-gray-600">{article.description}</p>
-                          <p className="text-xs text-red-600 mt-1">
-                            Stock: {article.stockTotal} / Min: {article.stockMin}
-                          </p>
-                        </div>
-                        <Link 
-                          href={`/admin/stock-flotte/articles/${article.id}`}
-                          className="text-sm text-blue-600 hover:text-blue-800 ml-4"
-                        >
-                          Voir
-                        </Link>
-                      </div>
-                    ))}
+        {/* Derniers mouvements */}
+        <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Derniers Mouvements</h2>
+            <Link href="/admin/stock-flotte/mouvements" className="text-sm text-blue-600 hover:text-blue-800">
+              Tout voir →
+            </Link>
+          </div>
+          {derniersMouvements.length === 0 ? (
+            <p className="text-sm text-gray-500 text-center py-4">Aucun mouvement</p>
+          ) : (
+            <div className="space-y-3">
+              {derniersMouvements.map(mouvement => (
+                <div key={mouvement.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-1 text-xs rounded font-medium ${
+                        mouvement.type === 'entree' ? 'bg-green-100 text-green-800' :
+                        mouvement.type === 'sortie' ? 'bg-red-100 text-red-800' :
+                        'bg-blue-100 text-blue-800'
+                      }`}>
+                        {mouvement.type}
+                      </span>
+                      <p className="text-sm font-medium text-gray-900">{mouvement.articleCode}</p>
+                    </div>
+                    <p className="text-xs text-gray-600 mt-1">
+                      {mouvement.quantite} unités · {new Date(mouvement.date).toLocaleDateString('fr-FR')}
+                    </p>
                   </div>
-                )}
-              </div>
-
-              {/* Derniers mouvements */}
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900">Derniers Mouvements</h2>
-                  <Link href="/admin/stock-flotte/mouvements" className="text-sm text-blue-600 hover:text-blue-800">
-                    Tout voir →
-                  </Link>
                 </div>
-                {derniersMouvements.length === 0 ? (
-                  <p className="text-sm text-gray-500 text-center py-4">Aucun mouvement</p>
-                ) : (
-                  <div className="space-y-3">
-                    {derniersMouvements.map(mouvement => (
-                      <div key={mouvement.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className={`px-2 py-1 text-xs rounded font-medium ${
-                              mouvement.type === 'entree' ? 'bg-green-100 text-green-800' :
-                              mouvement.type === 'sortie' ? 'bg-red-100 text-red-800' :
-                              'bg-blue-100 text-blue-800'
-                            }`}>
-                              {mouvement.type}
-                            </span>
-                            <p className="text-sm font-medium text-gray-900">{mouvement.articleCode}</p>
-                          </div>
-                          <p className="text-xs text-gray-600 mt-1">
-                            {mouvement.quantite} unités · {new Date(mouvement.date).toLocaleDateString('fr-FR')}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Onglet Consommation */}
-          {ongletActif === 'consommation' && (
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Consommation des articles sur 6 mois
-              </h3>
-              <GraphiqueConsommation nombreMois={6} />
-            </div>
-          )}
-
-          {/* Onglet Maintenance */}
-          {ongletActif === 'maintenance' && (
-            <div>
-              <GraphiqueCoutsMaintenance nombreMois={6} />
-            </div>
-          )}
-
-          {/* Onglet Prévisions */}
-          {ongletActif === 'previsions' && (
-            <div>
-              <PrevisionsReapprovisionnement />
+              ))}
             </div>
           )}
         </div>

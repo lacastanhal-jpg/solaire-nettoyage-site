@@ -207,6 +207,25 @@ export async function getInterventionsByPeriode(debut: string, fin: string): Pro
 }
 
 /**
+ * Récupérer une intervention par ID
+ */
+export async function getInterventionCalendarById(id: string): Promise<(InterventionCalendar & { id: string }) | null> {
+  try {
+    const docSnap = await getDoc(doc(db, 'interventions_calendar', id))
+    if (docSnap.exists()) {
+      return {
+        id: docSnap.id,
+        ...docSnap.data()
+      } as InterventionCalendar & { id: string }
+    }
+    return null
+  } catch (error) {
+    console.error('Erreur récupération intervention:', error)
+    return null
+  }
+}
+
+/**
  * Mettre à jour une intervention
  */
 export async function updateInterventionCalendar(id: string, updates: Partial<InterventionCalendar>) {

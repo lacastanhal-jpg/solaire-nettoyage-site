@@ -143,6 +143,10 @@ export default function IntranetHeader() {
                     🔴 Avoirs
                   </Link>
                   <div className="border-t border-gray-200 my-1"></div>
+                  <Link href="/admin/tarification" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
+                    💰 Tarification
+                  </Link>
+                  <div className="border-t border-gray-200 my-1"></div>
                   <div className="px-4 py-2 text-xs text-gray-500 italic">
                     💳 Notes de Frais (à venir)
                   </div>

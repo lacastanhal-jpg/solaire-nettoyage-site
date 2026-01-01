@@ -57,6 +57,7 @@ export {
   getInterventionsByClientCalendar,
   getInterventionsBySiteCalendar,
   getInterventionsByPeriode,
+  getInterventionCalendarById,
   updateInterventionCalendar,
   deleteInterventionCalendar,
   demanderChangementDate,
@@ -292,3 +293,18 @@ export {
   accessoireDejaAffecte
 } from './stock-affectations-accessoires'
 export type { AffectationAccessoire, AffectationAccessoireInput } from './stock-affectations-accessoires'
+
+// ===================================
+// STOCK PRÉVISIONS (NOUVEAU - Semaine 1)
+// ===================================
+
+// Export Stock Prévisions functions
+export {
+  genererPrevisionsReapprovisionnement,
+  getStatistiquesConsommationParMois,
+  getEvolutionStockArticle
+} from './stock-previsions'
+export type { 
+  PrevisionReapprovisionnement,
+  StatistiquesConsommation
+} from './stock-previsions'

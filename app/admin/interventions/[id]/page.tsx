@@ -5,7 +5,11 @@ import { useRouter, useParams } from 'next/navigation'
 import { db, storage } from '@/lib/firebase'
 import { doc, getDoc, updateDoc } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { ArrowLeft, Upload, FileText, Calendar, MapPin, User } from 'lucide-react'
+import { ArrowLeft, Upload, FileText, Calendar, MapPin, User, DollarSign } from 'lucide-react'
+import { calculerPrixIntervention, genererFactureFromIntervention } from '@/lib/workflows/intervention-to-facture'
+import { getPrestationsActives } from '@/lib/firebase/prestations-catalogue'
+import type { PrestationCatalogue } from '@/lib/types/tarification'
+import type { ResultatCalculPrix } from '@/lib/types/tarification'
 
 interface Rapport {
   numeroIntervention: string
@@ -38,6 +42,10 @@ interface Intervention {
   equipeId: number
   notes?: string
   rapport?: Rapport
+  factureId?: string
+  factureNumero?: string
+  factureLe?: string
+  facturePar?: string
 }
 
 export default function DetailInterventionPage() {
@@ -49,6 +57,15 @@ export default function DetailInterventionPage() {
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  
+  // États génération facture
+  const [showModalFacture, setShowModalFacture] = useState(false)
+  const [prestations, setPrestations] = useState<PrestationCatalogue[]>([])
+  const [prestationSelectionnee, setPrestationSelectionnee] = useState<string>('NETT-STANDARD')
+  const [calculEnCours, setCalculEnCours] = useState(false)
+  const [resultatCalcul, setResultatCalcul] = useState<ResultatCalculPrix | null>(null)
+  const [prixManuel, setPrixManuel] = useState<number | null>(null)
+  const [generationEnCours, setGenerationEnCours] = useState(false)
 
   useEffect(() => {
     const userRole = localStorage.getItem('user_role')
@@ -57,7 +74,17 @@ export default function DetailInterventionPage() {
       return
     }
     loadIntervention()
+    loadPrestations()
   }, [interventionId, router])
+
+  const loadPrestations = async () => {
+    try {
+      const data = await getPrestationsActives()
+      setPrestations(data)
+    } catch (error) {
+      console.error('Erreur chargement prestations:', error)
+    }
+  }
 
   const loadIntervention = async () => {
     try {
@@ -130,6 +157,85 @@ export default function DetailInterventionPage() {
       alert(`❌ Erreur: ${error.message}`)
     } finally {
       setUploading(false)
+    }
+  }
+
+  const handleOuvrirModalFacture = async () => {
+    if (!intervention) return
+    
+    setShowModalFacture(true)
+    setResultatCalcul(null)
+    setPrixManuel(null)
+    
+    // Calculer le prix automatiquement
+    await handleCalculerPrix()
+  }
+
+  const handleCalculerPrix = async () => {
+    if (!intervention) return
+    
+    try {
+      setCalculEnCours(true)
+      
+      const userName = localStorage.getItem('user_name') || 'Admin'
+      
+      const resultat = await calculerPrixIntervention(
+        interventionId,
+        prestationSelectionnee,
+        [], // Majorations (TODO: permettre sélection)
+        [], // Remises (TODO: permettre sélection)
+        userName
+      )
+      
+      setResultatCalcul(resultat)
+      setPrixManuel(resultat.detail.totalHT)
+      
+    } catch (error: any) {
+      console.error('Erreur calcul prix:', error)
+      alert(`❌ ${error.message || 'Erreur lors du calcul du prix'}`)
+    } finally {
+      setCalculEnCours(false)
+    }
+  }
+
+  const handleGenererFacture = async () => {
+    if (!intervention || !resultatCalcul) return
+    
+    if (!confirm(
+      `Générer la facture pour cette intervention ?\n\n` +
+      `Montant HT: ${prixManuel?.toFixed(2)}€\n` +
+      `Total TTC: ${((prixManuel || 0) * (1 + resultatCalcul.detail.tauxTVA / 100)).toFixed(2)}€`
+    )) {
+      return
+    }
+    
+    try {
+      setGenerationEnCours(true)
+      
+      const userName = localStorage.getItem('user_name') || 'Admin'
+      
+      const factureId = await genererFactureFromIntervention(
+        interventionId,
+        resultatCalcul.detail,
+        prixManuel || undefined,
+        [], // Lignes supplémentaires (TODO: permettre ajout)
+        userName
+      )
+      
+      alert('✅ Facture générée avec succès !')
+      setShowModalFacture(false)
+      
+      // Recharger l'intervention pour afficher la facture liée
+      await loadIntervention()
+      
+      // Rediriger vers la facture
+      router.push(`/admin/factures/${factureId}`)
+      
+    } catch (error: any) {
+      console.error('Erreur génération facture:', error)
+      alert(`❌ ${error.message || 'Erreur lors de la génération'}`)
+    } finally {
+      setGenerationEnCours(false)
     }
   }
 
@@ -372,6 +478,39 @@ export default function DetailInterventionPage() {
 
           {/* Sidebar actions */}
           <div className="space-y-4">
+            {/* Facture */}
+            {intervention.factureId ? (
+              <div className="bg-green-50 rounded-xl shadow-lg border-2 border-green-200 p-6">
+                <h3 className="text-lg font-bold text-green-900 mb-2">✅ Facturée</h3>
+                <p className="text-sm text-green-800 mb-3">
+                  Facture {intervention.factureNumero}
+                </p>
+                <p className="text-xs text-green-700 mb-4">
+                  Générée le {intervention.factureLe ? new Date(intervention.factureLe).toLocaleDateString('fr-FR') : ''}
+                </p>
+                <a
+                  href={`/admin/factures/${intervention.factureId}`}
+                  className="block w-full px-4 py-2 bg-green-600 text-white text-center rounded-lg hover:bg-green-700 font-bold"
+                >
+                  📄 Voir facture
+                </a>
+              </div>
+            ) : intervention.statut === 'Terminée' && (
+              <div className="bg-blue-50 rounded-xl shadow-lg border-2 border-blue-200 p-6">
+                <h3 className="text-lg font-bold text-blue-900 mb-2">💰 Facturation</h3>
+                <p className="text-sm text-blue-800 mb-4">
+                  Cette intervention peut être facturée
+                </p>
+                <button
+                  onClick={handleOuvrirModalFacture}
+                  className="block w-full px-4 py-2 bg-blue-600 text-white text-center rounded-lg hover:bg-blue-700 font-bold"
+                >
+                  <DollarSign className="w-4 h-4 inline mr-2" />
+                  Générer facture
+                </button>
+              </div>
+            )}
+            
             <div className="bg-white rounded-xl shadow-lg border border-blue-200 p-6">
               <h3 className="text-lg font-bold text-gray-900 mb-4">⚙️ Actions</h3>
               <div className="space-y-2">
@@ -392,6 +531,140 @@ export default function DetailInterventionPage() {
           </div>
         </div>
       </main>
+      
+      {/* Modal Génération Facture */}
+      {showModalFacture && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b-2 border-gray-200">
+              <h2 className="text-2xl font-bold text-gray-900">💰 Génération Facture Client</h2>
+              <p className="text-gray-600 mt-1">
+                {intervention?.siteName} - {intervention?.surface} m²
+              </p>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              {/* Sélection prestation */}
+              <div>
+                <label className="block text-sm font-bold text-gray-900 mb-2">
+                  Type de prestation
+                </label>
+                <select
+                  value={prestationSelectionnee}
+                  onChange={(e) => {
+                    setPrestationSelectionnee(e.target.value)
+                    setResultatCalcul(null)
+                  }}
+                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                >
+                  {prestations.map(p => (
+                    <option key={p.id} value={p.code}>
+                      {p.code} - {p.libelle} ({p.prixBase}€/{p.unite})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Bouton calcul */}
+              <button
+                onClick={handleCalculerPrix}
+                disabled={calculEnCours}
+                className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold disabled:bg-gray-400"
+              >
+                {calculEnCours ? '⏳ Calcul en cours...' : '🔄 (Re)calculer le prix'}
+              </button>
+
+              {/* Résultat calcul */}
+              {resultatCalcul && (
+                <div className="bg-blue-50 rounded-lg p-6 border-2 border-blue-200">
+                  <h3 className="text-lg font-bold text-blue-900 mb-4">📊 Détail du calcul</h3>
+                  
+                  {/* Grille utilisée */}
+                  <div className="bg-white rounded-lg p-4 mb-4">
+                    <p className="text-sm text-gray-600">Grille tarifaire appliquée</p>
+                    <p className="font-bold text-gray-900">{resultatCalcul.detail.grilleNom}</p>
+                    {resultatCalcul.messageInfo && (
+                      <p className="text-sm text-blue-700 mt-1">ℹ️ {resultatCalcul.messageInfo}</p>
+                    )}
+                  </div>
+
+                  {/* Éléments calcul */}
+                  <div className="space-y-2 mb-4">
+                    {resultatCalcul.detail.elements.map((elem, index) => (
+                      <div key={index} className="flex justify-between items-center py-2 border-b border-gray-200">
+                        <div>
+                          <div className="font-medium text-gray-900">{elem.libelle}</div>
+                          {elem.base && elem.prix && (
+                            <div className="text-xs text-gray-600">
+                              {elem.base.toLocaleString()} × {elem.prix.toFixed(2)}€
+                            </div>
+                          )}
+                        </div>
+                        <div className={`font-bold ${elem.type === 'remise' ? 'text-green-600' : elem.type === 'majoration' ? 'text-orange-600' : 'text-gray-900'}`}>
+                          {elem.montant >= 0 ? '+' : ''}{elem.montant.toFixed(2)}€
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Prix modifiable */}
+                  <div className="bg-white rounded-lg p-4">
+                    <label className="block text-sm font-bold text-gray-900 mb-2">
+                      Prix HT (modifiable)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={prixManuel || ''}
+                      onChange={(e) => setPrixManuel(parseFloat(e.target.value) || 0)}
+                      className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-lg"
+                    />
+                  </div>
+
+                  {/* Totaux */}
+                  <div className="bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg p-4 mt-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-gray-900">
+                        <span>Total HT:</span>
+                        <span className="font-bold">{(prixManuel || 0).toFixed(2)}€</span>
+                      </div>
+                      <div className="flex justify-between text-gray-900">
+                        <span>TVA ({resultatCalcul.detail.tauxTVA}%):</span>
+                        <span className="font-bold">
+                          {((prixManuel || 0) * (resultatCalcul.detail.tauxTVA / 100)).toFixed(2)}€
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-lg border-t-2 border-blue-300 pt-2">
+                        <span className="font-bold text-gray-900">Total TTC:</span>
+                        <span className="font-black text-blue-600 text-xl">
+                          {((prixManuel || 0) * (1 + resultatCalcul.detail.tauxTVA / 100)).toFixed(2)}€
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="p-6 border-t-2 border-gray-200 flex gap-3">
+              <button
+                onClick={() => setShowModalFacture(false)}
+                className="flex-1 px-6 py-3 border-2 border-gray-300 rounded-lg hover:bg-gray-100 font-bold text-gray-900"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleGenererFacture}
+                disabled={!resultatCalcul || generationEnCours}
+                className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold disabled:bg-gray-400"
+              >
+                {generationEnCours ? '⏳ Génération...' : '✅ Créer la facture'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
