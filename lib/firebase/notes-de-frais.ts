@@ -20,6 +20,61 @@ export interface JustificatifNoteFrais {
   dateUpload: string
 }
 
+/**
+ * DONNÉES CARBURANT (extraction OCR)
+ */
+export interface DonneesCarburant {
+  quantiteLitres: number          // 86.84 L
+  prixUnitaire: number            // 1.639 €/L
+  typeCarburant: string           // Gasoil, SP95, SP98, E10, GPL
+  numeroPompe?: string            // Numéro pompe
+  immatriculation?: string        // Plaque véhicule
+  kmDebut?: number                // Km compteur début
+  kmFin?: number                  // Km compteur fin
+  kmParcourus?: number            // Calcul auto: kmFin - kmDebut
+  consommationL100km?: number     // Calcul auto: (litres / km) × 100
+  coutAuKm?: number               // Calcul auto: montant / km
+}
+
+/**
+ * DONNÉES OCR (métadonnées analyse)
+ */
+export interface DonneesOCR {
+  confiance: number               // 0-100
+  typeTicket: string              // essence, restaurant, peage, etc.
+  dateAnalyse: string             // Date extraction OCR
+  texteComplet?: string           // Texte brut extrait
+  validation?: {
+    calculCorrect: boolean
+    champsManquants: string[]
+    avertissements: string[]
+  }
+}
+
+/**
+ * DONNÉES RESTAURANT (extraction OCR)
+ */
+export interface DonneesRestaurant {
+  nombrePersonnes?: number
+  articles?: Array<{
+    nom: string
+    quantite: number
+    prixUnitaire: number
+    total: number
+  }>
+}
+
+/**
+ * DONNÉES PÉAGE (extraction OCR)
+ */
+export interface DonneesPeage {
+  entree?: string
+  sortie?: string
+  classe?: string
+  trajet?: string
+  societe?: string  // VINCI, SANEF, etc.
+}
+
 export interface NoteDeFrais {
   id: string
   numero: string
@@ -47,6 +102,14 @@ export interface NoteDeFrais {
   vehiculeId?: string
   vehiculeImmat?: string
   kmParcourus?: number
+  
+  // DONNÉES SPÉCIFIQUES PAR TYPE (extraction OCR)
+  donneesCarburant?: DonneesCarburant
+  donneesRestaurant?: DonneesRestaurant
+  donneesPeage?: DonneesPeage
+  
+  // MÉTADONNÉES OCR
+  donneesOCR?: DonneesOCR
   
   // JUSTIFICATIFS
   justificatifs: JustificatifNoteFrais[]
@@ -552,3 +615,108 @@ export async function getStatistiquesNotesDeFrais(
     throw error
   }
 }
+
+/**
+ * CALCULS AUTOMATIQUES CARBURANT
+ */
+
+/**
+ * Calculer consommation L/100km
+ */
+export function calculerConsommationCarburant(
+  quantiteLitres: number,
+  kmParcourus: number
+): number {
+  if (kmParcourus <= 0) return 0
+  return (quantiteLitres / kmParcourus) * 100
+}
+
+/**
+ * Calculer coût au km
+ */
+export function calculerCoutAuKm(
+  montantTTC: number,
+  kmParcourus: number
+): number {
+  if (kmParcourus <= 0) return 0
+  return montantTTC / kmParcourus
+}
+
+/**
+ * Enrichir données carburant avec calculs automatiques
+ */
+export function enrichirDonneesCarburant(
+  donneesCarburant: DonneesCarburant,
+  montantTTC: number
+): DonneesCarburant {
+  const enrichi = { ...donneesCarburant }
+  
+  // Calculer km parcourus si début et fin renseignés
+  if (enrichi.kmDebut && enrichi.kmFin) {
+    enrichi.kmParcourus = enrichi.kmFin - enrichi.kmDebut
+  }
+  
+  // Calculer consommation si km et litres disponibles
+  if (enrichi.kmParcourus && enrichi.kmParcourus > 0 && enrichi.quantiteLitres > 0) {
+    enrichi.consommationL100km = calculerConsommationCarburant(
+      enrichi.quantiteLitres,
+      enrichi.kmParcourus
+    )
+  }
+  
+  // Calculer coût/km si km disponibles
+  if (enrichi.kmParcourus && enrichi.kmParcourus > 0) {
+    enrichi.coutAuKm = calculerCoutAuKm(montantTTC, enrichi.kmParcourus)
+  }
+  
+  return enrichi
+}
+
+/**
+ * Valider cohérence données carburant
+ */
+export function validerDonneesCarburant(
+  donneesCarburant: DonneesCarburant,
+  montantTTC: number
+): { valide: boolean; erreurs: string[] } {
+  const erreurs: string[] = []
+  
+  // Vérifier calcul quantité × prix ≈ montant
+  if (donneesCarburant.quantiteLitres && donneesCarburant.prixUnitaire) {
+    const montantCalcule = donneesCarburant.quantiteLitres * donneesCarburant.prixUnitaire
+    const difference = Math.abs(montantCalcule - montantTTC)
+    
+    if (difference > 0.50) { // Tolérance 0.50€
+      erreurs.push(
+        `Incohérence montant: ${donneesCarburant.quantiteLitres}L × ${donneesCarburant.prixUnitaire}€ = ${montantCalcule.toFixed(2)}€ ≠ ${montantTTC}€`
+      )
+    }
+  }
+  
+  // Vérifier km cohérents
+  if (donneesCarburant.kmDebut && donneesCarburant.kmFin) {
+    if (donneesCarburant.kmFin <= donneesCarburant.kmDebut) {
+      erreurs.push('Km fin doit être > Km début')
+    }
+    
+    const kmParcourus = donneesCarburant.kmFin - donneesCarburant.kmDebut
+    if (kmParcourus > 1000) {
+      erreurs.push(`Km parcourus anormalement élevé: ${kmParcourus} km`)
+    }
+  }
+  
+  // Vérifier consommation cohérente
+  if (donneesCarburant.consommationL100km) {
+    if (donneesCarburant.consommationL100km < 3 || donneesCarburant.consommationL100km > 30) {
+      erreurs.push(
+        `Consommation anormale: ${donneesCarburant.consommationL100km.toFixed(1)} L/100km`
+      )
+    }
+  }
+  
+  return {
+    valide: erreurs.length === 0,
+    erreurs
+  }
+}
+
