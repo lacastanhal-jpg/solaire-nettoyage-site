@@ -293,6 +293,35 @@ export async function deleteNoteDeFrais(id: string): Promise<void> {
 }
 
 /**
+ * Soumettre une note de frais (brouillon → soumise)
+ */
+export async function soumettreNoteDeFrais(id: string): Promise<void> {
+  try {
+    const noteRef = doc(db, 'notes_de_frais', id)
+    const noteSnap = await getDoc(noteRef)
+    
+    if (!noteSnap.exists()) {
+      throw new Error('Note de frais introuvable')
+    }
+    
+    const note = noteSnap.data() as NoteDeFrais
+    
+    if (note.statut !== 'brouillon') {
+      throw new Error('Seules les notes en brouillon peuvent être soumises')
+    }
+    
+    await updateDoc(noteRef, {
+      statut: 'soumise',
+      dateSoumission: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Erreur soumission note de frais:', error)
+    throw error
+  }
+}
+
+/**
  * Valider une note de frais
  */
 export async function validerNoteDeFrais(

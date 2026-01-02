@@ -2,8 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import Link from 'next/link'
 import { getDevisById, updateDevisStatut, type Devis } from '@/lib/firebase/devis'
 import { getEmailsHistorique, type EmailHistorique } from '@/lib/firebase/emails'
+import { devisAGeneréInterventions, getInterventionsByDevis } from '@/lib/firebase/workflow-devis-intervention'
+import ModalGenererInterventions from '@/components/ModalGenererInterventions'
+import { Calendar, FileText } from 'lucide-react'
 
 const STATUT_LABELS = {
   brouillon: { label: 'Brouillon', color: 'bg-gray-100 text-gray-800' },
@@ -27,10 +31,16 @@ export default function VoirDevisPage() {
   const [emailDestinataire, setEmailDestinataire] = useState('')
   const [emailMessage, setEmailMessage] = useState('')
   const [sendingEmail, setSendingEmail] = useState(false)
+  
+  // Workflow interventions
+  const [showModalInterventions, setShowModalInterventions] = useState(false)
+  const [interventionsGenerees, setInterventionsGenerees] = useState(false)
+  const [interventions, setInterventions] = useState<any[]>([])
 
   useEffect(() => {
     loadDevis()
     loadEmailsHistorique()
+    loadInterventions()
   }, [devisId])
 
   async function loadDevis() {
@@ -45,6 +55,10 @@ export default function VoirDevisPage() {
       }
 
       setDevis(data)
+      
+      // Vérifier si interventions générées
+      const aGenere = await devisAGeneréInterventions(devisId)
+      setInterventionsGenerees(aGenere)
     } catch (error) {
       console.error('Erreur chargement devis:', error)
       alert('Erreur lors du chargement du devis')
@@ -59,6 +73,15 @@ export default function VoirDevisPage() {
       setEmailsHistorique(historique)
     } catch (error) {
       console.error('Erreur chargement historique:', error)
+    }
+  }
+  
+  async function loadInterventions() {
+    try {
+      const ints = await getInterventionsByDevis(devisId)
+      setInterventions(ints)
+    } catch (error) {
+      console.error('Erreur chargement interventions:', error)
     }
   }
 
@@ -259,6 +282,68 @@ export default function VoirDevisPage() {
           </div>
         </div>
 
+        {/* Génération Interventions - Visible si accepté */}
+        {devis.statut === 'accepté' && (
+          <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg shadow-sm p-6 mb-6 border-2 border-green-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-green-600" />
+                  Générer les Interventions
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  {interventionsGenerees 
+                    ? `✅ ${interventions.length} intervention(s) déjà créée(s) depuis ce devis`
+                    : "Créer automatiquement les interventions depuis ce devis"}
+                </p>
+              </div>
+              <div className="flex gap-3">
+                {interventionsGenerees && interventions.length > 0 && (
+                  <Link
+                    href="/admin/calendrier"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Voir Planning
+                  </Link>
+                )}
+                {!interventionsGenerees && (
+                  <button
+                    onClick={() => setShowModalInterventions(true)}
+                    className="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors shadow-lg flex items-center gap-2"
+                  >
+                    <Calendar className="w-5 h-5" />
+                    Générer Interventions
+                  </button>
+                )}
+              </div>
+            </div>
+            
+            {/* Liste interventions créées */}
+            {interventionsGenerees && interventions.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-green-200">
+                <p className="text-sm font-medium text-gray-700 mb-2">Interventions créées :</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {interventions.map((int: any) => (
+                    <Link
+                      key={int.id}
+                      href={`/admin/interventions/${int.id}`}
+                      className="text-sm bg-white border border-green-200 rounded px-3 py-2 hover:bg-green-50 transition-colors"
+                    >
+                      <span className="font-medium text-green-700">{int.id}</span>
+                      <span className="text-gray-600 mx-2">•</span>
+                      <span className="text-gray-700">{int.siteName}</span>
+                      <span className="text-gray-500 block text-xs mt-1">
+                        📅 {int.dateDebut ? new Date(int.dateDebut).toLocaleDateString('fr-FR') : 'Date invalide'}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Informations client */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Client</h2>
@@ -414,6 +499,18 @@ export default function VoirDevisPage() {
             </div>
           </div>
         </div>
+      )}
+      
+      {/* Modal Génération Interventions */}
+      {showModalInterventions && devis && (
+        <ModalGenererInterventions
+          devis={devis}
+          onClose={() => setShowModalInterventions(false)}
+          onSuccess={() => {
+            loadDevis()
+            loadInterventions()
+          }}
+        />
       )}
     </div>
   )

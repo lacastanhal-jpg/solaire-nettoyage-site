@@ -114,6 +114,24 @@ export async function createCompteBancaire(compte: Omit<CompteBancaire, 'id' | '
 }
 
 /**
+ * Mettre à jour un compte bancaire
+ */
+export async function updateCompteBancaire(
+  compteId: string, 
+  data: Partial<Omit<CompteBancaire, 'id' | 'createdAt' | 'updatedAt'>>
+): Promise<void> {
+  try {
+    await updateDoc(doc(db, 'comptes_bancaires', compteId), {
+      ...data,
+      updatedAt: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Erreur mise à jour compte bancaire:', error)
+    throw error
+  }
+}
+
+/**
  * Mettre à jour le solde d'un compte
  */
 export async function updateSoldeCompte(compteId: string, nouveauSolde: number): Promise<void> {

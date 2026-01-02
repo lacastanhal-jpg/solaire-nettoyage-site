@@ -87,3 +87,16 @@ export async function uploadMultiplePhotos(
     throw error
   }
 }
+
+// Fonction générique pour uploader n'importe quel fichier
+export async function uploadFile(file: File, path: string): Promise<string> {
+  try {
+    const storageRef = ref(storage, path)
+    await uploadBytes(storageRef, file)
+    const downloadURL = await getDownloadURL(storageRef)
+    return downloadURL
+  } catch (error) {
+    console.error('Erreur upload fichier:', error)
+    throw error
+  }
+}

@@ -308,3 +308,18 @@ export type {
   PrevisionReapprovisionnement,
   StatistiquesConsommation
 } from './stock-previsions'
+
+// ===================================
+// TRÉSORERIE STATS (NOUVEAU - Semaine 2)
+// ===================================
+
+export {
+  getStatistiquesTresorerie,
+  getEvolutionSolde,
+  getTransactionsNonRapprochees,
+  getVariationSoldeMensuelle
+} from './tresorerie-stats'
+export type {
+  StatistiquesTresorerie,
+  EvolutionSolde
+} from './tresorerie-stats'

@@ -1,0 +1,356 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { createNoteDeFrais } from '@/lib/firebase/notes-de-frais'
+import { getAllOperateurs, type Operateur } from '@/lib/firebase/operateurs'
+import { getAllEquipements } from '@/lib/firebase/stock-equipements'
+import { uploadFile } from '@/lib/firebase/storage'
+
+export default function NouvelleNoteFraisPage() {
+  const router = useRouter()
+  const [loading, setLoading] = useState(false)
+  const [operateurs, setOperateurs] = useState<Operateur[]>([])
+  const [equipements, setEquipements] = useState<any[]>([])
+  
+  const [formData, setFormData] = useState({
+    operateurId: '',
+    operateurNom: '',
+    date: new Date().toISOString().split('T')[0],
+    categorie: 'carburant' as const,
+    montantTTC: 0,
+    tauxTVA: 20,
+    tvaRecuperable: true,
+    description: '',
+    fournisseur: '',
+    vehiculeId: '',
+    vehiculeImmat: '',
+    kmParcourus: 0,
+    statut: 'brouillon' as const
+  })
+  
+  const [fichiers, setFichiers] = useState<File[]>([])
+  const [uploading, setUploading] = useState(false)
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  async function loadData() {
+    try {
+      const [ops, equips] = await Promise.all([
+        getAllOperateurs(),
+        getAllEquipements()
+      ])
+      setOperateurs(ops)
+      setEquipements(equips.filter((e: any) => e.type === 'vehicule'))
+    } catch (error) {
+      console.error('Erreur:', error)
+    }
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    
+    if (!formData.operateurId) {
+      alert('⚠️ Sélectionnez un opérateur')
+      return
+    }
+    
+    if (formData.montantTTC <= 0) {
+      alert('⚠️ Le montant doit être supérieur à 0')
+      return
+    }
+    
+    try {
+      setLoading(true)
+      
+      // Upload justificatifs
+      let justificatifs: any[] = []
+      if (fichiers.length > 0) {
+        setUploading(true)
+        for (const fichier of fichiers) {
+          const url = await uploadFile(fichier, `notes-frais/${Date.now()}_${fichier.name}`)
+          justificatifs.push({
+            type: fichier.type.includes('pdf') ? 'pdf' : 'image',
+            url,
+            nom: fichier.name
+          })
+        }
+        setUploading(false)
+      }
+      
+      const noteId = await createNoteDeFrais({
+        ...formData,
+        justificatifs
+      })
+      
+      alert('✅ Note de frais créée')
+      router.push(`/admin/finances/notes-frais/${noteId}`)
+    } catch (error) {
+      console.error('Erreur:', error)
+      alert('❌ Erreur lors de la création')
+    } finally {
+      setLoading(false)
+      setUploading(false)
+    }
+  }
+
+  const handleOperateurChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const opId = e.target.value
+    const op = operateurs.find(o => o.id === opId)
+    setFormData({
+      ...formData,
+      operateurId: opId,
+      operateurNom: op ? `${op.prenom} ${op.nom}` : ''
+    })
+  }
+
+  const handleVehiculeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const vId = e.target.value
+    const v = equipements.find((eq: any) => eq.id === vId)
+    setFormData({
+      ...formData,
+      vehiculeId: vId,
+      vehiculeImmat: v ? v.immatriculation : ''
+    })
+  }
+
+  return (
+    <div className="p-6 max-w-4xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Nouvelle Note de Frais</h1>
+        <p className="text-gray-600 mt-2">Créer une nouvelle demande de remboursement</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6">
+        {/* Opérateur */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Opérateur *
+          </label>
+          <select
+            required
+            value={formData.operateurId}
+            onChange={handleOperateurChange}
+            className="w-full px-3 py-2 border rounded-lg"
+          >
+            <option value="">Sélectionner un opérateur</option>
+            {operateurs.map(op => (
+              <option key={op.id} value={op.id}>
+                {op.prenom} {op.nom}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          {/* Date */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Date *
+            </label>
+            <input
+              type="date"
+              required
+              value={formData.date}
+              onChange={(e) => setFormData({...formData, date: e.target.value})}
+              className="w-full px-3 py-2 border rounded-lg"
+            />
+          </div>
+
+          {/* Catégorie */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Catégorie *
+            </label>
+            <select
+              value={formData.categorie}
+              onChange={(e) => setFormData({...formData, categorie: e.target.value as any})}
+              className="w-full px-3 py-2 border rounded-lg"
+            >
+              <option value="carburant">⛽ Carburant</option>
+              <option value="peage">🛣️ Péage</option>
+              <option value="repas">🍽️ Repas</option>
+              <option value="hebergement">🏨 Hébergement</option>
+              <option value="fournitures">📦 Fournitures</option>
+              <option value="entretien">🔧 Entretien</option>
+              <option value="autre">📄 Autre</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          {/* Montant TTC */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Montant TTC *
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              required
+              value={formData.montantTTC}
+              onChange={(e) => setFormData({...formData, montantTTC: parseFloat(e.target.value)})}
+              className="w-full px-3 py-2 border rounded-lg"
+            />
+          </div>
+
+          {/* Taux TVA */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Taux TVA (%)
+            </label>
+            <select
+              value={formData.tauxTVA}
+              onChange={(e) => setFormData({...formData, tauxTVA: parseFloat(e.target.value)})}
+              className="w-full px-3 py-2 border rounded-lg"
+            >
+              <option value="0">0%</option>
+              <option value="5.5">5.5%</option>
+              <option value="10">10%</option>
+              <option value="20">20%</option>
+            </select>
+          </div>
+
+          {/* TVA récupérable */}
+          <div className="flex items-end">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={formData.tvaRecuperable}
+                onChange={(e) => setFormData({...formData, tvaRecuperable: e.target.checked})}
+                className="w-4 h-4"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                TVA récupérable
+              </span>
+            </label>
+          </div>
+        </div>
+
+        {/* Description */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Description *
+          </label>
+          <textarea
+            required
+            value={formData.description}
+            onChange={(e) => setFormData({...formData, description: e.target.value})}
+            className="w-full px-3 py-2 border rounded-lg"
+            rows={3}
+            placeholder="Décrivez la dépense..."
+          />
+        </div>
+
+        {/* Fournisseur */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Fournisseur (optionnel)
+          </label>
+          <input
+            type="text"
+            value={formData.fournisseur}
+            onChange={(e) => setFormData({...formData, fournisseur: e.target.value})}
+            className="w-full px-3 py-2 border rounded-lg"
+            placeholder="Ex: Total, Auchan, Vinci Autoroutes..."
+          />
+        </div>
+
+        {/* Section Véhicule (si carburant ou péage) */}
+        {(formData.categorie === 'carburant' || formData.categorie === 'peage') && (
+          <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+            <h3 className="font-bold text-gray-900 mb-4">Informations Véhicule</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Véhicule
+                </label>
+                <select
+                  value={formData.vehiculeId}
+                  onChange={handleVehiculeChange}
+                  className="w-full px-3 py-2 border rounded-lg bg-white"
+                >
+                  <option value="">Sélectionner un véhicule</option>
+                  {equipements.map((v: any) => (
+                    <option key={v.id} value={v.id}>
+                      {v.immatriculation} - {v.modele}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {formData.categorie === 'carburant' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Km parcourus
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.kmParcourus}
+                    onChange={(e) => setFormData({...formData, kmParcourus: parseInt(e.target.value)})}
+                    className="w-full px-3 py-2 border rounded-lg"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Upload justificatifs */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Justificatifs (photos ou PDF)
+          </label>
+          <input
+            type="file"
+            multiple
+            accept="image/*,application/pdf"
+            onChange={(e) => setFichiers(Array.from(e.target.files || []))}
+            className="w-full px-3 py-2 border rounded-lg"
+          />
+          {fichiers.length > 0 && (
+            <div className="mt-2 text-sm text-gray-600">
+              {fichiers.length} fichier{fichiers.length > 1 ? 's' : ''} sélectionné{fichiers.length > 1 ? 's' : ''}
+            </div>
+          )}
+        </div>
+
+        {/* Statut */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Statut
+          </label>
+          <select
+            value={formData.statut}
+            onChange={(e) => setFormData({...formData, statut: e.target.value as any})}
+            className="w-full px-3 py-2 border rounded-lg"
+          >
+            <option value="brouillon">💾 Brouillon (modifier plus tard)</option>
+            <option value="soumise">📤 Soumettre pour validation</option>
+          </select>
+        </div>
+
+        {/* Boutons */}
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+          >
+            Annuler
+          </button>
+          <button
+            type="submit"
+            disabled={loading || uploading}
+            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+          >
+            {uploading ? '📤 Upload en cours...' : loading ? 'Création...' : 'Créer'}
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}
