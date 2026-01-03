@@ -20,15 +20,44 @@ export async function POST(request: NextRequest) {
     
     console.log('✅ Analyse terminée')
 
-    // FORMAT ATTENDU PAR LE FRONTEND
+    // Générer description automatique selon type
+    let description = ''
+    if (resultat.donneesEssence) {
+      description = `${resultat.donneesEssence.quantite}L ${resultat.donneesEssence.typeCarburant} à ${resultat.donneesEssence.prixUnitaire}€/L`
+    } else if (resultat.donneesRestaurant?.nombrePersonnes) {
+      description = `Repas ${resultat.donneesRestaurant.nombrePersonnes} personne(s)`
+    } else if (resultat.donneesPeage?.trajet) {
+      description = `Péage ${resultat.donneesPeage.trajet}${resultat.donneesPeage.entree && resultat.donneesPeage.sortie ? ` (${resultat.donneesPeage.entree} → ${resultat.donneesPeage.sortie})` : ''}`
+    } else {
+      description = resultat.fournisseur
+    }
+
+    // FORMAT COMPLET POUR LE FRONTEND
     return NextResponse.json({
       success: true,
       confidence: resultat.confiance,
       data: {
         date: resultat.date,
         montantTTC: resultat.montantTTC,
+        montantHT: resultat.montantHT,
+        montantTVA: resultat.montantTVA,
         fournisseur: resultat.fournisseur,
-        categorie: resultat.categorie
+        categorie: resultat.categorie,
+        description: description,
+        
+        // Données spécifiques
+        donneesEssence: resultat.donneesEssence,
+        donneesRestaurant: resultat.donneesRestaurant,
+        donneesPeage: resultat.donneesPeage,
+        
+        // Métadonnées
+        numeroTicket: resultat.numeroTicket,
+        adresse: resultat.adresse,
+        ville: resultat.ville,
+        codePostal: resultat.codePostal,
+        
+        // Texte brut
+        texteComplet: resultat.texteComplet
       }
     })
 
