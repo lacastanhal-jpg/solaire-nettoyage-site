@@ -1,5 +1,6 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -12,10 +13,11 @@ import { getDevisById } from '@/lib/firebase/devis'
 import type { InterventionCalendar } from '@/lib/firebase/interventions-calendar'
 import { Search, Calendar, Users, Filter, Download, Plus, Eye, Edit2, Trash2, CheckCircle2 } from 'lucide-react'
 
-// Force dynamic rendering (évite pre-rendering avec useSearchParams)
+// Force dynamic rendering
 export const dynamic = 'force-dynamic'
 
-export default function ListeInterventionsPage() {
+// Composant avec useSearchParams wrappé dans Suspense
+function ListeInterventionsContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   
@@ -781,5 +783,21 @@ export default function ListeInterventionsPage() {
         )}
       </main>
     </div>
+  )
+}
+
+// Page principale avec Suspense Boundary
+export default function ListeInterventionsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement des interventions...</p>
+        </div>
+      </div>
+    }>
+      <ListeInterventionsContent />
+    </Suspense>
   )
 }
