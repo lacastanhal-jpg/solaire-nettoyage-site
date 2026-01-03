@@ -12,6 +12,9 @@ import { getDevisById } from '@/lib/firebase/devis'
 import type { InterventionCalendar } from '@/lib/firebase/interventions-calendar'
 import { Search, Calendar, Users, Filter, Download, Plus, Eye, Edit2, Trash2, CheckCircle2 } from 'lucide-react'
 
+// Force dynamic rendering (évite pre-rendering avec useSearchParams)
+export const dynamic = 'force-dynamic'
+
 export default function ListeInterventionsPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
