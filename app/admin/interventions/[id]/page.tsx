@@ -61,7 +61,7 @@ export default function DetailInterventionPage() {
   // États génération facture
   const [showModalFacture, setShowModalFacture] = useState(false)
   const [prestations, setPrestations] = useState<PrestationCatalogue[]>([])
-  const [prestationSelectionnee, setPrestationSelectionnee] = useState<string>('NETT-STANDARD')
+  const [prestationSelectionnee, setPrestationSelectionnee] = useState<string>('')
   const [calculEnCours, setCalculEnCours] = useState(false)
   const [resultatCalcul, setResultatCalcul] = useState<ResultatCalculPrix | null>(null)
   const [prixManuel, setPrixManuel] = useState<number | null>(null)
@@ -100,6 +100,13 @@ export default function DetailInterventionPage() {
       setLoading(false)
     }
   }
+
+  // Pré-sélectionner automatiquement la première prestation disponible
+  useEffect(() => {
+    if (prestations.length > 0 && !prestationSelectionnee) {
+      setPrestationSelectionnee(prestations[0].code)
+    }
+  }, [prestations, prestationSelectionnee])
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]

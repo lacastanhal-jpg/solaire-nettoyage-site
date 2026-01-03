@@ -17,6 +17,12 @@ import {
   getClientById 
 } from '@/lib/firebase/clients'
 import { 
+  getGroupeById 
+} from '@/lib/firebase/groupes'
+import {
+  getDevisById
+} from '@/lib/firebase/devis'
+import { 
   generateFactureNumero,
   type Facture,
   type LigneFacture
@@ -61,7 +67,7 @@ function getPrixPourTranche(
  */
 export async function calculerPrixIntervention(
   interventionId: string,
-  prestationCode: string = 'NETT-STANDARD',
+  prestationCode: string,
   majorationsCodes: string[] = [],
   remisesCodes: string[] = [],
   operateur: string = 'Système'
@@ -408,6 +414,27 @@ export async function genererFactureFromIntervention(
       throw new Error('Client non trouvé')
     }
     
+    // 2b. Récupérer le groupe si le client en a un (pour facturation à 3 niveaux)
+    let groupeData: { groupeId: string; groupeNom: string } | null = null
+    if (client.groupeId) {
+      const groupe = await getGroupeById(client.groupeId)
+      if (groupe) {
+        groupeData = {
+          groupeId: client.groupeId,
+          groupeNom: groupe.nom
+        }
+      }
+    }
+    
+    // 2c. Récupérer le numéro de commande client depuis le devis d'origine
+    let numeroBonCommandeClient: string | undefined = undefined
+    if ((intervention as any).devisId) {
+      const devis = await getDevisById((intervention as any).devisId)
+      if (devis && devis.numeroCommandeClient) {
+        numeroBonCommandeClient = devis.numeroCommandeClient
+      }
+    }
+    
     // 3. Créer ligne facture principale
     const totalHT = prixManuel || detailCalcul.totalHT
     const totalTVA = totalHT * (detailCalcul.tauxTVA / 100)
@@ -415,11 +442,11 @@ export async function genererFactureFromIntervention(
     
     const lignePrincipale: LigneFacture = {
       siteId: intervention.siteId,
-      siteNom: site.nom,
+      siteNom: site.complementNom || site.nom || 'Site inconnu',
       articleId: 'intervention',
       articleCode: detailCalcul.prestationCode,
       articleNom: detailCalcul.prestationLibelle,
-      articleDescription: `${site.nom} - ${intervention.surface} m² - ${new Date(intervention.dateDebut).toLocaleDateString('fr-FR')}`,
+      articleDescription: `${site.complementNom || site.nom || 'Site'} - ${intervention.surface} m² - ${new Date(intervention.dateDebut).toLocaleDateString('fr-FR')}`,
       quantite: intervention.surface,
       prixUnitaire: totalHT / intervention.surface,
       tva: detailCalcul.tauxTVA,
@@ -443,14 +470,17 @@ export async function genererFactureFromIntervention(
     const dateEcheance = new Date(now)
     dateEcheance.setDate(dateEcheance.getDate() + 30) // Échéance 30 jours
     
-    const facture: Omit<Facture, 'id'> = {
+    const facture: any = {
       numero: numeroFacture,
       societeId: 'solaire-nettoyage',
       date: now.toISOString().split('T')[0],
       dateEcheance: dateEcheance.toISOString().split('T')[0],
       clientId: intervention.clientId,
       clientNom: client.company,
-      groupeNom: client.groupeId ? client.groupeNom : undefined,
+      // Ajouter infos groupe SEULEMENT si présentes (pour facturation 3 niveaux: Site/Client/Groupe)
+      ...(groupeData ? { groupeId: groupeData.groupeId, groupeNom: groupeData.groupeNom } : {}),
+      // Ajouter numéro commande client si présent dans le devis d'origine
+      ...(numeroBonCommandeClient ? { numeroBonCommandeClient } : {}),
       lignes,
       totalHT: factureTotalHT,
       totalTVA: factureTotalTVA,

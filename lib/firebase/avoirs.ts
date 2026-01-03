@@ -32,6 +32,7 @@ export interface Avoir {
   // LIEN AVEC FACTURE SOURCE
   factureId?: string
   factureNumero?: string
+  numeroBonCommandeClient?: string  // N° commande client (propagé)
   
   // CLIENT (copié de la facture)
   clientId: string
@@ -74,6 +75,7 @@ export interface AvoirInput {
   societeId: string  // AJOUT : Société émettrice
   factureId?: string
   factureNumero?: string
+  numeroBonCommandeClient?: string  // N° commande client (propagé)
   clientId: string
   clientNom: string
   groupeNom?: string

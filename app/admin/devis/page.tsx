@@ -8,7 +8,8 @@ const STATUT_LABELS = {
   brouillon: { label: 'Brouillon', color: 'bg-gray-100 text-gray-800' },
   envoyé: { label: 'Envoyé', color: 'bg-blue-100 text-blue-800' },
   accepté: { label: 'Accepté', color: 'bg-green-100 text-green-800' },
-  refusé: { label: 'Refusé', color: 'bg-red-100 text-red-800' }
+  refusé: { label: 'Refusé', color: 'bg-red-100 text-red-800' },
+  validé_commande: { label: 'Validé en Commande', color: 'bg-purple-100 text-purple-800' }
 }
 
 export default function DevisPage() {
@@ -65,7 +66,8 @@ export default function DevisPage() {
     envoyé: devis.filter(d => d.statut === 'envoyé').length,
     accepté: devis.filter(d => d.statut === 'accepté').length,
     refusé: devis.filter(d => d.statut === 'refusé').length,
-    montantTotal: devis.filter(d => d.statut === 'accepté').reduce((sum, d) => sum + d.totalTTC, 0)
+    validé_commande: devis.filter(d => d.statut === 'validé_commande').length,
+    montantTotal: devis.filter(d => d.statut === 'accepté' || d.statut === 'validé_commande').reduce((sum, d) => sum + d.totalTTC, 0)
   }
 
   return (
@@ -117,12 +119,13 @@ export default function DevisPage() {
               <option value="envoyé">Envoyé</option>
               <option value="accepté">Accepté</option>
               <option value="refusé">Refusé</option>
+              <option value="validé_commande">Validé en Commande</option>
             </select>
           </div>
         </div>
 
         {/* Statistiques */}
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-7 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="text-gray-800 text-sm mb-1">Total</div>
             <div className="text-3xl font-bold text-gray-900">{stats.total}</div>
@@ -138,6 +141,10 @@ export default function DevisPage() {
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="text-gray-800 text-sm mb-1">Accepté</div>
             <div className="text-3xl font-bold text-green-600">{stats.accepté}</div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="text-gray-800 text-sm mb-1">Validé Cmd</div>
+            <div className="text-3xl font-bold text-purple-600">{stats.validé_commande}</div>
           </div>
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="text-gray-800 text-sm mb-1">Refusé</div>

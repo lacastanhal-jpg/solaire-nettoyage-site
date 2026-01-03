@@ -72,7 +72,21 @@ export async function GET(
     doc.text(`Date: ${dateDevis}`, 15, yPos)
     yPos += 5
     doc.text(`Statut: ${devis.statut.toUpperCase()}`, 15, yPos)
-    yPos += 10
+    yPos += 5
+    
+    // ⭐ N° BON DE COMMANDE CLIENT
+    if (devis.numeroCommandeClient) {
+      doc.setFontSize(11)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(0, 0, 200) // Bleu
+      doc.text(`N° Commande Client: ${devis.numeroCommandeClient}`, 15, yPos)
+      doc.setTextColor(0, 0, 0) // Retour noir
+      doc.setFont('helvetica', 'normal')
+      yPos += 7
+    } else {
+      yPos += 2
+    }
+    yPos += 3
 
     // ============================================
     // INFORMATIONS CLIENT

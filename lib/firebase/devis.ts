@@ -53,7 +53,12 @@ export interface Devis {
   totalTTC: number
   
   // STATUT
-  statut: 'brouillon' | 'envoyé' | 'accepté' | 'refusé'
+  statut: 'brouillon' | 'envoyé' | 'accepté' | 'refusé' | 'validé_commande'
+  
+  // INTERVENTIONS GÉNÉRÉES
+  interventionsGenerees?: boolean
+  interventionsNumeros?: string[]
+  dateValidationCommande?: string
   
   // CONDITIONS COMMERCIALES (peuvent surcharger celles du client)
   conditionsPaiement?: string
@@ -80,7 +85,7 @@ export interface DevisInput {
   conditionsPaiement?: string
   modalitesReglement?: string
   notes?: string
-  statut?: 'brouillon' | 'envoyé' | 'accepté' | 'refusé'
+  statut?: 'brouillon' | 'envoyé' | 'accepté' | 'refusé' | 'validé_commande'
 }
 
 /**
@@ -318,12 +323,33 @@ export async function deleteDevis(id: string): Promise<void> {
  */
 export async function updateDevisStatut(
   id: string, 
-  statut: 'brouillon' | 'envoyé' | 'accepté' | 'refusé'
+  statut: 'brouillon' | 'envoyé' | 'accepté' | 'refusé' | 'validé_commande'
 ): Promise<void> {
   try {
     await updateDevis(id, { statut })
   } catch (error) {
-    console.error('Erreur changement statut devis:', error)
+    console.error('Erreur changement statut:', error)
     throw error
   }
 }
+
+/**
+ * Mettre à jour le numéro de commande client
+ */
+export async function updateNumeroCommandeClient(
+  id: string,
+  numeroCommandeClient: string
+): Promise<void> {
+  try {
+    const devisRef = doc(db, 'devis', id)
+    await updateDoc(devisRef, {
+      numeroCommandeClient,
+      dateCommandeClient: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Erreur mise à jour N° commande client:', error)
+    throw error
+  }
+}
+

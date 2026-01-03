@@ -3,12 +3,16 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { getFactureById, addPaiement, Facture, PaiementFacture } from '@/lib/firebase/factures'
+import { getClientById } from '@/lib/firebase/clients'
+import { getSiteById } from '@/lib/firebase/sites'
 import Link from 'next/link'
 
 export default function DetailFacturePage() {
   const params = useParams()
   const router = useRouter()
   const [facture, setFacture] = useState<Facture | null>(null)
+  const [client, setClient] = useState<any>(null)
+  const [sites, setSites] = useState<{ [key: string]: any }>({})
   const [loading, setLoading] = useState(true)
   const [showPaiementModal, setShowPaiementModal] = useState(false)
   const [showEmailModal, setShowEmailModal] = useState(false)
@@ -35,6 +39,24 @@ export default function DetailFacturePage() {
       setFacture(data)
       if (data) {
         setNouveauPaiement(prev => ({...prev, montant: data.resteAPayer}))
+        
+        // Charger les infos client
+        if (data.clientId) {
+          const clientData = await getClientById(data.clientId)
+          setClient(clientData)
+        }
+        
+        // Charger les infos des sites pour chaque ligne
+        const sitesData: { [key: string]: any } = {}
+        for (const ligne of data.lignes) {
+          if (ligne.siteId && !sitesData[ligne.siteId]) {
+            const siteData = await getSiteById(ligne.siteId)
+            if (siteData) {
+              sitesData[ligne.siteId] = siteData
+            }
+          }
+        }
+        setSites(sitesData)
       }
     } catch (error) {
       console.error('Erreur chargement facture:', error)
@@ -224,8 +246,14 @@ export default function DetailFacturePage() {
           <tbody className="divide-y divide-gray-300">
             {facture.lignes.map((ligne, index) => (
               <tr key={index}>
-                <td className="px-4 py-3 text-gray-900 font-medium">
-                  {ligne.articleCode} - {ligne.articleNom}
+                <td className="px-4 py-3 text-gray-900">
+                  <div className="font-medium">{ligne.articleCode} - {ligne.articleNom}</div>
+                  {ligne.siteNom && (
+                    <div className="text-sm text-gray-600 mt-1">📍 {ligne.siteNom}</div>
+                  )}
+                  {ligne.articleDescription && (
+                    <div className="text-xs text-gray-500 mt-1">{ligne.articleDescription}</div>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-right text-gray-900">{ligne.quantite}</td>
                 <td className="px-4 py-3 text-right text-gray-900">{ligne.prixUnitaire.toFixed(2)} €</td>
@@ -293,6 +321,144 @@ export default function DetailFacturePage() {
             </tbody>
           </table>
         )}
+      </div>
+
+      {/* INFORMATIONS COMPLÉMENTAIRES */}
+      <div className="bg-white p-6 rounded-lg shadow mb-6 border border-gray-300">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">📋 Informations complémentaires</h2>
+        
+        <div className="space-y-6">
+          {/* N° COMMANDE CLIENT */}
+          <div>
+            <h3 className="text-sm font-bold text-gray-900 mb-2">N° Commande Client</h3>
+            {facture.numeroBonCommandeClient ? (
+              <p className="text-blue-700 font-medium">{facture.numeroBonCommandeClient}</p>
+            ) : (
+              <div className="flex items-center gap-2">
+                <p className="text-red-600">❌ Non renseigné</p>
+                <Link
+                  href={`/admin/finances/factures/${facture.id}/modifier`}
+                  className="text-sm text-blue-700 hover:underline"
+                >
+                  [Ajouter]
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* INFOS CLIENT */}
+          <div>
+            <h3 className="text-sm font-bold text-gray-900 mb-2">Client : {facture.clientNom}</h3>
+            <div className="ml-4 space-y-1 text-sm">
+              {client?.siret ? (
+                <p className="text-gray-900">• SIRET : <span className="font-medium">{client.siret}</span> ✅</p>
+              ) : (
+                <p className="text-red-600">• ❌ SIRET client manquant</p>
+              )}
+              
+              {client?.numeroTVA ? (
+                <p className="text-gray-900">• TVA : <span className="font-medium">{client.numeroTVA}</span> ✅</p>
+              ) : (
+                <p className="text-red-600">• ❌ N° TVA client manquant</p>
+              )}
+              
+              {client?.adresseFacturation && (
+                <div className="text-gray-700 mt-2">
+                  <p className="font-medium">Adresse facturation :</p>
+                  {client.adresseFacturation.rue && <p className="ml-2">{client.adresseFacturation.rue}</p>}
+                  {client.adresseFacturation.codePostal && client.adresseFacturation.ville && (
+                    <p className="ml-2">{client.adresseFacturation.codePostal} {client.adresseFacturation.ville}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* SITES INTERVENTION */}
+          {facture.lignes.length > 0 && (
+            <div>
+              <h3 className="text-sm font-bold text-gray-900 mb-2">Site(s) d'intervention</h3>
+              <div className="ml-4 space-y-3">
+                {facture.lignes.map((ligne, index) => {
+                  const site = sites[ligne.siteId]
+                  return (
+                    <div key={index} className="text-sm border-l-2 border-blue-500 pl-3">
+                      <p className="font-medium text-gray-900">📍 {ligne.siteNom || 'Site non nommé'}</p>
+                      {site ? (
+                        <div className="text-gray-700 mt-1">
+                          {site.adresse1 ? (
+                            <>
+                              <p>• {site.adresse1}</p>
+                              {site.codePostal && site.ville && (
+                                <p>• {site.codePostal} {site.ville} ✅</p>
+                              )}
+                            </>
+                          ) : (
+                            <p className="text-red-600">• ❌ Adresse site incomplète</p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-gray-500 text-xs">Chargement...</p>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* CONDITIONS DE PAIEMENT */}
+          <div>
+            <h3 className="text-sm font-bold text-gray-900 mb-2">Conditions de paiement</h3>
+            <div className="ml-4 space-y-1 text-sm">
+              {facture.conditionsPaiement ? (
+                <p className="text-gray-900">• Conditions : <span className="font-medium">{facture.conditionsPaiement}</span> ✅</p>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <p className="text-red-600">• ❌ Conditions non renseignées</p>
+                  <Link
+                    href={`/admin/finances/factures/${facture.id}/modifier`}
+                    className="text-sm text-blue-700 hover:underline"
+                  >
+                    [Ajouter]
+                  </Link>
+                </div>
+              )}
+              
+              {facture.modalitesReglement ? (
+                <p className="text-gray-900">• Modalités : <span className="font-medium">{facture.modalitesReglement}</span> ✅</p>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <p className="text-red-600">• ❌ Modalités non renseignées</p>
+                  <Link
+                    href={`/admin/finances/factures/${facture.id}/modifier`}
+                    className="text-sm text-blue-700 hover:underline"
+                  >
+                    [Ajouter]
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ALERTES RÉCAPITULATIVES */}
+          {(!facture.numeroBonCommandeClient || !client?.siret || !client?.numeroTVA || 
+            !facture.conditionsPaiement || !facture.modalitesReglement) && (
+            <div className="bg-red-50 border-l-4 border-red-600 p-4 rounded">
+              <h3 className="text-sm font-bold text-red-900 mb-2">⚠️ Informations manquantes pour facture conforme</h3>
+              <p className="text-xs text-red-800">
+                Certaines informations obligatoires sont manquantes. Cliquez sur{' '}
+                <Link
+                  href={`/admin/finances/factures/${facture.id}/modifier`}
+                  className="font-bold underline"
+                >
+                  [Modifier]
+                </Link>{' '}
+                pour les compléter avant d'envoyer la facture au client.
+              </p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* MODAL PAIEMENT */}

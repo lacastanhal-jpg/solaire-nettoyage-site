@@ -47,7 +47,7 @@ export interface ArticleStockInput {
 // MOUVEMENTS STOCK
 // ===================================
 
-export type TypeMouvement = 'entree' | 'sortie' | 'transfert' | 'ajustement' | 'correction'
+export type TypeMouvement = 'entree' | 'sortie' | 'transfert' | 'ajustement' | 'correction' | 'retour'
 
 export interface MouvementStock {
   id: string

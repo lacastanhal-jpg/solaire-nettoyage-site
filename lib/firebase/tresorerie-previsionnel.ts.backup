@@ -3,7 +3,6 @@ import { collection, getDocs, query, where } from 'firebase/firestore'
 import { getAllComptesBancaires, getAllLignesBancaires } from './lignes-bancaires'
 import type { Facture } from './factures'
 import type { FactureFournisseur } from './factures-fournisseurs'
-import type { NoteDeFrais } from './notes-de-frais'
 
 /**
  * Interface pour une ligne de prévision journalière
@@ -28,12 +27,6 @@ export interface PrevisionJour {
       montant: number
       dateEcheance: string
     }>
-    notesDeFraisARembouser: Array<{
-      operateurNom: string
-      montant: number
-      dateRemboursementPrevue: string
-      categorie: string
-    }>
   }
 }
 
@@ -49,7 +42,6 @@ export interface StatistiquesPrevisionnel {
   totalDecaissementsPrevisionnels: number
   nombreFacturesClientsEnAttente: number
   nombreFacturesFournisseursEnAttente: number
-  nombreNotesFraisEnAttente: number
   joursAvantSoldeNegatif: number | null // null si jamais négatif
   alertes: Array<{
     type: 'warning' | 'critique'
@@ -67,7 +59,7 @@ async function getFacturesClientsEnAttente(): Promise<Array<{
   clientNom: string
   montantTTC: number
   dateEcheance: string
-  dateEmission: string
+  dateEmission: string  // Date d'émission de la facture
 }>> {
   try {
     const facturesRef = collection(db, 'factures')
@@ -86,7 +78,7 @@ async function getFacturesClientsEnAttente(): Promise<Array<{
       let dateEcheance = data.dateEcheance
       if (!dateEcheance && data.date) {
         const emission = new Date(data.date)
-        emission.setDate(emission.getDate() + 30)
+        emission.setDate(emission.getDate() + 30) // +30 jours par défaut
         dateEcheance = emission.toISOString().split('T')[0]
       }
       
@@ -97,7 +89,7 @@ async function getFacturesClientsEnAttente(): Promise<Array<{
           clientNom: data.clientNom || 'Client inconnu',
           montantTTC: data.totalTTC || 0,
           dateEcheance: dateEcheance,
-          dateEmission: data.date || ''
+          dateEmission: data.date || ''  // Date d'émission
         })
       }
     })
@@ -137,7 +129,7 @@ async function getFacturesFournisseursEnAttente(): Promise<Array<{
       let dateEcheance = data.dateEcheance || data.datePaiementPrevue
       if (!dateEcheance && data.dateFacture) {
         const facture = new Date(data.dateFacture)
-        facture.setDate(facture.getDate() + 30)
+        facture.setDate(facture.getDate() + 30) // +30 jours par défaut
         dateEcheance = facture.toISOString().split('T')[0]
       }
       
@@ -161,61 +153,6 @@ async function getFacturesFournisseursEnAttente(): Promise<Array<{
 }
 
 /**
- * ⭐ NOUVEAU - Récupérer les notes de frais validées en attente de remboursement
- */
-async function getNotesDeFraisARembouser(): Promise<Array<{
-  id: string
-  operateurNom: string
-  montantTTC: number
-  dateRemboursementPrevue: string
-  date: string
-  categorie: string
-}>> {
-  try {
-    const notesRef = collection(db, 'notes_de_frais')
-    const q = query(
-      notesRef,
-      where('statut', '==', 'validee')
-    )
-    
-    const snapshot = await getDocs(q)
-    const notes: any[] = []
-    
-    snapshot.docs.forEach(doc => {
-      const data = doc.data() as NoteDeFrais
-      
-      // Calculer date remboursement prévue (validation + 15 jours)
-      let dateRemboursement = data.dateValidation
-      if (!dateRemboursement && data.date) {
-        const noteDate = new Date(data.date)
-        noteDate.setDate(noteDate.getDate() + 15)
-        dateRemboursement = noteDate.toISOString().split('T')[0]
-      } else if (dateRemboursement) {
-        const validationDate = new Date(dateRemboursement)
-        validationDate.setDate(validationDate.getDate() + 15)
-        dateRemboursement = validationDate.toISOString().split('T')[0]
-      }
-      
-      if (dateRemboursement) {
-        notes.push({
-          id: doc.id,
-          operateurNom: data.operateurNom,
-          montantTTC: data.montantTTC,
-          dateRemboursementPrevue: dateRemboursement,
-          date: data.date,
-          categorie: data.categorie
-        })
-      }
-    })
-    
-    return notes
-  } catch (error) {
-    console.error('Erreur récupération notes de frais à rembourser:', error)
-    return []
-  }
-}
-
-/**
  * Générer le prévisionnel de trésorerie sur N jours
  */
 export async function genererPrevisionnelTresorerie(
@@ -228,17 +165,16 @@ export async function genererPrevisionnelTresorerie(
       .filter(c => c.actif)
       .reduce((sum, c) => sum + c.solde, 0)
     
-    // 2. Récupérer historique transactions
+    // 2. Récupérer historique transactions (pour solde réel passé)
     const lignes = await getAllLignesBancaires()
     const lignesTriees = lignes.sort((a, b) => 
       new Date(a.date).getTime() - new Date(b.date).getTime()
     )
     
-    // 3. Récupérer factures et notes en attente
-    const [facturesClients, facturesFournisseurs, notesFrais] = await Promise.all([
+    // 3. Récupérer factures en attente
+    const [facturesClients, facturesFournisseurs] = await Promise.all([
       getFacturesClientsEnAttente(),
-      getFacturesFournisseursEnAttente(),
-      getNotesDeFraisARembouser()
+      getFacturesFournisseursEnAttente()
     ])
     
     // 4. Construire prévision jour par jour
@@ -258,6 +194,7 @@ export async function genererPrevisionnelTresorerie(
       if (i === 0) {
         soldeReel = soldeActuel
       } else if (dateJour <= aujourdhui) {
+        // Calculer solde réel depuis l'historique
         const transactionsJusquaCeJour = lignesTriees.filter(l => 
           new Date(l.date) <= dateJour
         )
@@ -270,11 +207,7 @@ export async function genererPrevisionnelTresorerie(
       
       // Décaissements prévisionnels ce jour
       const facturesFournisseursCeJour = facturesFournisseurs.filter(f => f.dateEcheance === dateStr)
-      const notesFraisCeJour = notesFrais.filter(n => n.dateRemboursementPrevue === dateStr)
-      
-      const decaissementsFournisseurs = facturesFournisseursCeJour.reduce((sum, f) => sum + f.montantTTC, 0)
-      const decaissementsNotesFrais = notesFraisCeJour.reduce((sum, n) => sum + n.montantTTC, 0)
-      const decaissementsPrevisionnels = decaissementsFournisseurs + decaissementsNotesFrais
+      const decaissementsPrevisionnels = facturesFournisseursCeJour.reduce((sum, f) => sum + f.montantTTC, 0)
       
       // Calculer solde prévu
       soldeCourant = soldeCourant + encaissementsPrevisionnels - decaissementsPrevisionnels
@@ -306,12 +239,6 @@ export async function genererPrevisionnelTresorerie(
             fournisseurNom: f.fournisseurNom,
             montant: f.montantTTC,
             dateEcheance: f.dateEcheance
-          })),
-          notesDeFraisARembouser: notesFraisCeJour.map(n => ({
-            operateurNom: n.operateurNom,
-            montant: n.montantTTC,
-            dateRemboursementPrevue: n.dateRemboursementPrevue,
-            categorie: n.categorie
           }))
         }
       })
@@ -349,11 +276,10 @@ export async function getStatistiquesPrevisionnel(): Promise<StatistiquesPrevisi
       (sum, p) => sum + p.decaissementsPrevisionnels, 0
     )
     
-    // Nombre de factures et notes en attente
-    const [facturesClients, facturesFournisseurs, notesFrais] = await Promise.all([
+    // Nombre de factures en attente
+    const [facturesClients, facturesFournisseurs] = await Promise.all([
       getFacturesClientsEnAttente(),
-      getFacturesFournisseursEnAttente(),
-      getNotesDeFraisARembouser()
+      getFacturesFournisseursEnAttente()
     ])
     
     // Jours avant solde négatif
@@ -391,7 +317,6 @@ export async function getStatistiquesPrevisionnel(): Promise<StatistiquesPrevisi
       totalDecaissementsPrevisionnels,
       nombreFacturesClientsEnAttente: facturesClients.length,
       nombreFacturesFournisseursEnAttente: facturesFournisseurs.length,
-      nombreNotesFraisEnAttente: notesFrais.length,
       joursAvantSoldeNegatif,
       alertes
     }

@@ -19,6 +19,7 @@ export default function ModifierFacturePage() {
     notes: '',
     conditionsPaiement: '',
     modalitesReglement: '',
+    numeroBonCommandeClient: '',
     statut: 'brouillon' as Facture['statut']
   })
 
@@ -42,6 +43,7 @@ export default function ModifierFacturePage() {
           notes: factureData.notes || '',
           conditionsPaiement: factureData.conditionsPaiement || '',
           modalitesReglement: factureData.modalitesReglement || '',
+          numeroBonCommandeClient: factureData.numeroBonCommandeClient || '',
           statut: factureData.statut
         })
       }
@@ -77,7 +79,8 @@ export default function ModifierFacturePage() {
     const ligne = { ...nouvellesLignes[index] }
     
     if (field === 'articleId') {
-      const article = articles.find(a => a.id === value)
+      // Chercher l'article par ID OU par CODE (pour les factures d'intervention)
+      const article = articles.find(a => a.id === value || a.code === value)
       if (article) {
         ligne.articleId = article.id
         ligne.articleCode = article.code
@@ -125,6 +128,7 @@ export default function ModifierFacturePage() {
         notes: formData.notes,
         conditionsPaiement: formData.conditionsPaiement,
         modalitesReglement: formData.modalitesReglement,
+        numeroBonCommandeClient: formData.numeroBonCommandeClient,
         statut: formData.statut
       })
       
@@ -166,7 +170,7 @@ export default function ModifierFacturePage() {
         <div className="bg-white p-6 rounded-lg shadow mb-6 border border-gray-300">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Informations</h2>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-sm font-bold text-gray-900 mb-2">Date d'échéance</label>
               <input
@@ -190,6 +194,20 @@ export default function ModifierFacturePage() {
               </select>
             </div>
           </div>
+          
+          <div>
+            <label className="block text-sm font-bold text-gray-900 mb-2">
+              N° Bon de commande client
+              <span className="text-xs font-normal text-gray-600 ml-2">(Important pour le paiement)</span>
+            </label>
+            <input
+              type="text"
+              value={formData.numeroBonCommandeClient}
+              onChange={(e) => setFormData({...formData, numeroBonCommandeClient: e.target.value})}
+              placeholder="Ex: BC-2025-001"
+              className="w-full px-4 py-2 border border-gray-400 rounded-lg text-gray-900"
+            />
+          </div>
         </div>
 
         {/* LIGNES */}
@@ -211,13 +229,13 @@ export default function ModifierFacturePage() {
                 <div className="col-span-2">
                   <label className="block text-xs font-bold text-gray-900 mb-1">Article</label>
                   <select
-                    value={ligne.articleId}
+                    value={ligne.articleCode || ligne.articleId || ''}
                     onChange={(e) => modifierLigne(index, 'articleId', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-400 rounded text-gray-900 text-sm"
                   >
                     <option value="">Sélectionner</option>
                     {articles.map(article => (
-                      <option key={article.id} value={article.id}>
+                      <option key={article.id} value={article.code}>
                         {article.code} - {article.nom}
                       </option>
                     ))}

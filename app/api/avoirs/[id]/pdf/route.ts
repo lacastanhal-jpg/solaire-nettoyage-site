@@ -47,6 +47,16 @@ export async function GET(
     doc.text(avoir.numero, 150, 40)
     doc.text(`Date : ${new Date(avoir.date).toLocaleDateString('fr-FR')}`, 150, 47)
     
+    // ⭐ N° BON DE COMMANDE CLIENT
+    if (avoir.numeroBonCommandeClient) {
+      doc.setFontSize(11)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(0, 0, 200) // Bleu
+      doc.text(`N° Commande Client: ${avoir.numeroBonCommandeClient}`, 150, 54)
+      doc.setTextColor(0, 0, 0) // Retour noir
+      doc.setFont('helvetica', 'normal')
+    }
+    
     // CLIENT
     doc.setFontSize(12)
     doc.setFont('helvetica', 'bold')

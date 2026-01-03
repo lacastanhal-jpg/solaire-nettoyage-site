@@ -17,15 +17,41 @@ export interface Site {
   nom: string
   nomSite?: string  // Nom du site (import Excel)
   complementNom?: string  // ID unique site
-  adresse: string
+  
+  // Adresse complète (3 lignes possibles)
+  adresse: string      // Adresse condensée (pour affichage simple)
+  adresse1?: string    // Ligne 1 (numéro, rue)
+  adresse2?: string    // Ligne 2 (complément)
+  adresse3?: string    // Ligne 3 (bâtiment, etc.)
+  
   ville: string
   codePostal: string
+  pays?: string
+  
+  // Coordonnées GPS
+  gps?: string         // Format "44.123456 / 2.654321"
   lat?: number
   lng?: number
+  
+  // Contacts
+  tel?: string
+  portable?: string
+  email?: string
+  contact?: string
+  internet?: string
+  
+  // Informations techniques
   puissance?: string
   typeInstallation?: string
   surface?: number
+  pente?: string
+  eau?: string
+  accesCamion?: string
+  typeInterv?: string
+  infosCompl?: string
+  
   createdAt: string
+  updatedAt?: string
 }
 
 const SITES_COLLECTION = 'sites'

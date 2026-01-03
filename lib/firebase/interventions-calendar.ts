@@ -29,6 +29,9 @@ export interface InterventionCalendar {
   clientId: string
   clientName: string
   groupeId: string
+  devisId?: string        // Lien vers le devis (si créé depuis devis)
+  devisNumero?: string    // Numéro du devis
+  numeroCommandeClient?: string  // N° commande client (propagé depuis devis)
   equipeId: 1 | 2 | 3
   equipeName: string
   
@@ -39,6 +42,12 @@ export interface InterventionCalendar {
   heureFin: string   // Format "17:00"
   
   surface: number // m²
+  
+  // Montants (si créé depuis devis)
+  totalHT?: number
+  totalTVA?: number
+  totalTTC?: number
+  
   type: 'Standard' | 'Urgence' | 'Maintenance'
   statut: 'Planifiée' | 'En cours' | 'Terminée' | 'Annulée' | 'Demande modification'
   rapportUrl?: string

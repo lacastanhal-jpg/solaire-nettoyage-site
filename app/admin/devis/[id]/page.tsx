@@ -3,17 +3,18 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { getDevisById, updateDevisStatut, type Devis } from '@/lib/firebase/devis'
+import { getDevisById, updateDevisStatut, updateNumeroCommandeClient, type Devis } from '@/lib/firebase/devis'
 import { getEmailsHistorique, type EmailHistorique } from '@/lib/firebase/emails'
-import { devisAGeneréInterventions, getInterventionsByDevis } from '@/lib/firebase/workflow-devis-intervention'
+import { devisAGeneréInterventions, getInterventionsByDevis, validerDevisEnCommande } from '@/lib/firebase/workflow-devis-intervention'
 import ModalGenererInterventions from '@/components/ModalGenererInterventions'
-import { Calendar, FileText } from 'lucide-react'
+import { Calendar, FileText, CheckCircle2 } from 'lucide-react'
 
 const STATUT_LABELS = {
   brouillon: { label: 'Brouillon', color: 'bg-gray-100 text-gray-800' },
   envoyé: { label: 'Envoyé', color: 'bg-blue-100 text-blue-800' },
   accepté: { label: 'Accepté', color: 'bg-green-100 text-green-800' },
-  refusé: { label: 'Refusé', color: 'bg-red-100 text-red-800' }
+  refusé: { label: 'Refusé', color: 'bg-red-100 text-red-800' },
+  validé_commande: { label: 'Validé en Commande', color: 'bg-purple-100 text-purple-800' }
 }
 
 export default function VoirDevisPage() {
@@ -31,6 +32,11 @@ export default function VoirDevisPage() {
   const [emailDestinataire, setEmailDestinataire] = useState('')
   const [emailMessage, setEmailMessage] = useState('')
   const [sendingEmail, setSendingEmail] = useState(false)
+  
+  // N° Bon de Commande Client
+  const [showModalNumeroBCClient, setShowModalNumeroBCClient] = useState(false)
+  const [numeroBCClient, setNumeroBCClient] = useState('')
+  const [savingNumeroBCClient, setSavingNumeroBCClient] = useState(false)
   
   // Workflow interventions
   const [showModalInterventions, setShowModalInterventions] = useState(false)
@@ -85,7 +91,63 @@ export default function VoirDevisPage() {
     }
   }
 
-  async function handleChangeStatut(newStatut: 'brouillon' | 'envoyé' | 'accepté' | 'refusé') {
+  async function handleValiderEnCommande() {
+    if (!devis) return
+
+    const nombreSites = Array.from(new Set(devis.lignes.map(l => l.siteId))).length
+    
+    if (!window.confirm(
+      `✅ VALIDER CE DEVIS EN COMMANDE ?\n\n` +
+      `Cela va créer automatiquement ${nombreSites} intervention(s) en statut "brouillon".\n\n` +
+      `Vous pourrez ensuite affecter les équipes et dates.`
+    )) {
+      return
+    }
+
+    try {
+      setChangingStatut(true)
+      
+      const result = await validerDevisEnCommande(devisId)
+      
+      if (result.success) {
+        alert(
+          `✅ DEVIS VALIDÉ EN COMMANDE !\n\n` +
+          `${result.interventionsCreees.length} intervention(s) créée(s) :\n` +
+          `${result.interventionsCreees.join(', ')}\n\n` +
+          `Redirection vers les interventions...`
+        )
+        
+        // Redirection vers la liste des interventions avec filtre devisId
+        router.push(`/admin/interventions?devisId=${devisId}&mode=affectation`)
+      } else {
+        alert(`❌ Erreur :\n${result.errors.join('\n')}`)
+      }
+    } catch (error) {
+      console.error('Erreur validation commande:', error)
+      alert('❌ Erreur lors de la validation en commande')
+    } finally {
+      setChangingStatut(false)
+    }
+  }
+
+  async function handleSaveNumeroBCClient() {
+    if (!devis) return
+
+    try {
+      setSavingNumeroBCClient(true)
+      await updateNumeroCommandeClient(devisId, numeroBCClient)
+      await loadDevis()
+      setShowModalNumeroBCClient(false)
+      alert('✅ N° de commande client enregistré')
+    } catch (error) {
+      console.error('Erreur sauvegarde N° BC:', error)
+      alert('❌ Erreur lors de la sauvegarde')
+    } finally {
+      setSavingNumeroBCClient(false)
+    }
+  }
+
+  async function handleChangeStatut(newStatut: 'brouillon' | 'envoyé' | 'accepté' | 'refusé' | 'validé_commande') {
     if (!devis) return
 
     try {
@@ -282,6 +344,88 @@ export default function VoirDevisPage() {
           </div>
         </div>
 
+        {/* Validation Commande - Visible si envoyé ou accepté */}
+        {(devis.statut === 'envoyé' || devis.statut === 'accepté') && !interventionsGenerees && (
+          <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg shadow-lg p-6 mb-6 border-2 border-green-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <CheckCircle2 className="w-6 h-6 text-green-600" />
+                  Valider en Commande
+                </h3>
+                <p className="text-sm text-gray-700 mt-2">
+                  Créer automatiquement {Array.from(new Set(devis.lignes.map(l => l.siteId))).length} intervention(s) en statut "brouillon"
+                </p>
+                <p className="text-xs text-gray-600 mt-1">
+                  ⚡ Les interventions seront créées sans dates ni équipes. Vous pourrez les affecter ensuite.
+                </p>
+              </div>
+              <button
+                onClick={handleValiderEnCommande}
+                disabled={changingStatut}
+                className="px-8 py-4 bg-green-600 text-white rounded-lg font-bold text-lg hover:bg-green-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 flex items-center gap-3"
+              >
+                <CheckCircle2 className="w-6 h-6" />
+                VALIDER EN COMMANDE
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Interventions déjà créées */}
+        {interventionsGenerees && interventions.length > 0 && (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-sm p-6 mb-6 border-2 border-blue-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-blue-600" />
+                  Interventions Créées
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  ✅ {interventions.length} intervention(s) créée(s) depuis ce devis
+                </p>
+              </div>
+              <Link
+                href={`/admin/interventions?devisId=${devisId}`}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
+              >
+                <Calendar className="w-5 h-5" />
+                Voir les Interventions
+              </Link>
+            </div>
+            
+            {/* Liste interventions */}
+            <div className="mt-4 pt-4 border-t border-blue-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {interventions.map((int: any) => (
+                  <Link
+                    key={int.id}
+                    href={`/admin/interventions/${int.id}`}
+                    className="bg-white border-2 border-blue-200 rounded-lg px-4 py-3 hover:bg-blue-50 hover:border-blue-400 transition-all"
+                  >
+                    <div className="font-semibold text-gray-900">{int.id}</div>
+                    <div className="text-sm text-gray-700 mt-1">{int.siteName}</div>
+                    <div className="flex items-center justify-between mt-2">
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        int.statut === 'brouillon' 
+                          ? 'bg-gray-100 text-gray-700' 
+                          : 'bg-green-100 text-green-700'
+                      }`}>
+                        {int.statut || 'brouillon'}
+                      </span>
+                      {int.totalTTC && (
+                        <span className="text-sm font-medium text-gray-900">
+                          {int.totalTTC.toFixed(2)}€
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Génération Interventions - Visible si accepté */}
         {devis.statut === 'accepté' && (
           <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg shadow-sm p-6 mb-6 border-2 border-green-200">
@@ -359,6 +503,55 @@ export default function VoirDevisPage() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* N° Bon de Commande Client */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-900">N° Bon de Commande Client</h2>
+            {(devis.statut === 'envoyé' || devis.statut === 'accepté' || devis.statut === 'validé_commande') && (
+              <button
+                onClick={() => {
+                  setNumeroBCClient(devis.numeroCommandeClient || '')
+                  setShowModalNumeroBCClient(true)
+                }}
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                {devis.numeroCommandeClient ? '✏️ Modifier' : '➕ Ajouter'}
+              </button>
+            )}
+          </div>
+          
+          {devis.numeroCommandeClient ? (
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+              <div className="flex items-center gap-3">
+                <div className="text-3xl">📋</div>
+                <div className="flex-1">
+                  <div className="text-sm text-gray-700">Référence client</div>
+                  <div className="text-2xl font-bold text-blue-900">
+                    {devis.numeroCommandeClient}
+                  </div>
+                  {devis.dateCommandeClient && (
+                    <div className="text-xs text-gray-600 mt-1">
+                      Enregistré le {new Date(devis.dateCommandeClient).toLocaleDateString('fr-FR')}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4">
+              <div className="flex items-center gap-3">
+                <div className="text-3xl">⚠️</div>
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-gray-900">N° de commande non renseigné</div>
+                  <div className="text-sm text-gray-700 mt-1">
+                    Pour les gros comptes (ENGIE, EDF, TotalEnergies...), pensez à ajouter le N° de commande client pour faciliter la facturation.
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Lignes du devis */}
@@ -511,6 +704,54 @@ export default function VoirDevisPage() {
             loadInterventions()
           }}
         />
+      )}
+
+      {/* Modal N° Bon de Commande Client */}
+      {showModalNumeroBCClient && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              N° Bon de Commande Client
+            </h2>
+            
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-900 mb-2">
+                Numéro de commande client (optionnel)
+              </label>
+              <input
+                type="text"
+                value={numeroBCClient}
+                onChange={(e) => setNumeroBCClient(e.target.value)}
+                placeholder="BC-ENGIE-2026-12345"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                autoFocus
+              />
+              <p className="text-sm text-gray-600 mt-2">
+                Ce numéro sera visible sur les interventions et les factures liées à ce devis.
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Requis pour : ENGIE, EDF, TotalEnergies, CGN...
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleSaveNumeroBCClient}
+                disabled={savingNumeroBCClient}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                {savingNumeroBCClient ? 'Enregistrement...' : '✅ Enregistrer'}
+              </button>
+              <button
+                onClick={() => setShowModalNumeroBCClient(false)}
+                disabled={savingNumeroBCClient}
+                className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-medium transition-colors disabled:opacity-50"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

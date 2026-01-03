@@ -159,6 +159,8 @@ export interface TarifSpecialSite {
   siteId: string
   siteNom: string
   
+  motif?: string  // Explication générale du tarif spécial
+  
   // Option 1 : Tarifs fixes par prestation
   tarifsFixes?: {
     prestationCode: string
@@ -187,6 +189,7 @@ export interface TarifSpecialSite {
 export interface TarifSpecialSiteInput {
   siteId: string
   siteNom: string
+  motif?: string  // Explication générale
   tarifsFixes?: {
     prestationCode: string
     prixFixe: number

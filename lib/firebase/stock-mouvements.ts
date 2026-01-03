@@ -11,49 +11,143 @@ import {
   limit,
   serverTimestamp,
   updateDoc,
-  increment
+  increment,
+  runTransaction
 } from 'firebase/firestore'
 import type { MouvementStock } from '@/lib/types/stock-flotte'
 
 const COLLECTION = 'mouvements_stock'
 
 // Créer un mouvement de stock (met à jour automatiquement les stocks)
+// ✅ VERSION CORRIGÉE AVEC TRANSACTION ATOMIQUE
 export async function createMouvementStock(data: Omit<MouvementStock, 'id' | 'createdAt' | 'updatedAt'>) {
   try {
-    // Construire le document en excluant les champs undefined
-    const mouvementData: any = {
-      type: data.type,
-      articleId: data.articleId,
-      quantite: data.quantite,
-      operateur: data.operateur,
-      date: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }
+    // Utiliser une transaction pour garantir l'atomicité
+    const mouvementId = await runTransaction(db, async (transaction) => {
+      const articleRef = doc(db, 'articles_stock', data.articleId)
+      
+      // Lire l'article actuel dans la transaction
+      const articleDoc = await transaction.get(articleRef)
+      
+      if (!articleDoc.exists()) {
+        throw new Error(`Article ${data.articleId} non trouvé`)
+      }
+      
+      const article = articleDoc.data()
+      const stockParDepot = article.stockParDepot || {}
+      
+      // Construire le document mouvement
+      const mouvementData: any = {
+        type: data.type,
+        articleId: data.articleId,
+        quantite: data.quantite,
+        operateur: data.operateur,
+        date: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
 
-    // Ajouter les champs optionnels seulement s'ils existent
-    if (data.depotSource) mouvementData.depotSource = data.depotSource
-    if (data.depotDestination) mouvementData.depotDestination = data.depotDestination
-    if (data.raison) mouvementData.raison = data.raison
-    if (data.notes) mouvementData.notes = data.notes
-    if (data.equipementId) mouvementData.equipementId = data.equipementId
-    if (data.interventionId) mouvementData.interventionId = data.interventionId
+      // Ajouter les champs optionnels
+      if (data.depotSource) mouvementData.depotSource = data.depotSource
+      if (data.depotDestination) mouvementData.depotDestination = data.depotDestination
+      if (data.raison) mouvementData.raison = data.raison
+      if (data.notes) mouvementData.notes = data.notes
+      if (data.equipementId) mouvementData.equipementId = data.equipementId
+      if (data.interventionId) mouvementData.interventionId = data.interventionId
+      if (data.articleCode) mouvementData.articleCode = data.articleCode
+      if (data.articleDescription) mouvementData.articleDescription = data.articleDescription
+      if (data.coutUnitaire !== undefined) mouvementData.coutUnitaire = data.coutUnitaire
+      if (data.coutTotal !== undefined) mouvementData.coutTotal = data.coutTotal
 
-    // Créer le mouvement
-    const docRef = await addDoc(collection(db, COLLECTION), mouvementData)
+      // Créer la référence pour le nouveau mouvement
+      const mouvementRef = doc(collection(db, COLLECTION))
+      
+      // Créer le mouvement dans la transaction
+      transaction.set(mouvementRef, mouvementData)
+      
+      // Calculer les nouvelles valeurs de stock selon le type
+      const updates: any = {
+        updatedAt: new Date().toISOString()
+      }
+      
+      switch (data.type) {
+        case 'entree':
+          // Ajouter au dépôt de destination
+          if (data.depotDestination) {
+            const stockActuel = stockParDepot[data.depotDestination] || 0
+            updates[`stockParDepot.${data.depotDestination}`] = stockActuel + data.quantite
+            updates.stockTotal = increment(data.quantite)
+          }
+          break
 
-    // Mettre à jour les stocks dans articles_stock
-    await updateStocksFromMouvement(data)
+        case 'sortie':
+          // Retirer du dépôt d'origine
+          if (data.depotSource) {
+            const stockActuel = stockParDepot[data.depotSource] || 0
+            const nouveauStock = stockActuel - data.quantite
+            
+            // Vérification : ne pas descendre en dessous de 0 (optionnel, peut être commenté si négatif autorisé)
+            if (nouveauStock < 0) {
+              console.warn(`⚠️ Stock négatif pour article ${data.articleId} au dépôt ${data.depotSource}: ${nouveauStock}`)
+              // On autorise quand même (comme demandé par l'utilisateur pour gérer pièces perdues)
+            }
+            
+            updates[`stockParDepot.${data.depotSource}`] = nouveauStock
+            updates.stockTotal = increment(-data.quantite)
+          }
+          break
 
-    return docRef.id
+        case 'transfert':
+          // Retirer de l'origine, ajouter à la destination
+          if (data.depotSource && data.depotDestination) {
+            const stockSource = stockParDepot[data.depotSource] || 0
+            const stockDest = stockParDepot[data.depotDestination] || 0
+            
+            updates[`stockParDepot.${data.depotSource}`] = stockSource - data.quantite
+            updates[`stockParDepot.${data.depotDestination}`] = stockDest + data.quantite
+            // Le stock total ne change pas (juste transfert)
+          }
+          break
+
+        case 'ajustement':
+          // Définir une nouvelle quantité absolue dans le dépôt
+          if (data.depotDestination) {
+            const stockActuel = stockParDepot[data.depotDestination] || 0
+            const difference = data.quantite - stockActuel
+
+            updates[`stockParDepot.${data.depotDestination}`] = data.quantite
+            updates.stockTotal = increment(difference)
+          }
+          break
+          
+        case 'retour':
+          // Retour = entrée (remettre en stock)
+          if (data.depotDestination) {
+            const stockActuel = stockParDepot[data.depotDestination] || 0
+            updates[`stockParDepot.${data.depotDestination}`] = stockActuel + data.quantite
+            updates.stockTotal = increment(data.quantite)
+          }
+          break
+      }
+      
+      // Mettre à jour l'article dans la transaction
+      transaction.update(articleRef, updates)
+      
+      return mouvementRef.id
+    })
+    
+    console.log(`✅ Mouvement stock créé avec succès (transaction atomique): ${mouvementId}`)
+    return mouvementId
+    
   } catch (error) {
-    console.error('Erreur création mouvement:', error)
+    console.error('❌ Erreur création mouvement (transaction échouée):', error)
     throw error
   }
 }
 
-// Mettre à jour les stocks selon le type de mouvement
-async function updateStocksFromMouvement(mouvement: Omit<MouvementStock, 'id' | 'createdAt' | 'updatedAt'>) {
+// ⚠️ ANCIENNE FONCTION updateStocksFromMouvement - PLUS UTILISÉE
+// Conservée pour référence mais remplacée par la transaction atomique ci-dessus
+async function updateStocksFromMouvement_OLD(mouvement: Omit<MouvementStock, 'id' | 'createdAt' | 'updatedAt'>) {
   const articleRef = doc(db, 'articles_stock', mouvement.articleId)
   
   switch (mouvement.type) {

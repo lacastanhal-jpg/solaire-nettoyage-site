@@ -9,7 +9,9 @@ import {
   validerNoteDeFrais,
   refuserNoteDeFrais,
   marquerNoteDeFraisRemboursee,
-  type NoteDeFrais
+  getStatistiquesDashboard,
+  type NoteDeFrais,
+  type StatistiquesDashboard
 } from '@/lib/firebase/notes-de-frais'
 import {
   validerNotesEnMasse,
@@ -22,6 +24,8 @@ export default function NotesFraisPage() {
   const [notes, setNotes] = useState<NoteDeFrais[]>([])
   const [notesEnAttente, setNotesEnAttente] = useState<NoteDeFrais[]>([])
   const [notesARembourser, setNotesARembourser] = useState<NoteDeFrais[]>([])
+  
+  const [stats, setStats] = useState<StatistiquesDashboard | null>(null)
   
   // Filtres
   const [statutFilter, setStatutFilter] = useState<string>('all')
@@ -49,15 +53,17 @@ export default function NotesFraisPage() {
   async function loadData() {
     try {
       setLoading(true)
-      const [allNotes, enAttente, aRembourser] = await Promise.all([
+      const [allNotes, enAttente, aRembourser, statsData] = await Promise.all([
         getAllNotesDeFrais(),
         getNotesDeFraisEnAttente(),
-        getNotesDeFraisARembourser()
+        getNotesDeFraisARembourser(),
+        getStatistiquesDashboard()
       ])
       
       setNotes(allNotes)
       setNotesEnAttente(enAttente)
       setNotesARembourser(aRembourser)
+      setStats(statsData)
     } catch (error) {
       console.error('Erreur chargement notes:', error)
     } finally {
@@ -317,6 +323,138 @@ export default function NotesFraisPage() {
           </div>
         </div>
       </div>
+
+      {/* STATISTIQUES */}
+      {stats && (
+        <div className="mb-8 space-y-6">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-6">📈 Évolution & Statistiques</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="border-l-4 border-blue-500 pl-4">
+                <div className="text-sm text-gray-600">Mois actuel</div>
+                <div className="text-2xl font-bold text-gray-900">{stats.totalMoisActuel.toFixed(2)} €</div>
+                <div className="text-sm">
+                  {stats.evolutionPourcentage >= 0 ? (
+                    <span className="text-green-600">↗ +{stats.evolutionPourcentage.toFixed(1)}%</span>
+                  ) : (
+                    <span className="text-red-600">↘ {stats.evolutionPourcentage.toFixed(1)}%</span>
+                  )}
+                  <span className="text-gray-500 ml-1">vs mois dernier</span>
+                </div>
+              </div>
+              
+              <div className="border-l-4 border-green-500 pl-4">
+                <div className="text-sm text-gray-600">Année {new Date().getFullYear()}</div>
+                <div className="text-2xl font-bold text-gray-900">{stats.totalAnnee.toFixed(2)} €</div>
+                <div className="text-sm text-gray-500">{stats.nombreNotesTotal} notes</div>
+              </div>
+              
+              <div className="border-l-4 border-purple-500 pl-4">
+                <div className="text-sm text-gray-600">Moyenne / note</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {stats.nombreNotesTotal > 0 ? (stats.totalAnnee / stats.nombreNotesTotal).toFixed(2) : '0.00'} €
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">6 derniers mois</h3>
+              <div className="h-64 flex items-end gap-2 border-b border-l border-gray-300 p-4">
+                {stats.evolutionMensuelle.slice(-6).map((mois, i) => {
+                  const max = Math.max(...stats.evolutionMensuelle.slice(-6).map(m => m.montant))
+                  const hauteur = max > 0 ? (mois.montant / max) * 100 : 0
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center gap-2">
+                      <div className="relative w-full flex flex-col items-center">
+                        <span className="text-xs font-semibold text-gray-700 mb-1">
+                          {mois.montant.toFixed(0)}€
+                        </span>
+                        <div
+                          className="w-full bg-gradient-to-t from-blue-600 to-blue-400 rounded-t hover:from-blue-700 hover:to-blue-500 transition-all cursor-pointer"
+                          style={{ height: `${hauteur}%` }}
+                          title={`${mois.moisLabel}: ${mois.montant.toFixed(2)}€ (${mois.nombre} notes)`}
+                        />
+                      </div>
+                      <span className="text-xs text-gray-600">{mois.moisLabel.split(' ')[0].slice(0, 3)}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">🏷️ Par catégorie</h3>
+              <div className="space-y-3">
+                {stats.parCategorie.map((cat, i) => (
+                  <div key={i}>
+                    <div className="flex items-center justify-between text-sm mb-1">
+                      <span className="font-medium text-gray-700 capitalize">{cat.categorie}</span>
+                      <span className="font-bold text-gray-900">{cat.montant.toFixed(2)} €</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 bg-gray-200 rounded-full h-2">
+                        <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${cat.pourcentage}%` }} />
+                      </div>
+                      <span className="text-xs text-gray-600 w-12 text-right">{cat.pourcentage.toFixed(1)}%</span>
+                    </div>
+                    <span className="text-xs text-gray-500">{cat.nombre} note{cat.nombre > 1 ? 's' : ''}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">👥 Par opérateur</h3>
+              <div className="space-y-3">
+                {stats.parOperateur.map((op, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                    <div>
+                      <div className="font-medium text-gray-900">{op.operateurNom}</div>
+                      <div className="text-xs text-gray-500">{op.nombreNotes} notes • Moy: {op.moyenneParNote.toFixed(2)}€</div>
+                    </div>
+                    <div className="text-lg font-bold text-gray-900">{op.montantTotal.toFixed(2)} €</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">🔥 Top 10 dépenses</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-2 px-4 text-sm font-semibold text-gray-700">Date</th>
+                    <th className="text-left py-2 px-4 text-sm font-semibold text-gray-700">Opérateur</th>
+                    <th className="text-left py-2 px-4 text-sm font-semibold text-gray-700">Catégorie</th>
+                    <th className="text-right py-2 px-4 text-sm font-semibold text-gray-700">Montant</th>
+                    <th className="text-center py-2 px-4 text-sm font-semibold text-gray-700">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.topDepenses.map((dep, i) => (
+                    <tr key={i} className="border-b hover:bg-gray-50">
+                      <td className="py-2 px-4 text-sm text-gray-600">{new Date(dep.date).toLocaleDateString('fr-FR')}</td>
+                      <td className="py-2 px-4 text-sm font-medium text-gray-900">{dep.operateurNom}</td>
+                      <td className="py-2 px-4 text-sm text-gray-700 capitalize">{dep.categorie}</td>
+                      <td className="py-2 px-4 text-right text-sm font-bold text-gray-900">{dep.montantTTC.toFixed(2)} €</td>
+                      <td className="py-2 px-4 text-center">
+                        <Link href={`/admin/finances/notes-frais/${dep.id}`} className="text-blue-600 hover:text-blue-800 text-sm">
+                          Voir →
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filtres */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">

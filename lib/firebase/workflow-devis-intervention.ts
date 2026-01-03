@@ -255,6 +255,165 @@ export async function devisAGeneréInterventions(devisId: string): Promise<boole
 }
 
 /**
+ * NOUVELLE FONCTION : Génération automatique sans configuration manuelle
+ * Crée les interventions en statut "brouillon" sans dates/équipes
+ */
+export async function validerDevisEnCommande(devisId: string): Promise<{
+  success: boolean
+  interventionsCreees: string[]
+  errors: string[]
+}> {
+  try {
+    const devis = await getDevisById(devisId)
+    if (!devis) {
+      return { success: false, interventionsCreees: [], errors: ['Devis introuvable'] }
+    }
+    
+    // Vérifier que le devis est bien envoyé
+    if (devis.statut !== 'envoyé' && devis.statut !== 'accepté') {
+      return { 
+        success: false, 
+        interventionsCreees: [], 
+        errors: ['Le devis doit être envoyé ou accepté pour être validé en commande'] 
+      }
+    }
+    
+    // Vérifier qu'il n'a pas déjà généré des interventions
+    const dejaGenere = await devisAGeneréInterventions(devisId)
+    if (dejaGenere) {
+      return {
+        success: false,
+        interventionsCreees: [],
+        errors: ['Ce devis a déjà généré des interventions']
+      }
+    }
+    
+    // Récupérer le client pour avoir le groupeId
+    const client = await getClientById(devis.clientId)
+    if (!client) {
+      return { success: false, interventionsCreees: [], errors: ['Client introuvable'] }
+    }
+    
+    // Grouper les lignes par site
+    const sitesMap = grouperLignesParSite(devis)
+    
+    const interventionsCreees: string[] = []
+    const errors: string[] = []
+    
+    // Générer tous les numéros d'intervention à l'avance
+    const nombreSites = sitesMap.size
+    const numeros: string[] = []
+    const premierNumero = await generateInterventionNumero()
+    const year = new Date().getFullYear()
+    const baseNumber = parseInt(premierNumero.split('-')[2])
+    
+    for (let i = 0; i < nombreSites; i++) {
+      const newNumber = baseNumber + i
+      const numero = `INT-${year}-${newNumber.toString().padStart(4, '0')}`
+      numeros.push(numero)
+    }
+    
+    // Créer une intervention par site
+    let index = 0
+    const sitesEntries = Array.from(sitesMap.entries())
+    for (const [siteId, articlesDevis] of sitesEntries) {
+      const numero = numeros[index]
+      index++
+      
+      try {
+        // Récupérer les infos du site depuis les lignes
+        const lignesSite = devis.lignes.filter(l => l.siteId === siteId)
+        const totalSurface = lignesSite.reduce((sum, l) => sum + l.quantite, 0)
+        const siteNom = lignesSite[0]?.siteNom || 'Site inconnu'
+        
+        // Calculer totaux
+        const totalHT = articlesDevis.reduce((sum, art) => 
+          sum + (art.quantite * art.prixUnitaire), 0
+        )
+        const totalTVA = articlesDevis.reduce((sum, art) => 
+          sum + (art.quantite * art.prixUnitaire * art.tva / 100), 0
+        )
+        const totalTTC = totalHT + totalTVA
+        
+        // Créer l'intervention en statut BROUILLON (sans dates/équipes)
+        const interventionData: any = {
+          // Identifiants
+          siteId: siteId,
+          siteName: siteNom,
+          clientId: devis.clientId,
+          clientName: devis.clientNom,
+          groupeId: client.groupeId || '',
+          
+          // Dates NON définies - à affecter plus tard
+          dateDebut: null,
+          dateFin: null,
+          heureDebut: null,
+          heureFin: null,
+          
+          // Équipe NON définie - à affecter plus tard
+          equipeId: null,
+          equipeName: null,
+          
+          // Infos intervention
+          surface: totalSurface,
+          type: 'Standard' as const,
+          statut: 'brouillon' as const,  // ⚡ BROUILLON en attente planification
+          
+          // Notes avec détails devis
+          notes: `✅ Intervention générée depuis devis ${devis.numero}\n\n📋 Articles:\n${articlesDevis.map(a => `- ${a.articleNom} (x${a.quantite})`).join('\n')}\n\n💰 Total TTC: ${totalTTC.toFixed(2)}€`,
+          
+          // Lien devis
+          devisId: devis.id,
+          devisNumero: devis.numero,
+          
+          // Métadonnées
+          createdAt: new Date().toISOString(),
+          createdBy: 'workflow-devis-auto',
+          
+          // Totaux pour référence
+          totalHT,
+          totalTVA,
+          totalTTC,
+          articles: articlesDevis
+        }
+        
+        const interventionRef = doc(db, 'interventions_calendar', numero)
+        await setDoc(interventionRef, interventionData)
+        
+        interventionsCreees.push(numero)
+      } catch (error) {
+        console.error(`Erreur création intervention ${numero}:`, error)
+        errors.push(`Erreur pour site ${siteId}: ${error}`)
+      }
+    }
+    
+    // Mettre à jour le devis
+    if (interventionsCreees.length > 0) {
+      const devisRef = doc(db, 'devis', devisId)
+      await setDoc(devisRef, {
+        statut: 'validé_commande',  // Nouveau statut
+        interventionsGenerees: true,
+        interventionsNumeros: interventionsCreees,
+        dateValidationCommande: new Date().toISOString()
+      }, { merge: true })
+    }
+    
+    return {
+      success: interventionsCreees.length > 0,
+      interventionsCreees,
+      errors
+    }
+  } catch (error) {
+    console.error('Erreur validation commande:', error)
+    return {
+      success: false,
+      interventionsCreees: [],
+      errors: [`Erreur générale: ${error}`]
+    }
+  }
+}
+
+/**
  * Récupérer les interventions créées depuis un devis
  */
 export async function getInterventionsByDevis(devisId: string): Promise<any[]> {
@@ -295,3 +454,53 @@ export async function getInterventionsByDevis(devisId: string): Promise<any[]> {
     return []
   }
 }
+
+/**
+ * Affectation en masse équipe + dates
+ * Met à jour plusieurs interventions en une fois
+ */
+export async function affecterInterventionsEnMasse(
+  affectations: {
+    interventionId: string
+    dateDebut: string
+    dateFin: string
+    equipeId: number
+    equipeName: string
+  }[]
+): Promise<{ success: boolean; errors: string[] }> {
+  try {
+    const errors: string[] = []
+    
+    // Traiter chaque affectation
+    for (const affectation of affectations) {
+      try {
+        const interventionRef = doc(db, 'interventions_calendar', affectation.interventionId)
+        
+        await setDoc(interventionRef, {
+          dateDebut: affectation.dateDebut,
+          dateFin: affectation.dateFin,
+          heureDebut: '08:00',  // Par défaut
+          heureFin: '17:00',    // Par défaut
+          equipeId: affectation.equipeId as 1 | 2 | 3,
+          equipeName: affectation.equipeName,
+          statut: 'Planifiée' as const,  // Passe de "brouillon" à "Planifiée"
+          updatedAt: new Date().toISOString()
+        }, { merge: true })
+      } catch (error) {
+        errors.push(`Erreur intervention ${affectation.interventionId}: ${error}`)
+      }
+    }
+    
+    return {
+      success: errors.length === 0,
+      errors
+    }
+  } catch (error) {
+    console.error('Erreur affectation en masse:', error)
+    return {
+      success: false,
+      errors: [`Erreur générale: ${error}`]
+    }
+  }
+}
+

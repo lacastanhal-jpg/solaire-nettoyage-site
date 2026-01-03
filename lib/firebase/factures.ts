@@ -65,6 +65,9 @@ export interface Facture {
   devisId?: string
   devisNumero?: string
   
+  // RÉFÉRENCES COMMANDE CLIENT
+  numeroBonCommandeClient?: string
+  
   // ACOMPTE
   estAcompte: boolean // true si c'est une facture d'acompte
   pourcentageAcompte?: number // 30% par exemple
@@ -109,6 +112,7 @@ export interface FactureInput {
   groupeNom?: string
   devisId?: string
   devisNumero?: string
+  numeroBonCommandeClient?: string
   dateEcheance?: string
   estAcompte?: boolean
   pourcentageAcompte?: number
@@ -338,6 +342,7 @@ export async function createFacture(factureData: FactureInput): Promise<string> 
     if (factureData.groupeNom) facture.groupeNom = factureData.groupeNom
     if (factureData.devisId) facture.devisId = factureData.devisId
     if (factureData.devisNumero) facture.devisNumero = factureData.devisNumero
+    if (factureData.numeroBonCommandeClient) facture.numeroBonCommandeClient = factureData.numeroBonCommandeClient
     if (factureData.conditionsPaiement) facture.conditionsPaiement = factureData.conditionsPaiement
     if (factureData.modalitesReglement) facture.modalitesReglement = factureData.modalitesReglement
     if (factureData.pourcentageAcompte) facture.pourcentageAcompte = factureData.pourcentageAcompte

@@ -36,9 +36,10 @@ export default function ModifierDevisPage() {
   
   const [selectedClientId, setSelectedClientId] = useState('')
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
+  const [numeroCommandeClient, setNumeroCommandeClient] = useState('')
   const [lignes, setLignes] = useState<LigneFormData[]>([])
   const [notes, setNotes] = useState('')
-  const [statut, setStatut] = useState<'brouillon' | 'envoyé' | 'accepté' | 'refusé'>('brouillon')
+  const [statut, setStatut] = useState<'brouillon' | 'envoyé' | 'accepté' | 'refusé' | 'validé_commande'>('brouillon')
 
   useEffect(() => {
     loadInitialData()
@@ -70,6 +71,7 @@ export default function ModifierDevisPage() {
       
       // Charger les données du devis
       setSelectedClientId(devisData.clientId)
+      setNumeroCommandeClient(devisData.numeroCommandeClient || '')
       setNotes(devisData.notes || '')
       setStatut(devisData.statut)
 
@@ -223,6 +225,7 @@ export default function ModifierDevisPage() {
         clientId: selectedClientId,
         clientNom: selectedClient!.company,
         groupeNom: selectedClient!.groupeNom,
+        numeroCommandeClient: numeroCommandeClient || undefined,
         lignes: lignesDevis,
         notes,
         statut
@@ -289,6 +292,25 @@ export default function ModifierDevisPage() {
                   {selectedClient.groupeNom && <div><strong>Groupe:</strong> {selectedClient.groupeNom}</div>}
                   <div><strong>Sites disponibles:</strong> {sites.length}</div>
                 </div>
+              </div>
+            )}
+            
+            {/* N° Bon de Commande Client */}
+            {selectedClient && (
+              <div className="mt-4">
+                <label className="block text-sm font-bold text-gray-900 mb-2">
+                  N° Bon de Commande Client (optionnel)
+                </label>
+                <input
+                  type="text"
+                  value={numeroCommandeClient}
+                  onChange={(e) => setNumeroCommandeClient(e.target.value)}
+                  placeholder="BC-ENGIE-2026-12345"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-600"
+                />
+                <p className="text-xs text-gray-600 mt-1">
+                  Pour les gros comptes (ENGIE, EDF, TotalEnergies...) - Requis pour la facturation
+                </p>
               </div>
             )}
           </div>
