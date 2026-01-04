@@ -183,7 +183,16 @@ export function calculateMontantsNoteFrais(
 /**
  * Obtenir le compte comptable PCG selon la catégorie
  */
-export function getCompteComptable(categorie: NoteDeFrais['categorie']): string {
+export function getCompteComptable(
+  categorie: NoteDeFrais['categorie'],
+  donneesCarburant?: DonneesCarburant
+): string {
+  // Si carburant ET type renseigné → sous-compte spécifique
+  if (categorie === 'carburant' && donneesCarburant?.typeCarburant) {
+    return getCompteComptableCarburant(donneesCarburant.typeCarburant)
+  }
+  
+  // Sinon, comptes standards
   const comptes: Record<string, string> = {
     'carburant': '6061',      // Fournitures non stockables (eau, énergie, carburant)
     'peage': '6251',          // Voyages et déplacements
@@ -194,6 +203,31 @@ export function getCompteComptable(categorie: NoteDeFrais['categorie']): string 
     'autre': '6288'           // Autres services divers
   }
   return comptes[categorie] || '6288'
+}
+
+/**
+ * Obtenir le sous-compte carburant selon le type
+ */
+export function getCompteComptableCarburant(typeCarburant: string): string {
+  const type = typeCarburant.toUpperCase().trim()
+  const comptes: Record<string, string> = {
+    'GASOIL': '606100',      // Gasoil véhicules
+    'GAZOLE': '606100',      // Gasoil (synonyme)
+    'DIESEL': '606100',      // Diesel (synonyme)
+    'SP95': '606101',        // Essence SP95
+    'SP98': '606101',        // Essence SP98
+    'E10': '606101',         // Essence E10
+    'SANS_PLOMB': '606101',  // Sans plomb (générique)
+    'E85': '606102',         // Bioéthanol E85
+    'GPL': '606103',         // GPL
+    'ADBLUE': '606104',      // AdBlue (urée)
+    'FUEL': '606105',        // Fuel domestique (cuves)
+    'FIOUL': '606105',       // Fioul (synonyme)
+    'ELECTRIQUE': '606106',  // Électricité véhicules
+    'HYBRIDE': '606101',     // Hybride → essence par défaut
+  }
+  
+  return comptes[type] || '6061'  // Par défaut carburant générique
 }
 
 /**
@@ -363,7 +397,7 @@ export async function createNoteDeFrais(noteData: NoteDeFraisInput): Promise<str
     const numero = await generateNoteFraisNumero()
     const tauxTVA = noteData.tauxTVA || 20
     const montants = calculateMontantsNoteFrais(noteData.montantTTC, tauxTVA)
-    const compteComptable = getCompteComptable(noteData.categorie)
+    const compteComptable = getCompteComptable(noteData.categorie, noteData.donneesCarburant)
     
     const note: any = {
       numero,
@@ -424,7 +458,8 @@ export async function updateNoteDeFrais(id: string, noteData: Partial<NoteDeFrai
     if (noteData.date !== undefined) updates.date = noteData.date
     if (noteData.categorie !== undefined) {
       updates.categorie = noteData.categorie
-      updates.compteComptable = getCompteComptable(noteData.categorie)
+      // Recalculer compte avec données carburant si modifiées
+      updates.compteComptable = getCompteComptable(noteData.categorie, noteData.donneesCarburant)
     }
     if (noteData.description !== undefined) updates.description = noteData.description
     if (noteData.fournisseur !== undefined) updates.fournisseur = noteData.fournisseur
