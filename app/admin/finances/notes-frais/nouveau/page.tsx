@@ -6,6 +6,9 @@ import { createNoteDeFrais } from '@/lib/firebase/notes-de-frais'
 import { getAllOperateurs, type Operateur } from '@/lib/firebase/operateurs'
 import { getAllEquipements } from '@/lib/firebase/stock-equipements'
 import { uploadFile } from '@/lib/firebase/storage'
+import { auth, db } from '@/lib/firebase/config'
+import { onAuthStateChanged } from 'firebase/auth'
+import { doc, getDoc } from 'firebase/firestore'
 
 // ✨ NOUVEAU - Imports OCR
 interface OCRResult {
@@ -76,6 +79,38 @@ export default function NouvelleNoteFraisPage() {
   const [ocrEnCours, setOcrEnCours] = useState(false)
   const [ocrResult, setOcrResult] = useState<OCRResult | null>(null)
   const [photoBase64, setPhotoBase64] = useState<string>('')
+
+  // ✅ NOUVEAU - Récupérer utilisateur connecté
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          // Récupérer les infos utilisateur depuis Firestore
+          const userDoc = await getDoc(doc(db, 'utilisateurs', user.uid))
+          
+          if (userDoc.exists()) {
+            const userData = userDoc.data()
+            setFormData(prev => ({
+              ...prev,
+              operateurId: user.uid,
+              operateurNom: userData.nom || user.email || 'Opérateur'
+            }))
+          } else {
+            // Si pas de doc utilisateur, utiliser email
+            setFormData(prev => ({
+              ...prev,
+              operateurId: user.uid,
+              operateurNom: user.email || 'Opérateur'
+            }))
+          }
+        } catch (error) {
+          console.error('Erreur récupération utilisateur:', error)
+        }
+      }
+    })
+    
+    return () => unsubscribe()
+  }, [])
 
   useEffect(() => {
     loadData()
@@ -411,24 +446,22 @@ export default function NouvelleNoteFraisPage() {
           {modeOCR && ocrResult ? '✅ Vérifier et compléter' : 'Informations'}
         </h3>
 
-        {/* Opérateur */}
+        {/* Opérateur - ✅ PRÉ-SÉLECTIONNÉ AUTOMATIQUEMENT */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Opérateur *
+            Opérateur
           </label>
-          <select
-            required
-            value={formData.operateurId}
-            onChange={handleOperateurChange}
-            className="w-full px-3 py-2 border rounded-lg"
-          >
-            <option value="">Sélectionner un opérateur</option>
-            {operateurs.map(op => (
-              <option key={op.id} value={op.id}>
-                {op.prenom} {op.nom}
-              </option>
-            ))}
-          </select>
+          <div className="w-full px-4 py-3 bg-blue-50 border-2 border-blue-200 rounded-lg">
+            <p className="font-medium text-blue-900">
+              📋 {formData.operateurNom || 'Chargement...'}
+            </p>
+            <p className="text-sm text-blue-600 mt-1">
+              Opérateur connecté (auto-sélectionné)
+            </p>
+          </div>
+          {/* Champs cachés pour envoyer les données */}
+          <input type="hidden" value={formData.operateurId} />
+          <input type="hidden" value={formData.operateurNom} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
