@@ -97,6 +97,7 @@ export interface NoteDeFrais {
   // DÉTAILS
   description: string
   fournisseur?: string
+  numeroTicket?: string  // Numéro ticket fournisseur (détection doublons)
   
   // VÉHICULE (si carburant ou péage)
   vehiculeId?: string
@@ -148,6 +149,7 @@ export interface NoteDeFraisInput {
   tvaRecuperable?: boolean
   description: string
   fournisseur?: string
+  numeroTicket?: string  // Numéro ticket (détection doublons)
   vehiculeId?: string
   vehiculeImmat?: string
   kmParcourus?: number
@@ -192,6 +194,47 @@ export function getCompteComptable(categorie: NoteDeFrais['categorie']): string 
     'autre': '6288'           // Autres services divers
   }
   return comptes[categorie] || '6288'
+}
+
+/**
+ * Détecter un doublon par numéro de ticket
+ */
+export async function detecterDoublonParTicket(
+  numeroTicket: string,
+  fournisseur?: string
+): Promise<NoteDeFrais | null> {
+  try {
+    // Si pas de numéro ticket → impossible détecter
+    if (!numeroTicket || numeroTicket.trim() === '') {
+      return null
+    }
+    
+    const notesRef = collection(db, 'notes_de_frais')
+    const allNotes = await getDocs(notesRef)
+    
+    for (const docSnap of allNotes.docs) {
+      const note = { id: docSnap.id, ...docSnap.data() } as NoteDeFrais
+      
+      // Vérifier numéro ticket exact
+      if (note.numeroTicket === numeroTicket) {
+        // Si fournisseur renseigné, vérifier aussi pour confirmation
+        if (fournisseur && note.fournisseur) {
+          const fournisseur1 = fournisseur.toLowerCase().trim()
+          const fournisseur2 = note.fournisseur.toLowerCase().trim()
+          if (fournisseur1 === fournisseur2) {
+            return note // DOUBLON CONFIRMÉ
+          }
+        } else {
+          return note // DOUBLON DÉTECTÉ (même sans fournisseur)
+        }
+      }
+    }
+    
+    return null // Pas de doublon
+  } catch (error) {
+    console.error('Erreur détection doublon:', error)
+    return null
+  }
 }
 
 /**
@@ -295,6 +338,18 @@ export async function getNotesDeFraisByOperateur(operateurId: string): Promise<N
  */
 export async function createNoteDeFrais(noteData: NoteDeFraisInput): Promise<string> {
   try {
+    // ⚠️ VÉRIFIER DOUBLON PAR NUMÉRO TICKET AVANT CRÉATION
+    if (noteData.numeroTicket) {
+      const doublon = await detecterDoublonParTicket(
+        noteData.numeroTicket,
+        noteData.fournisseur
+      )
+      
+      if (doublon) {
+        throw new Error(`DOUBLON DÉTECTÉ : Ce ticket a déjà été enregistré dans la note ${doublon.numero}`)
+      }
+    }
+    
     const numero = await generateNoteFraisNumero()
     const tauxTVA = noteData.tauxTVA || 20
     const montants = calculateMontantsNoteFrais(noteData.montantTTC, tauxTVA)
@@ -325,6 +380,7 @@ export async function createNoteDeFrais(noteData: NoteDeFraisInput): Promise<str
     
     // Champs optionnels
     if (noteData.fournisseur) note.fournisseur = noteData.fournisseur
+    if (noteData.numeroTicket) note.numeroTicket = noteData.numeroTicket  // Stockage numéro ticket
     if (noteData.vehiculeId) note.vehiculeId = noteData.vehiculeId
     if (noteData.vehiculeImmat) note.vehiculeImmat = noteData.vehiculeImmat
     if (noteData.kmParcourus) note.kmParcourus = noteData.kmParcourus
@@ -394,9 +450,30 @@ export async function updateNoteDeFrais(id: string, noteData: Partial<NoteDeFrai
 
 /**
  * Supprimer une note de frais
+ * @param id - ID de la note
+ * @param force - Si true, permet de supprimer même une note validée/remboursée
  */
-export async function deleteNoteDeFrais(id: string): Promise<void> {
+export async function deleteNoteDeFrais(id: string, force: boolean = false): Promise<void> {
   try {
+    // Vérifier le statut avant suppression (sauf si force = true)
+    if (!force) {
+      const note = await getNoteDeFraisById(id)
+      if (note) {
+        if (note.statut === 'validee' || note.statut === 'remboursee') {
+          throw new Error(
+            `Impossible de supprimer une note ${note.statut}. ` +
+            `Utilisez la suppression forcée si nécessaire.`
+          )
+        }
+        if (note.exported) {
+          throw new Error(
+            'Impossible de supprimer une note déjà exportée en comptabilité. ' +
+            'Utilisez la suppression forcée si nécessaire.'
+          )
+        }
+      }
+    }
+    
     await deleteDoc(doc(db, 'notes_de_frais', id))
   } catch (error) {
     console.error('Erreur suppression note de frais:', error)
