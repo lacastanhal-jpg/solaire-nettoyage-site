@@ -132,7 +132,6 @@ export default function NouvelleNoteFraisPage() {
       setEquipements(equips.filter((e: any) => e.type === 'vehicule'))
     } catch (error) {
       console.error('❌ Erreur loadData:', error)
-      setDebugInfo([`❌ Erreur chargement: ${error}`])
     }
   }
 
@@ -295,7 +294,7 @@ export default function NouvelleNoteFraisPage() {
             ✨ OCR Activé
           </span>
         </h1>
-        <p className="text-gray-600 mt-2">Créer une nouvelle demande de remboursement</p>
+        <p className="text-gray-600 mt-2">Créer une nouvelle note de frais</p>
       </div>
 
       {/* ✨ NOUVEAU - SECTION OCR */}

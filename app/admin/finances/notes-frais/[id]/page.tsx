@@ -287,8 +287,8 @@ export default function DetailNoteFraisPage() {
               <p className="text-gray-900">{note.description}</p>
             </div>
             
-            {/* ✅ NOUVEAU - Détails Carburant */}
-            {note.donneesCarburant && (
+            {/* ✅ Détails CARBURANT */}
+            {note.donneesCarburant && note.categorie === 'carburant' && (
               <div className="mt-4 pt-4 border-t">
                 <p className="text-sm font-medium text-gray-700 mb-3">⛽ Détails Carburant</p>
                 <div className="grid grid-cols-2 gap-4 bg-blue-50 p-4 rounded-lg">
@@ -316,6 +316,48 @@ export default function DetailNoteFraisPage() {
                       {(note.donneesCarburant.quantiteLitres * note.donneesCarburant.prixUnitaire).toFixed(2)} €
                     </p>
                   </div>
+                </div>
+              </div>
+            )}
+            
+            {/* ✅ Détails RESTAURANT */}
+            {note.donneesRestaurant && note.categorie === 'repas' && (
+              <div className="mt-4 pt-4 border-t">
+                <p className="text-sm font-medium text-gray-700 mb-3">🍽️ Détails Restaurant</p>
+                <div className="bg-orange-50 p-4 rounded-lg">
+                  {note.donneesRestaurant.nombrePersonnes && (
+                    <div className="mb-2">
+                      <p className="text-sm text-gray-600">Nombre de personnes</p>
+                      <p className="font-medium text-orange-900">{note.donneesRestaurant.nombrePersonnes}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {/* ✅ Détails PÉAGE */}
+            {note.donneesPeage && note.categorie === 'peage' && (
+              <div className="mt-4 pt-4 border-t">
+                <p className="text-sm font-medium text-gray-700 mb-3">🛣️ Détails Péage</p>
+                <div className="grid grid-cols-2 gap-4 bg-purple-50 p-4 rounded-lg">
+                  {note.donneesPeage.trajet && (
+                    <div className="col-span-2">
+                      <p className="text-sm text-gray-600">Trajet</p>
+                      <p className="font-medium text-purple-900">{note.donneesPeage.trajet}</p>
+                    </div>
+                  )}
+                  {note.donneesPeage.entree && (
+                    <div>
+                      <p className="text-sm text-gray-600">Entrée</p>
+                      <p className="font-medium text-purple-900">{note.donneesPeage.entree}</p>
+                    </div>
+                  )}
+                  {note.donneesPeage.sortie && (
+                    <div>
+                      <p className="text-sm text-gray-600">Sortie</p>
+                      <p className="font-medium text-purple-900">{note.donneesPeage.sortie}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
