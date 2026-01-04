@@ -81,57 +81,61 @@ export default function NouvelleNoteFraisPage() {
   
   // ✅ DEBUG visible sur téléphone
   const [debugInfo, setDebugInfo] = useState<string[]>([])
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null)
 
+  // ✅ ÉTAPE 1 : Écouter Firebase Auth (une seule fois)
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setCurrentUserId(user.uid)
+        setCurrentUserEmail(user.email)
+        setDebugInfo(prev => [...prev, `🔍 Auth: ${user.email}`])
+      } else {
+        setDebugInfo(prev => [...prev, '❌ Pas connecté'])
+      }
+    })
+    return () => unsubscribe()
+  }, []) // Une seule fois au montage
+
+  // ✅ ÉTAPE 2 : Charger opérateurs
   useEffect(() => {
     loadData()
   }, [])
   
-  // ✅ ATTENDRE QUE FIREBASE AUTH SOIT PRÊT
+  // ✅ ÉTAPE 3 : Quand on a les DEUX (user ET operateurs), pré-sélectionner
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      const debugMessages: string[] = []
+    if (currentUserEmail && operateurs.length > 0) {
+      const debugMessages: string[] = [`✅ ${operateurs.length} opérateurs`, `🔍 Email: ${currentUserEmail}`]
       
-      if (user && operateurs.length > 0) {
-        debugMessages.push(`🔍 Auth prêt: ${user.email}`)
+      const opFound = operateurs.find(o => o.email === currentUserEmail)
+      
+      if (opFound) {
+        debugMessages.push(`✅ TROUVÉ: ${opFound.prenom} ${opFound.nom}`)
+        setFormData(prev => ({
+          ...prev,
+          operateurId: opFound.id!,
+          operateurNom: `${opFound.prenom} ${opFound.nom}`
+        }))
+      } else {
+        debugMessages.push(`⚠️ PAS TROUVÉ`)
+        debugMessages.push(`📋 Emails:`)
+        operateurs.slice(0, 3).forEach(o => {
+          debugMessages.push(`  ${o.email || 'AUCUN'} (${o.prenom})`)
+        })
         
-        // Chercher l'opérateur par email
-        const opFound = operateurs.find(o => o.email === user.email)
-        
-        if (opFound) {
-          debugMessages.push(`✅ TROUVÉ: ${opFound.prenom} ${opFound.nom}`)
-          setFormData(prev => ({
-            ...prev,
-            operateurId: opFound.id!,
-            operateurNom: `${opFound.prenom} ${opFound.nom}`
-          }))
-        } else {
-          debugMessages.push(`⚠️ Email ${user.email} PAS trouvé`)
-          debugMessages.push(`📋 Emails opérateurs:`)
-          operateurs.forEach(o => {
-            debugMessages.push(`   - ${o.email || 'AUCUN'} (${o.prenom} ${o.nom})`)
-          })
-          
-          // Fallback
-          if (operateurs.length > 0) {
-            setFormData(prev => ({
-              ...prev,
-              operateurId: operateurs[0].id!,
-              operateurNom: `${operateurs[0].prenom} ${operateurs[0].nom}`
-            }))
-            debugMessages.push(`➡️ Fallback: ${operateurs[0].prenom} ${operateurs[0].nom}`)
-          }
-        }
-        
-        setDebugInfo(debugMessages)
-      } else if (!user) {
-        setDebugInfo(['⏳ Attente Firebase Auth...'])
-      } else if (operateurs.length === 0) {
-        setDebugInfo(['⏳ Attente chargement opérateurs...'])
+        // Fallback
+        setFormData(prev => ({
+          ...prev,
+          operateurId: operateurs[0].id!,
+          operateurNom: `${operateurs[0].prenom} ${operateurs[0].nom}`
+        }))
+        debugMessages.push(`➡️ Fallback: ${operateurs[0].prenom}`)
       }
-    })
-    
-    return () => unsubscribe()
-  }, [operateurs]) // Se déclenche quand operateurs change
+      
+      setDebugInfo(debugMessages)
+    }
+  }, [currentUserEmail, operateurs]) // Quand un des deux change
 
   async function loadData() {
     try {
@@ -141,12 +145,9 @@ export default function NouvelleNoteFraisPage() {
       ])
       setOperateurs(ops)
       setEquipements(equips.filter((e: any) => e.type === 'vehicule'))
-      
-      setDebugInfo([`✅ ${ops.length} opérateurs chargés`, '⏳ Attente Firebase Auth...'])
-      
     } catch (error) {
       console.error('❌ Erreur loadData:', error)
-      setDebugInfo([`❌ Erreur: ${error}`])
+      setDebugInfo([`❌ Erreur chargement: ${error}`])
     }
   }
 
