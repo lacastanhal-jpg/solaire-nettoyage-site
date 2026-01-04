@@ -76,9 +76,6 @@ export default function NouvelleNoteFraisPage() {
   const [ocrEnCours, setOcrEnCours] = useState(false)
   const [ocrResult, setOcrResult] = useState<OCRResult | null>(null)
   const [photoBase64, setPhotoBase64] = useState<string>('')
-  
-  // ✅ DEBUG visible sur téléphone
-  const [debugInfo, setDebugInfo] = useState<string[]>([])
 
   useEffect(() => {
     loadData()
@@ -87,18 +84,9 @@ export default function NouvelleNoteFraisPage() {
   // ✅ PRÉ-SÉLECTION quand opérateurs chargés
   useEffect(() => {
     if (operateurs.length > 0) {
-      const debugMessages: string[] = []
-      
-      // ✅ UTILISER LOCALSTORAGE (comme le reste de l'appli)
+      // Récupérer depuis localStorage (comme le reste de l'appli)
       const userEmail = localStorage.getItem('user_email')
-      const userName = localStorage.getItem('user_name')
       const userId = localStorage.getItem('user_id')
-      
-      debugMessages.push(`✅ ${operateurs.length} opérateurs`)
-      debugMessages.push(`🔍 localStorage:`)
-      debugMessages.push(`   email: ${userEmail || 'AUCUN'}`)
-      debugMessages.push(`   name: ${userName || 'AUCUN'}`)
-      debugMessages.push(`   id: ${userId || 'AUCUN'}`)
       
       if (userEmail) {
         // Chercher par email
@@ -107,43 +95,30 @@ export default function NouvelleNoteFraisPage() {
         )
         
         if (opFound) {
-          debugMessages.push(`✅ TROUVÉ: ${opFound.prenom} ${opFound.nom}`)
           setFormData(prev => ({
             ...prev,
             operateurId: opFound.id!,
             operateurNom: `${opFound.prenom} ${opFound.nom}`
           }))
         } else {
-          debugMessages.push(`⚠️ Email PAS trouvé dans opérateurs`)
-          debugMessages.push(`📋 Emails opérateurs:`)
-          operateurs.slice(0, 3).forEach(o => {
-            debugMessages.push(`   ${o.email || 'AUCUN'} (${o.prenom} ${o.nom})`)
-          })
-          
-          // Fallback
+          // Fallback : premier opérateur
           setFormData(prev => ({
             ...prev,
             operateurId: operateurs[0].id!,
             operateurNom: `${operateurs[0].prenom} ${operateurs[0].nom}`
           }))
-          debugMessages.push(`➡️ Fallback: ${operateurs[0].prenom}`)
         }
       } else if (userId) {
         // Chercher par ID
         const opFound = operateurs.find(o => o.id === userId)
         if (opFound) {
-          debugMessages.push(`✅ TROUVÉ par ID: ${opFound.prenom} ${opFound.nom}`)
           setFormData(prev => ({
             ...prev,
             operateurId: opFound.id!,
             operateurNom: `${opFound.prenom} ${opFound.nom}`
           }))
         }
-      } else {
-        debugMessages.push(`❌ Aucune info utilisateur dans localStorage`)
       }
-      
-      setDebugInfo(debugMessages)
     }
   }, [operateurs])
 
@@ -497,15 +472,6 @@ export default function NouvelleNoteFraisPage() {
               </option>
             ))}
           </select>
-          
-          {/* 🔍 DEBUG VISIBLE SUR TÉLÉPHONE */}
-          {debugInfo.length > 0 && (
-            <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
-              {debugInfo.map((msg, i) => (
-                <div key={i} className="text-gray-800">{msg}</div>
-              ))}
-            </div>
-          )}
           
           {formData.operateurId && formData.operateurNom && (
             <p className="text-sm text-green-600 mt-1">
