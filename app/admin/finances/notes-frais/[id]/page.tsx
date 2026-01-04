@@ -9,9 +9,10 @@ import {
   refuserNoteDeFrais,
   marquerNoteDeFraisRemboursee,
   soumettreNoteDeFrais,
+  deleteNoteDeFrais,
   type NoteDeFrais
 } from '@/lib/firebase/notes-de-frais'
-import { Eye, Download, Check, X, DollarSign, ArrowLeft, Send } from 'lucide-react'
+import { Eye, Download, Check, X, DollarSign, ArrowLeft, Send, Edit, Trash2 } from 'lucide-react'
 
 export default function DetailNoteFraisPage() {
   const params = useParams()
@@ -70,6 +71,36 @@ export default function DetailNoteFraisPage() {
     } catch (error) {
       console.error('Erreur:', error)
       alert('❌ Erreur')
+    }
+  }
+
+  async function handleModifier() {
+    if (!note) return
+    router.push(`/admin/finances/notes-frais/${note.id}/modifier`)
+  }
+
+  async function handleSupprimer() {
+    if (!note) return
+    
+    const confirmation = note.statut === 'validee' || note.statut === 'remboursee' || note.exported
+      ? confirm(
+          `⚠️ ATTENTION : Cette note est ${note.statut} ${note.exported ? 'et exportée en comptabilité' : ''}.\n\n` +
+          'Êtes-vous VRAIMENT sûr de vouloir la supprimer ?\n\n' +
+          'Cette action est irréversible !'
+        )
+      : confirm('Supprimer cette note de frais ?')
+    
+    if (!confirmation) return
+    
+    try {
+      // Suppression forcée si validée/remboursée/exportée
+      const force = note.statut === 'validee' || note.statut === 'remboursee' || note.exported
+      await deleteNoteDeFrais(note.id, force)
+      alert('✅ Note supprimée')
+      router.push('/admin/finances/notes-frais')
+    } catch (error: any) {
+      console.error('Erreur suppression:', error)
+      alert('❌ Erreur : ' + error.message)
     }
   }
 
@@ -142,6 +173,23 @@ export default function DetailNoteFraisPage() {
             <ArrowLeft className="w-4 h-4" />
             Retour
           </Link>
+          
+          {/* ✅ NOUVEAUX BOUTONS - Toujours visibles */}
+          <button
+            onClick={handleModifier}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            <Edit className="w-4 h-4" />
+            Modifier
+          </button>
+          <button
+            onClick={handleSupprimer}
+            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            <Trash2 className="w-4 h-4" />
+            Supprimer
+          </button>
+          
           {note.statut === 'brouillon' && (
             <button
               onClick={handleSoumettre}
@@ -215,12 +263,90 @@ export default function DetailNoteFraisPage() {
                   <p className="font-medium">{note.fournisseur}</p>
                 </div>
               )}
+              
+              {/* ✅ NOUVEAU - Comptabilité */}
+              <div>
+                <p className="text-sm text-gray-600">Compte comptable</p>
+                <p className="font-medium font-mono text-blue-600">{note.compteComptable}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Exporté comptabilité</p>
+                <p className="font-medium">{note.exported ? '✅ Oui' : '❌ Non'}</p>
+              </div>
+              
+              {note.numeroTicket && (
+                <div className="col-span-2">
+                  <p className="text-sm text-gray-600">N° Ticket</p>
+                  <p className="font-medium font-mono">{note.numeroTicket}</p>
+                </div>
+              )}
             </div>
 
             <div className="mt-4 pt-4 border-t">
               <p className="text-sm text-gray-600 mb-2">Description</p>
               <p className="text-gray-900">{note.description}</p>
             </div>
+            
+            {/* ✅ NOUVEAU - Détails Carburant */}
+            {note.donneesCarburant && (
+              <div className="mt-4 pt-4 border-t">
+                <p className="text-sm font-medium text-gray-700 mb-3">⛽ Détails Carburant</p>
+                <div className="grid grid-cols-2 gap-4 bg-blue-50 p-4 rounded-lg">
+                  <div>
+                    <p className="text-sm text-gray-600">Type</p>
+                    <p className="font-medium text-blue-900">{note.donneesCarburant.typeCarburant}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Quantité</p>
+                    <p className="font-medium text-blue-900">{note.donneesCarburant.quantiteLitres} L</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Prix unitaire</p>
+                    <p className="font-medium text-blue-900">{note.donneesCarburant.prixUnitaire.toFixed(3)} €/L</p>
+                  </div>
+                  {note.donneesCarburant.numeroPompe && (
+                    <div>
+                      <p className="text-sm text-gray-600">Pompe n°</p>
+                      <p className="font-medium text-blue-900">{note.donneesCarburant.numeroPompe}</p>
+                    </div>
+                  )}
+                  <div className="col-span-2 pt-2 border-t border-blue-200">
+                    <p className="text-sm text-gray-600">Total calculé</p>
+                    <p className="font-bold text-blue-900 text-lg">
+                      {(note.donneesCarburant.quantiteLitres * note.donneesCarburant.prixUnitaire).toFixed(2)} €
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* ✅ NOUVEAU - Métadonnées OCR */}
+            {note.donneesOCR && (
+              <div className="mt-4 pt-4 border-t">
+                <p className="text-sm font-medium text-gray-700 mb-3">📊 Métadonnées OCR</p>
+                <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
+                  <div>
+                    <p className="text-sm text-gray-600">Confiance</p>
+                    <p className="font-medium">{note.donneesOCR.confiance}%</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Analysé le</p>
+                    <p className="font-medium">
+                      {new Date(note.donneesOCR.dateAnalyse).toLocaleString('fr-FR')}
+                    </p>
+                  </div>
+                  {note.donneesOCR.texteComplet && (
+                    <div className="col-span-2">
+                      <p className="text-sm text-gray-600 mb-1">Texte brut extrait</p>
+                      <details className="text-xs text-gray-700 bg-white p-2 rounded border">
+                        <summary className="cursor-pointer font-medium">Afficher le texte</summary>
+                        <pre className="mt-2 whitespace-pre-wrap">{note.donneesOCR.texteComplet}</pre>
+                      </details>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {(note.vehiculeImmat || note.kmParcourus) && (
               <div className="mt-4 pt-4 border-t">
