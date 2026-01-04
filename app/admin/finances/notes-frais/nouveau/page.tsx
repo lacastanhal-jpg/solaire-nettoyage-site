@@ -6,8 +6,6 @@ import { createNoteDeFrais } from '@/lib/firebase/notes-de-frais'
 import { getAllOperateurs, type Operateur } from '@/lib/firebase/operateurs'
 import { getAllEquipements } from '@/lib/firebase/stock-equipements'
 import { uploadFile } from '@/lib/firebase/storage'
-import { auth } from '@/lib/firebase/config'
-import { onAuthStateChanged } from 'firebase/auth'
 
 // ✨ NOUVEAU - Imports OCR
 interface OCRResult {
@@ -81,61 +79,73 @@ export default function NouvelleNoteFraisPage() {
   
   // ✅ DEBUG visible sur téléphone
   const [debugInfo, setDebugInfo] = useState<string[]>([])
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
-  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null)
 
-  // ✅ ÉTAPE 1 : Écouter Firebase Auth (une seule fois)
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setCurrentUserId(user.uid)
-        setCurrentUserEmail(user.email)
-        setDebugInfo(prev => [...prev, `🔍 Auth: ${user.email}`])
-      } else {
-        setDebugInfo(prev => [...prev, '❌ Pas connecté'])
-      }
-    })
-    return () => unsubscribe()
-  }, []) // Une seule fois au montage
-
-  // ✅ ÉTAPE 2 : Charger opérateurs
   useEffect(() => {
     loadData()
   }, [])
   
-  // ✅ ÉTAPE 3 : Quand on a les DEUX (user ET operateurs), pré-sélectionner
+  // ✅ PRÉ-SÉLECTION quand opérateurs chargés
   useEffect(() => {
-    if (currentUserEmail && operateurs.length > 0) {
-      const debugMessages: string[] = [`✅ ${operateurs.length} opérateurs`, `🔍 Email: ${currentUserEmail}`]
+    if (operateurs.length > 0) {
+      const debugMessages: string[] = []
       
-      const opFound = operateurs.find(o => o.email === currentUserEmail)
+      // ✅ UTILISER LOCALSTORAGE (comme le reste de l'appli)
+      const userEmail = localStorage.getItem('user_email')
+      const userName = localStorage.getItem('user_name')
+      const userId = localStorage.getItem('user_id')
       
-      if (opFound) {
-        debugMessages.push(`✅ TROUVÉ: ${opFound.prenom} ${opFound.nom}`)
-        setFormData(prev => ({
-          ...prev,
-          operateurId: opFound.id!,
-          operateurNom: `${opFound.prenom} ${opFound.nom}`
-        }))
-      } else {
-        debugMessages.push(`⚠️ PAS TROUVÉ`)
-        debugMessages.push(`📋 Emails:`)
-        operateurs.slice(0, 3).forEach(o => {
-          debugMessages.push(`  ${o.email || 'AUCUN'} (${o.prenom})`)
-        })
+      debugMessages.push(`✅ ${operateurs.length} opérateurs`)
+      debugMessages.push(`🔍 localStorage:`)
+      debugMessages.push(`   email: ${userEmail || 'AUCUN'}`)
+      debugMessages.push(`   name: ${userName || 'AUCUN'}`)
+      debugMessages.push(`   id: ${userId || 'AUCUN'}`)
+      
+      if (userEmail) {
+        // Chercher par email
+        const opFound = operateurs.find(o => 
+          o.email?.toLowerCase() === userEmail.toLowerCase()
+        )
         
-        // Fallback
-        setFormData(prev => ({
-          ...prev,
-          operateurId: operateurs[0].id!,
-          operateurNom: `${operateurs[0].prenom} ${operateurs[0].nom}`
-        }))
-        debugMessages.push(`➡️ Fallback: ${operateurs[0].prenom}`)
+        if (opFound) {
+          debugMessages.push(`✅ TROUVÉ: ${opFound.prenom} ${opFound.nom}`)
+          setFormData(prev => ({
+            ...prev,
+            operateurId: opFound.id!,
+            operateurNom: `${opFound.prenom} ${opFound.nom}`
+          }))
+        } else {
+          debugMessages.push(`⚠️ Email PAS trouvé dans opérateurs`)
+          debugMessages.push(`📋 Emails opérateurs:`)
+          operateurs.slice(0, 3).forEach(o => {
+            debugMessages.push(`   ${o.email || 'AUCUN'} (${o.prenom} ${o.nom})`)
+          })
+          
+          // Fallback
+          setFormData(prev => ({
+            ...prev,
+            operateurId: operateurs[0].id!,
+            operateurNom: `${operateurs[0].prenom} ${operateurs[0].nom}`
+          }))
+          debugMessages.push(`➡️ Fallback: ${operateurs[0].prenom}`)
+        }
+      } else if (userId) {
+        // Chercher par ID
+        const opFound = operateurs.find(o => o.id === userId)
+        if (opFound) {
+          debugMessages.push(`✅ TROUVÉ par ID: ${opFound.prenom} ${opFound.nom}`)
+          setFormData(prev => ({
+            ...prev,
+            operateurId: opFound.id!,
+            operateurNom: `${opFound.prenom} ${opFound.nom}`
+          }))
+        }
+      } else {
+        debugMessages.push(`❌ Aucune info utilisateur dans localStorage`)
       }
       
       setDebugInfo(debugMessages)
     }
-  }, [currentUserEmail, operateurs]) // Quand un des deux change
+  }, [operateurs])
 
   async function loadData() {
     try {
