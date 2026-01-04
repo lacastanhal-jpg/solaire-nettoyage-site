@@ -216,7 +216,7 @@ export async function generateNoteFraisNumero(): Promise<string> {
     }
     
     const lastNumero = snapshot.docs[0].data().numero
-    const lastNumber = parseInt(lastNumero.split('-')[1])
+    const lastNumber = parseInt(lastNumero.split('-')[2])  // Corrigé : [2] pour le compteur, pas [1]
     const nextNumber = (lastNumber + 1).toString().padStart(3, '0')
     
     return `NF-${year}${month}-${nextNumber}`
