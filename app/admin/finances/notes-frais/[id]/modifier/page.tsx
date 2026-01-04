@@ -21,7 +21,7 @@ export default function ModifierNoteFraisPage() {
   
   const [formData, setFormData] = useState({
     date: '',
-    categorie: 'carburant' as const,
+    categorie: 'carburant' as 'carburant' | 'peage' | 'repas' | 'hebergement' | 'fournitures' | 'entretien' | 'autre',
     montantTTC: 0,
     tauxTVA: 20,
     tvaRecuperable: true,
