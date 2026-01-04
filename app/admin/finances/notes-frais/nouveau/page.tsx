@@ -85,11 +85,56 @@ export default function NouvelleNoteFraisPage() {
   useEffect(() => {
     loadData()
   }, [])
+  
+  // ✅ ATTENDRE QUE FIREBASE AUTH SOIT PRÊT
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      const debugMessages: string[] = []
+      
+      if (user && operateurs.length > 0) {
+        debugMessages.push(`🔍 Auth prêt: ${user.email}`)
+        
+        // Chercher l'opérateur par email
+        const opFound = operateurs.find(o => o.email === user.email)
+        
+        if (opFound) {
+          debugMessages.push(`✅ TROUVÉ: ${opFound.prenom} ${opFound.nom}`)
+          setFormData(prev => ({
+            ...prev,
+            operateurId: opFound.id!,
+            operateurNom: `${opFound.prenom} ${opFound.nom}`
+          }))
+        } else {
+          debugMessages.push(`⚠️ Email ${user.email} PAS trouvé`)
+          debugMessages.push(`📋 Emails opérateurs:`)
+          operateurs.forEach(o => {
+            debugMessages.push(`   - ${o.email || 'AUCUN'} (${o.prenom} ${o.nom})`)
+          })
+          
+          // Fallback
+          if (operateurs.length > 0) {
+            setFormData(prev => ({
+              ...prev,
+              operateurId: operateurs[0].id!,
+              operateurNom: `${operateurs[0].prenom} ${operateurs[0].nom}`
+            }))
+            debugMessages.push(`➡️ Fallback: ${operateurs[0].prenom} ${operateurs[0].nom}`)
+          }
+        }
+        
+        setDebugInfo(debugMessages)
+      } else if (!user) {
+        setDebugInfo(['⏳ Attente Firebase Auth...'])
+      } else if (operateurs.length === 0) {
+        setDebugInfo(['⏳ Attente chargement opérateurs...'])
+      }
+    })
+    
+    return () => unsubscribe()
+  }, [operateurs]) // Se déclenche quand operateurs change
 
   async function loadData() {
     try {
-      const debugMessages: string[] = []
-      
       const [ops, equips] = await Promise.all([
         getAllOperateurs(),
         getAllEquipements()
@@ -97,47 +142,7 @@ export default function NouvelleNoteFraisPage() {
       setOperateurs(ops)
       setEquipements(equips.filter((e: any) => e.type === 'vehicule'))
       
-      debugMessages.push(`✅ ${ops.length} opérateurs chargés`)
-      
-      // ✅ SIMPLE : L'utilisateur EST FORCÉMENT connecté (sinon pas d'accès à cette page)
-      const user = auth.currentUser
-      if (!user) {
-        debugMessages.push('❌ Erreur: pas de user (impossible)')
-        setDebugInfo(debugMessages)
-        return
-      }
-      
-      debugMessages.push(`🔍 Email connecté: ${user.email}`)
-      
-      // Chercher l'opérateur par email
-      const opFound = ops.find(o => o.email === user.email)
-      
-      if (opFound) {
-        debugMessages.push(`✅ TROUVÉ: ${opFound.prenom} ${opFound.nom}`)
-        setFormData(prev => ({
-          ...prev,
-          operateurId: opFound.id!,
-          operateurNom: `${opFound.prenom} ${opFound.nom}`
-        }))
-      } else {
-        debugMessages.push(`⚠️ Email ${user.email} PAS dans la liste`)
-        debugMessages.push(`📋 Emails opérateurs:`)
-        ops.forEach(o => {
-          debugMessages.push(`   - ${o.email || 'AUCUN EMAIL'} (${o.prenom} ${o.nom})`)
-        })
-        
-        // Fallback premier
-        if (ops.length > 0) {
-          setFormData(prev => ({
-            ...prev,
-            operateurId: ops[0].id!,
-            operateurNom: `${ops[0].prenom} ${ops[0].nom}`
-          }))
-          debugMessages.push(`➡️ Fallback: ${ops[0].prenom} ${ops[0].nom}`)
-        }
-      }
-      
-      setDebugInfo(debugMessages)
+      setDebugInfo([`✅ ${ops.length} opérateurs chargés`, '⏳ Attente Firebase Auth...'])
       
     } catch (error) {
       console.error('❌ Erreur loadData:', error)
