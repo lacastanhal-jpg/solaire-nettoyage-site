@@ -78,56 +78,70 @@ export default function NouvelleNoteFraisPage() {
   const [ocrEnCours, setOcrEnCours] = useState(false)
   const [ocrResult, setOcrResult] = useState<OCRResult | null>(null)
   const [photoBase64, setPhotoBase64] = useState<string>('')
+  
+  // ✅ DEBUG visible sur téléphone
+  const [debugInfo, setDebugInfo] = useState<string[]>([])
 
   useEffect(() => {
     loadData()
   }, [])
 
-  // ✅ PRÉ-SÉLECTION UTILISATEUR CONNECTÉ (attend Firebase Auth)
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user && operateurs.length > 0) {
-        console.log('🔍 Utilisateur connecté:', user.email)
-        
-        // Chercher l'opérateur par email dans la liste
-        const opFound = operateurs.find(o => 
-          o.email?.toLowerCase() === user.email?.toLowerCase()
-        )
-        
-        if (opFound) {
-          console.log('✅ Opérateur trouvé:', opFound.prenom, opFound.nom)
-          setFormData(prev => ({
-            ...prev,
-            operateurId: opFound.id!,
-            operateurNom: `${opFound.prenom} ${opFound.nom}`
-          }))
-        } else {
-          console.warn('⚠️ Aucun opérateur ne correspond à:', user.email)
-          // Fallback : prendre le premier
-          if (operateurs.length > 0) {
-            setFormData(prev => ({
-              ...prev,
-              operateurId: operateurs[0].id!,
-              operateurNom: `${operateurs[0].prenom} ${operateurs[0].nom}`
-            }))
-          }
-        }
-      }
-    })
-    
-    return () => unsubscribe()
-  }, [operateurs]) // Se déclenche quand operateurs est chargé
-
   async function loadData() {
     try {
+      const debugMessages: string[] = []
+      
       const [ops, equips] = await Promise.all([
         getAllOperateurs(),
         getAllEquipements()
       ])
       setOperateurs(ops)
       setEquipements(equips.filter((e: any) => e.type === 'vehicule'))
+      
+      debugMessages.push(`✅ ${ops.length} opérateurs chargés`)
+      
+      // ✅ SIMPLE : L'utilisateur EST FORCÉMENT connecté (sinon pas d'accès à cette page)
+      const user = auth.currentUser
+      if (!user) {
+        debugMessages.push('❌ Erreur: pas de user (impossible)')
+        setDebugInfo(debugMessages)
+        return
+      }
+      
+      debugMessages.push(`🔍 Email connecté: ${user.email}`)
+      
+      // Chercher l'opérateur par email
+      const opFound = ops.find(o => o.email === user.email)
+      
+      if (opFound) {
+        debugMessages.push(`✅ TROUVÉ: ${opFound.prenom} ${opFound.nom}`)
+        setFormData(prev => ({
+          ...prev,
+          operateurId: opFound.id!,
+          operateurNom: `${opFound.prenom} ${opFound.nom}`
+        }))
+      } else {
+        debugMessages.push(`⚠️ Email ${user.email} PAS dans la liste`)
+        debugMessages.push(`📋 Emails opérateurs:`)
+        ops.forEach(o => {
+          debugMessages.push(`   - ${o.email || 'AUCUN EMAIL'} (${o.prenom} ${o.nom})`)
+        })
+        
+        // Fallback premier
+        if (ops.length > 0) {
+          setFormData(prev => ({
+            ...prev,
+            operateurId: ops[0].id!,
+            operateurNom: `${ops[0].prenom} ${ops[0].nom}`
+          }))
+          debugMessages.push(`➡️ Fallback: ${ops[0].prenom} ${ops[0].nom}`)
+        }
+      }
+      
+      setDebugInfo(debugMessages)
+      
     } catch (error) {
       console.error('❌ Erreur loadData:', error)
+      setDebugInfo([`❌ Erreur: ${error}`])
     }
   }
 
@@ -467,6 +481,16 @@ export default function NouvelleNoteFraisPage() {
               </option>
             ))}
           </select>
+          
+          {/* 🔍 DEBUG VISIBLE SUR TÉLÉPHONE */}
+          {debugInfo.length > 0 && (
+            <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
+              {debugInfo.map((msg, i) => (
+                <div key={i} className="text-gray-800">{msg}</div>
+              ))}
+            </div>
+          )}
+          
           {formData.operateurId && formData.operateurNom && (
             <p className="text-sm text-green-600 mt-1">
               ✓ Pré-sélectionné : {formData.operateurNom}
