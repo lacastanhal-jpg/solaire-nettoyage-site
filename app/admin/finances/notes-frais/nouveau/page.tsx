@@ -179,6 +179,20 @@ export default function NouvelleNoteFraisPage() {
         if (result.data.categorie) updates.categorie = result.data.categorie
         if (result.data.description) updates.description = result.data.description
         
+        // ✅ DONNÉES STRUCTURÉES OCR (pour comptabilité)
+        if (result.data.numeroTicket) updates.numeroTicket = result.data.numeroTicket
+        if (result.data.donneesCarburant) updates.donneesCarburant = result.data.donneesCarburant
+        if (result.data.donneesRestaurant) updates.donneesRestaurant = result.data.donneesRestaurant
+        if (result.data.donneesPeage) updates.donneesPeage = result.data.donneesPeage
+        if (result.data.texteComplet) {
+          updates.donneesOCR = {
+            confiance: result.confidence,
+            typeTicket: result.data.categorie || 'inconnu',
+            dateAnalyse: new Date().toISOString(),
+            texteComplet: result.data.texteComplet
+          }
+        }
+        
         setFormData(prev => ({ ...prev, ...updates }))
         
         // 4. Ajouter le fichier aux justificatifs
