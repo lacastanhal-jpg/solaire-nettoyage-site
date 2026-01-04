@@ -449,19 +449,26 @@ export default function NouvelleNoteFraisPage() {
         {/* Opérateur - ✅ PRÉ-SÉLECTIONNÉ AUTOMATIQUEMENT */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Opérateur
+            Opérateur *
           </label>
-          <div className="w-full px-4 py-3 bg-blue-50 border-2 border-blue-200 rounded-lg">
-            <p className="font-medium text-blue-900">
-              📋 {formData.operateurNom || 'Chargement...'}
-            </p>
+          <select
+            required
+            value={formData.operateurId}
+            onChange={handleOperateurChange}
+            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Sélectionner un opérateur</option>
+            {operateurs.map(op => (
+              <option key={op.id} value={op.id}>
+                {op.prenom} {op.nom}
+              </option>
+            ))}
+          </select>
+          {formData.operateurId && (
             <p className="text-sm text-blue-600 mt-1">
-              Opérateur connecté (auto-sélectionné)
+              ✓ Opérateur connecté pré-sélectionné
             </p>
-          </div>
-          {/* Champs cachés pour envoyer les données */}
-          <input type="hidden" value={formData.operateurId} />
-          <input type="hidden" value={formData.operateurNom} />
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
