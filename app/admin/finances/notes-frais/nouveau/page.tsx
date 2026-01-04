@@ -13,11 +13,36 @@ interface OCRResult {
   confidence: number
   data: {
     montantTTC?: number
+    montantHT?: number
+    montantTVA?: number
     date?: string
     fournisseur?: string
     categorie?: 'carburant' | 'peage' | 'repas' | 'hebergement' | 'fournitures' | 'entretien' | 'autre'
+    description?: string
+    
+    // Données spécifiques
+    donneesEssence?: {
+      typeCarburant: string
+      quantite: number
+      prixUnitaire: number
+      numeroPompe?: string
+    }
+    donneesRestaurant?: {
+      nombrePersonnes?: number
+    }
+    donneesPeage?: {
+      trajet?: string
+      entree?: string
+      sortie?: string
+    }
+    
+    // Métadonnées
+    numeroTicket?: string
+    adresse?: string
+    ville?: string
+    codePostal?: string
+    texteComplet?: string
   }
-  texteComplet: string
   erreur?: string
 }
 
@@ -146,23 +171,31 @@ export default function NouvelleNoteFraisPage() {
         setOcrResult(result)
         
         // 3. Pré-remplir le formulaire avec les données OCR
-        if (result.data.date) {
-          setFormData(prev => ({ ...prev, date: result.data.date }))
-        }
-        if (result.data.montantTTC) {
-          setFormData(prev => ({ ...prev, montantTTC: result.data.montantTTC }))
-        }
-        if (result.data.fournisseur) {
-          setFormData(prev => ({ ...prev, fournisseur: result.data.fournisseur }))
-        }
-        if (result.data.categorie) {
-          setFormData(prev => ({ ...prev, categorie: result.data.categorie }))
-        }
+        const updates: any = {}
+        
+        if (result.data.date) updates.date = result.data.date
+        if (result.data.montantTTC) updates.montantTTC = result.data.montantTTC
+        if (result.data.fournisseur) updates.fournisseur = result.data.fournisseur
+        if (result.data.categorie) updates.categorie = result.data.categorie
+        if (result.data.description) updates.description = result.data.description
+        
+        setFormData(prev => ({ ...prev, ...updates }))
         
         // 4. Ajouter le fichier aux justificatifs
         setFichiers([file])
         
-        alert(`✅ OCR terminé (confiance: ${result.confidence}%)`)
+        // 5. Message détaillé selon type
+        let message = `✅ OCR terminé (confiance: ${result.confidence}%)`
+        
+        if (result.data.donneesEssence) {
+          message += `\n🚗 ${result.data.donneesEssence.quantite}L de ${result.data.donneesEssence.typeCarburant} à ${result.data.donneesEssence.prixUnitaire}€/L`
+        } else if (result.data.donneesRestaurant?.nombrePersonnes) {
+          message += `\n🍽️ Repas pour ${result.data.donneesRestaurant.nombrePersonnes} personne(s)`
+        } else if (result.data.donneesPeage) {
+          message += `\n🛣️ ${result.data.donneesPeage.trajet || 'Péage'}`
+        }
+        
+        alert(message)
       } else {
         alert('⚠️ OCR échoué: ' + (result.erreur || 'Erreur inconnue'))
         setOcrResult(null)
@@ -472,15 +505,14 @@ export default function NouvelleNoteFraisPage() {
         {/* Description */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Description *
+            Description (optionnel)
           </label>
           <textarea
-            required
             value={formData.description}
             onChange={(e) => setFormData({...formData, description: e.target.value})}
             className="w-full px-3 py-2 border rounded-lg"
             rows={3}
-            placeholder="Décrivez la dépense..."
+            placeholder="Décrivez la dépense (optionnel, pré-rempli par OCR)..."
           />
         </div>
 
