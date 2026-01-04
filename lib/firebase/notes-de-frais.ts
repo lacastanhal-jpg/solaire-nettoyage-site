@@ -436,10 +436,11 @@ export async function createNoteDeFrais(noteData: NoteDeFraisInput): Promise<str
     if (noteData.donneesPeage) note.donneesPeage = noteData.donneesPeage
     if (noteData.donneesOCR) note.donneesOCR = noteData.donneesOCR
     
-    const noteRef = doc(collection(db, 'notes_de_frais'))
+    // ✅ UTILISER LE NUMÉRO COMME ID FIREBASE (au lieu d'un hash aléatoire)
+    const noteRef = doc(db, 'notes_de_frais', numero)
     await setDoc(noteRef, note)
     
-    return noteRef.id
+    return noteRef.id  // Retourne "NF-20260104-001" au lieu de "fV7Xt2e8T5qqICEHkCZQ"
   } catch (error) {
     console.error('Erreur création note de frais:', error)
     throw error
