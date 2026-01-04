@@ -45,8 +45,8 @@ export async function POST(request: NextRequest) {
         categorie: resultat.categorie,
         description: description,
         
-        // Données spécifiques
-        donneesEssence: resultat.donneesEssence,
+        // Données spécifiques (noms cohérents avec interface NoteDeFrais)
+        donneesCarburant: resultat.donneesEssence,  // Renommé pour cohérence
         donneesRestaurant: resultat.donneesRestaurant,
         donneesPeage: resultat.donneesPeage,
         

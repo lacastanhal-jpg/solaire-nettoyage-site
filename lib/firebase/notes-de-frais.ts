@@ -114,6 +114,11 @@ export interface NoteDeFrais {
   // JUSTIFICATIFS
   justificatifs: JustificatifNoteFrais[]
   
+  // COMPTABILITÉ
+  compteComptable: string  // "6061", "6251", "6256", etc.
+  exported: boolean        // Exporté vers comptabilité
+  dateExport?: string      // Date export FEC
+  
   // WORKFLOW
   statut: 'brouillon' | 'soumise' | 'validee' | 'refusee' | 'remboursee'
   
@@ -146,6 +151,13 @@ export interface NoteDeFraisInput {
   vehiculeId?: string
   vehiculeImmat?: string
   kmParcourus?: number
+  
+  // DONNÉES STRUCTURÉES (depuis OCR)
+  donneesCarburant?: DonneesCarburant
+  donneesRestaurant?: DonneesRestaurant
+  donneesPeage?: DonneesPeage
+  donneesOCR?: DonneesOCR
+  
   justificatifs?: JustificatifNoteFrais[]
   statut?: NoteDeFrais['statut']
 }
@@ -164,6 +176,22 @@ export function calculateMontantsNoteFrais(
     montantHT: Math.round(montantHT * 100) / 100,
     montantTVA: Math.round(montantTVA * 100) / 100
   }
+}
+
+/**
+ * Obtenir le compte comptable PCG selon la catégorie
+ */
+export function getCompteComptable(categorie: NoteDeFrais['categorie']): string {
+  const comptes: Record<string, string> = {
+    'carburant': '6061',      // Fournitures non stockables (eau, énergie, carburant)
+    'peage': '6251',          // Voyages et déplacements
+    'repas': '6256',          // Missions
+    'hebergement': '6256',    // Missions
+    'fournitures': '6064',    // Fournitures administratives
+    'entretien': '6155',      // Entretien et réparations sur biens mobiliers
+    'autre': '6288'           // Autres services divers
+  }
+  return comptes[categorie] || '6288'
 }
 
 /**
@@ -270,6 +298,7 @@ export async function createNoteDeFrais(noteData: NoteDeFraisInput): Promise<str
     const numero = await generateNoteFraisNumero()
     const tauxTVA = noteData.tauxTVA || 20
     const montants = calculateMontantsNoteFrais(noteData.montantTTC, tauxTVA)
+    const compteComptable = getCompteComptable(noteData.categorie)
     
     const note: any = {
       numero,
@@ -284,6 +313,11 @@ export async function createNoteDeFrais(noteData: NoteDeFraisInput): Promise<str
       tvaRecuperable: noteData.tvaRecuperable !== false, // Par défaut true
       description: noteData.description,
       justificatifs: noteData.justificatifs || [],
+      
+      // COMPTABILITÉ
+      compteComptable,
+      exported: false,
+      
       statut: noteData.statut || 'brouillon',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -294,6 +328,12 @@ export async function createNoteDeFrais(noteData: NoteDeFraisInput): Promise<str
     if (noteData.vehiculeId) note.vehiculeId = noteData.vehiculeId
     if (noteData.vehiculeImmat) note.vehiculeImmat = noteData.vehiculeImmat
     if (noteData.kmParcourus) note.kmParcourus = noteData.kmParcourus
+    
+    // DONNÉES STRUCTURÉES (depuis OCR)
+    if (noteData.donneesCarburant) note.donneesCarburant = noteData.donneesCarburant
+    if (noteData.donneesRestaurant) note.donneesRestaurant = noteData.donneesRestaurant
+    if (noteData.donneesPeage) note.donneesPeage = noteData.donneesPeage
+    if (noteData.donneesOCR) note.donneesOCR = noteData.donneesOCR
     
     const noteRef = doc(collection(db, 'notes_de_frais'))
     await setDoc(noteRef, note)
@@ -316,7 +356,10 @@ export async function updateNoteDeFrais(id: string, noteData: Partial<NoteDeFrai
     }
     
     if (noteData.date !== undefined) updates.date = noteData.date
-    if (noteData.categorie !== undefined) updates.categorie = noteData.categorie
+    if (noteData.categorie !== undefined) {
+      updates.categorie = noteData.categorie
+      updates.compteComptable = getCompteComptable(noteData.categorie)
+    }
     if (noteData.description !== undefined) updates.description = noteData.description
     if (noteData.fournisseur !== undefined) updates.fournisseur = noteData.fournisseur
     if (noteData.vehiculeId !== undefined) updates.vehiculeId = noteData.vehiculeId
@@ -325,6 +368,12 @@ export async function updateNoteDeFrais(id: string, noteData: Partial<NoteDeFrai
     if (noteData.tvaRecuperable !== undefined) updates.tvaRecuperable = noteData.tvaRecuperable
     if (noteData.statut !== undefined) updates.statut = noteData.statut
     if (noteData.justificatifs !== undefined) updates.justificatifs = noteData.justificatifs
+    
+    // DONNÉES STRUCTURÉES
+    if (noteData.donneesCarburant !== undefined) updates.donneesCarburant = noteData.donneesCarburant
+    if (noteData.donneesRestaurant !== undefined) updates.donneesRestaurant = noteData.donneesRestaurant
+    if (noteData.donneesPeage !== undefined) updates.donneesPeage = noteData.donneesPeage
+    if (noteData.donneesOCR !== undefined) updates.donneesOCR = noteData.donneesOCR
     
     // Recalculer montants si montantTTC change
     if (noteData.montantTTC !== undefined) {
