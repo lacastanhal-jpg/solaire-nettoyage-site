@@ -83,6 +83,41 @@ export default function NouvelleNoteFraisPage() {
     loadData()
   }, [])
 
+  // ✅ PRÉ-SÉLECTION UTILISATEUR CONNECTÉ (attend Firebase Auth)
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user && operateurs.length > 0) {
+        console.log('🔍 Utilisateur connecté:', user.email)
+        
+        // Chercher l'opérateur par email dans la liste
+        const opFound = operateurs.find(o => 
+          o.email?.toLowerCase() === user.email?.toLowerCase()
+        )
+        
+        if (opFound) {
+          console.log('✅ Opérateur trouvé:', opFound.prenom, opFound.nom)
+          setFormData(prev => ({
+            ...prev,
+            operateurId: opFound.id!,
+            operateurNom: `${opFound.prenom} ${opFound.nom}`
+          }))
+        } else {
+          console.warn('⚠️ Aucun opérateur ne correspond à:', user.email)
+          // Fallback : prendre le premier
+          if (operateurs.length > 0) {
+            setFormData(prev => ({
+              ...prev,
+              operateurId: operateurs[0].id!,
+              operateurNom: `${operateurs[0].prenom} ${operateurs[0].nom}`
+            }))
+          }
+        }
+      }
+    })
+    
+    return () => unsubscribe()
+  }, [operateurs]) // Se déclenche quand operateurs est chargé
+
   async function loadData() {
     try {
       const [ops, equips] = await Promise.all([
@@ -91,58 +126,6 @@ export default function NouvelleNoteFraisPage() {
       ])
       setOperateurs(ops)
       setEquipements(equips.filter((e: any) => e.type === 'vehicule'))
-      
-      // ✅ PRÉ-SÉLECTION INTELLIGENTE (3 niveaux)
-      console.log('🔍 Pré-sélection opérateur...')
-      
-      // NIVEAU 1 : Firebase Auth (utilisateur connecté)
-      const currentUser = auth.currentUser
-      if (currentUser) {
-        console.log('✅ Utilisateur Firebase Auth trouvé:', currentUser.email)
-        
-        // Chercher l'opérateur correspondant par email
-        const opFound = ops.find(o => 
-          o.email?.toLowerCase() === currentUser.email?.toLowerCase()
-        )
-        
-        if (opFound) {
-          console.log('✅ Opérateur trouvé:', opFound.prenom, opFound.nom)
-          setFormData(prev => ({
-            ...prev,
-            operateurId: opFound.id,
-            operateurNom: `${opFound.prenom} ${opFound.nom}`
-          }))
-          return
-        } else {
-          console.warn('⚠️ Aucun opérateur ne correspond à cet email:', currentUser.email)
-        }
-      }
-      
-      // NIVEAU 2 : Si 1 seul opérateur, le pré-sélectionner automatiquement
-      if (ops.length === 1) {
-        console.log('✅ 1 seul opérateur trouvé, pré-sélection auto')
-        setFormData(prev => ({
-          ...prev,
-          operateurId: ops[0].id,
-          operateurNom: `${ops[0].prenom} ${ops[0].nom}`
-        }))
-        return
-      }
-      
-      // NIVEAU 3 : Prendre le premier disponible de la liste (fallback)
-      if (ops.length > 0) {
-        const premierDispo = ops.find(o => o.statut === 'Disponible') || ops[0]
-        console.log('ℹ️ Pré-sélection du premier opérateur:', premierDispo.prenom, premierDispo.nom)
-        setFormData(prev => ({
-          ...prev,
-          operateurId: premierDispo.id,
-          operateurNom: `${premierDispo.prenom} ${premierDispo.nom}`
-        }))
-        return
-      }
-      
-      console.warn('⚠️ Aucun opérateur disponible')
-      
     } catch (error) {
       console.error('❌ Erreur loadData:', error)
     }
