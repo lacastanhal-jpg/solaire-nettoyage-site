@@ -6,9 +6,8 @@ import { createNoteDeFrais } from '@/lib/firebase/notes-de-frais'
 import { getAllOperateurs, type Operateur } from '@/lib/firebase/operateurs'
 import { getAllEquipements } from '@/lib/firebase/stock-equipements'
 import { uploadFile } from '@/lib/firebase/storage'
-import { auth, db } from '@/lib/firebase/config'
+import { auth } from '@/lib/firebase/config'
 import { onAuthStateChanged } from 'firebase/auth'
-import { doc, getDoc } from 'firebase/firestore'
 
 // ✨ NOUVEAU - Imports OCR
 interface OCRResult {
@@ -80,38 +79,6 @@ export default function NouvelleNoteFraisPage() {
   const [ocrResult, setOcrResult] = useState<OCRResult | null>(null)
   const [photoBase64, setPhotoBase64] = useState<string>('')
 
-  // ✅ NOUVEAU - Récupérer utilisateur connecté
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        try {
-          // Récupérer les infos utilisateur depuis Firestore
-          const userDoc = await getDoc(doc(db, 'utilisateurs', user.uid))
-          
-          if (userDoc.exists()) {
-            const userData = userDoc.data()
-            setFormData(prev => ({
-              ...prev,
-              operateurId: user.uid,
-              operateurNom: userData.nom || user.email || 'Opérateur'
-            }))
-          } else {
-            // Si pas de doc utilisateur, utiliser email
-            setFormData(prev => ({
-              ...prev,
-              operateurId: user.uid,
-              operateurNom: user.email || 'Opérateur'
-            }))
-          }
-        } catch (error) {
-          console.error('Erreur récupération utilisateur:', error)
-        }
-      }
-    })
-    
-    return () => unsubscribe()
-  }, [])
-
   useEffect(() => {
     loadData()
   }, [])
@@ -124,8 +91,60 @@ export default function NouvelleNoteFraisPage() {
       ])
       setOperateurs(ops)
       setEquipements(equips.filter((e: any) => e.type === 'vehicule'))
+      
+      // ✅ PRÉ-SÉLECTION INTELLIGENTE (3 niveaux)
+      console.log('🔍 Pré-sélection opérateur...')
+      
+      // NIVEAU 1 : Firebase Auth (utilisateur connecté)
+      const currentUser = auth.currentUser
+      if (currentUser) {
+        console.log('✅ Utilisateur Firebase Auth trouvé:', currentUser.email)
+        
+        // Chercher l'opérateur correspondant par email
+        const opFound = ops.find(o => 
+          o.email?.toLowerCase() === currentUser.email?.toLowerCase()
+        )
+        
+        if (opFound) {
+          console.log('✅ Opérateur trouvé:', opFound.prenom, opFound.nom)
+          setFormData(prev => ({
+            ...prev,
+            operateurId: opFound.id,
+            operateurNom: `${opFound.prenom} ${opFound.nom}`
+          }))
+          return
+        } else {
+          console.warn('⚠️ Aucun opérateur ne correspond à cet email:', currentUser.email)
+        }
+      }
+      
+      // NIVEAU 2 : Si 1 seul opérateur, le pré-sélectionner automatiquement
+      if (ops.length === 1) {
+        console.log('✅ 1 seul opérateur trouvé, pré-sélection auto')
+        setFormData(prev => ({
+          ...prev,
+          operateurId: ops[0].id,
+          operateurNom: `${ops[0].prenom} ${ops[0].nom}`
+        }))
+        return
+      }
+      
+      // NIVEAU 3 : Prendre le premier disponible de la liste (fallback)
+      if (ops.length > 0) {
+        const premierDispo = ops.find(o => o.statut === 'Disponible') || ops[0]
+        console.log('ℹ️ Pré-sélection du premier opérateur:', premierDispo.prenom, premierDispo.nom)
+        setFormData(prev => ({
+          ...prev,
+          operateurId: premierDispo.id,
+          operateurNom: `${premierDispo.prenom} ${premierDispo.nom}`
+        }))
+        return
+      }
+      
+      console.warn('⚠️ Aucun opérateur disponible')
+      
     } catch (error) {
-      console.error('Erreur:', error)
+      console.error('❌ Erreur loadData:', error)
     }
   }
 
@@ -465,9 +484,14 @@ export default function NouvelleNoteFraisPage() {
               </option>
             ))}
           </select>
-          {formData.operateurId && (
-            <p className="text-sm text-blue-600 mt-1">
-              ✓ Opérateur connecté pré-sélectionné
+          {formData.operateurId && formData.operateurNom && (
+            <p className="text-sm text-green-600 mt-1">
+              ✓ Pré-sélectionné : {formData.operateurNom}
+            </p>
+          )}
+          {!formData.operateurId && (
+            <p className="text-sm text-orange-600 mt-1">
+              ⚠️ Veuillez sélectionner un opérateur
             </p>
           )}
         </div>
