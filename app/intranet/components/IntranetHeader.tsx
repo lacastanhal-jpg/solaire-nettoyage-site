@@ -153,11 +153,14 @@ export default function IntranetHeader() {
                   <Link href="/admin/finances/notes-frais" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
                     💳 Notes de Frais
                   </Link>
+                  <Link href="/admin/finances/categories" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
+                    🗂️ Catégories Dépenses
+                  </Link>
+                  <Link href="/admin/finances/charges" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
+                    💵 Charges Fixes
+                  </Link>
                   <div className="px-4 py-2 text-xs text-gray-500 italic">
                     📥 Factures Fournisseurs (à venir)
-                  </div>
-                  <div className="px-4 py-2 text-xs text-gray-500 italic">
-                    💵 Charges Fixes (à venir)
                   </div>
                   <div className="border-t border-gray-200 my-1"></div>
                   <div className="px-4 py-2 text-xs text-gray-500 italic">

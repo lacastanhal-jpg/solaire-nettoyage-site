@@ -254,7 +254,7 @@ export default function NotesFraisPage() {
         </div>
         <div className="flex gap-3">
           <Link
-            href="/admin/finances"
+            href="/admin"
             className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
           >
             ← Retour
