@@ -224,6 +224,7 @@ export default function NouvelleNoteFraisPage() {
             confiance: result.confidence,
             typeTicket: result.data.categorie || 'inconnu',
             dateAnalyse: new Date().toISOString(),
+            dateHeureTicket: result.data.dateHeureTicket,
             texteComplet: result.data.texteComplet
           }
         }

@@ -64,6 +64,7 @@ export interface ResultatAnalyseClaude {
   
   // Métadonnées
   numeroTicket?: string
+  dateHeureTicket?: string        // Date + heure sur le ticket (ex: "13/11/2025 10:17:16")
   adresse?: string
   ville?: string
   codePostal?: string
@@ -164,6 +165,7 @@ RÉPONSE FORMAT JSON STRICT :
   },
   
   "numeroTicket": "0741400286843",
+  "dateHeureTicket": "13/11/2025 10:17:16",
   "adresse": "9 AV MARIE CURIE",
   "ville": "SEVERAC LE CHATEAU",
   "codePostal": "12150",
@@ -250,6 +252,7 @@ IMPORTANT :
       donneesRestaurant: data.donneesRestaurant,
       donneesPeage: data.donneesPeage,
       numeroTicket: data.numeroTicket,
+      dateHeureTicket: data.dateHeureTicket,
       adresse: data.adresse,
       ville: data.ville,
       codePostal: data.codePostal,

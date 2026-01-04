@@ -43,6 +43,7 @@ export interface DonneesOCR {
   confiance: number               // 0-100
   typeTicket: string              // essence, restaurant, peage, etc.
   dateAnalyse: string             // Date extraction OCR
+  dateHeureTicket?: string        // Date + heure imprimée sur le ticket (ex: "13/11/2025 10:17:16")
   texteComplet?: string           // Texte brut extrait
   validation?: {
     calculCorrect: boolean

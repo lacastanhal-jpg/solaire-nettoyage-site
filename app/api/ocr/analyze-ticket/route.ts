@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
         
         // Métadonnées
         numeroTicket: resultat.numeroTicket,
+        dateHeureTicket: resultat.dateHeureTicket,
         adresse: resultat.adresse,
         ville: resultat.ville,
         codePostal: resultat.codePostal,

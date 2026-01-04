@@ -335,6 +335,12 @@ export default function DetailNoteFraisPage() {
                       {new Date(note.donneesOCR.dateAnalyse).toLocaleString('fr-FR')}
                     </p>
                   </div>
+                  {note.donneesOCR.dateHeureTicket && (
+                    <div className="col-span-2">
+                      <p className="text-sm text-gray-600">Date/heure du ticket</p>
+                      <p className="font-medium text-blue-900">{note.donneesOCR.dateHeureTicket}</p>
+                    </div>
+                  )}
                   {note.donneesOCR.texteComplet && (
                     <div className="col-span-2">
                       <p className="text-sm text-gray-600 mb-1">Texte brut extrait</p>
