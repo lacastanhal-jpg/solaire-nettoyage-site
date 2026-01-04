@@ -239,33 +239,43 @@ export async function detecterDoublonParTicket(
 
 /**
  * Générer le prochain numéro de note de frais
+ * Format: NF-AAAAMMJJ-NNN (ex: NF-20260104-001)
  */
 export async function generateNoteFraisNumero(): Promise<string> {
   try {
-    const year = new Date().getFullYear()
-    const month = (new Date().getMonth() + 1).toString().padStart(2, '0')
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = (now.getMonth() + 1).toString().padStart(2, '0')
+    const day = now.getDate().toString().padStart(2, '0')
+    const datePrefix = `${year}${month}${day}`  // 20260104
+    
     const notesRef = collection(db, 'notes_de_frais')
     const q = query(
       notesRef,
-      where('numero', '>=', `NF-${year}${month}-`),
-      where('numero', '<', `NF-${year}${month + 1}-`),
+      where('numero', '>=', `NF-${datePrefix}-`),
+      where('numero', '<', `NF-${datePrefix}-999`),
       orderBy('numero', 'desc')
     )
     
     const snapshot = await getDocs(q)
     
     if (snapshot.empty) {
-      return `NF-${year}${month}-001`
+      return `NF-${datePrefix}-001`
     }
     
     const lastNumero = snapshot.docs[0].data().numero
-    const lastNumber = parseInt(lastNumero.split('-')[2])  // Corrigé : [2] pour le compteur, pas [1]
+    const lastNumber = parseInt(lastNumero.split('-')[2])  // Prend le compteur (3ème partie)
     const nextNumber = (lastNumber + 1).toString().padStart(3, '0')
     
-    return `NF-${year}${month}-${nextNumber}`
+    return `NF-${datePrefix}-${nextNumber}`
   } catch (error) {
     console.error('Erreur génération numéro note de frais:', error)
-    return `NF-${new Date().getFullYear()}${(new Date().getMonth() + 1).toString().padStart(2, '0')}-${Date.now().toString().slice(-3)}`
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = (now.getMonth() + 1).toString().padStart(2, '0')
+    const day = now.getDate().toString().padStart(2, '0')
+    const timestamp = Date.now().toString().slice(-3)
+    return `NF-${year}${month}${day}-${timestamp}`
   }
 }
 
