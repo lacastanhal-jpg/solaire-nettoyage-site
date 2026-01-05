@@ -176,16 +176,20 @@ export {
   getAllArticlesStock,
   getArticleStockById as getArticleStock,
   getArticlesEnAlerte,
-  getArticlesParFournisseur,
+  getArticlesAffectesEquipement,
+  getArticlesStockByCompteComptable,
+  getStatistiquesParCompteComptable,
+  migrateArticlesStockComptesComptables,
   updateArticleStock,
   updateStockDepot,
+  deleteArticleStock,
   ajusterStock,
   affecterArticleEquipement,
   retirerAffectationArticle,
-  deleteArticleStock,
   desactiverArticleStock,
   articleStockCodeExists,
-  getStatistiquesStock
+  getStatistiquesStock,
+  getArticlesParFournisseur
 } from './stock-articles'
 
 // Export Mouvements Stock functions
@@ -323,3 +327,11 @@ export type {
   StatistiquesTresorerie,
   EvolutionSolde
 } from './tresorerie-stats'
+
+// Export nouvelles fonctions trésorerie
+export {
+  exportTransactionsCSV,
+  findMatchingFacturesClientsAmeliore,
+  findMatchingFacturesFournisseursAmeliore,
+  autoRapprocherLignes
+} from './lignes-bancaires'

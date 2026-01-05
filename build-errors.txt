@@ -1,0 +1,23 @@
+
+> solaire-nettoyage@1.0.0 build
+> next build
+
+  ▲ Next.js 14.2.0
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+Failed to compile.
+
+./app/admin/comptabilite/factures-fournisseurs/nouvelle/page.tsx:296:13
+Type error: Type '{ articleStockId: string | undefined; articleCode: string | undefined; designation: string; quantite: number; prixUnitaireHT: number; tauxTVA: number; montantHT: number; montantTVA: number; ... 4 more ...; genererMouvementStock: boolean; }[]' is not assignable to type 'LigneFactureFournisseur[]'.
+  Property 'id' is missing in type '{ articleStockId: string | undefined; articleCode: string | undefined; designation: string; quantite: number; prixUnitaireHT: number; tauxTVA: number; montantHT: number; montantTVA: number; ... 4 more ...; genererMouvementStock: boolean; }' but required in type 'LigneFactureFournisseur'.
+
+[0m [90m 294 |[39m[0m
+[0m [90m 295 |[39m     [36mtry[39m {[0m
+[0m[31m[1m>[22m[39m[90m 296 |[39m       [36mconst[39m lignesFacture[33m:[39m [33mLigneFactureFournisseur[39m[] [33m=[39m lignes[33m.[39mmap(ligne [33m=>[39m ({[0m
+[0m [90m     |[39m             [31m[1m^[22m[39m[0m
+[0m [90m 297 |[39m         articleStockId[33m:[39m ligne[33m.[39mtype [33m===[39m [32m'article'[39m [33m?[39m ligne[33m.[39marticleStockId [33m:[39m undefined[33m,[39m[0m
+[0m [90m 298 |[39m         articleCode[33m:[39m ligne[33m.[39mtype [33m===[39m [32m'article'[39m [33m&&[39m ligne[33m.[39marticleStockId [0m
+[0m [90m 299 |[39m           [33m?[39m articlesStock[33m.[39mfind(a [33m=>[39m a[33m.[39mid [33m===[39m ligne[33m.[39marticleStockId)[33m?[39m[33m.[39mcode [0m

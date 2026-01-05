@@ -10,7 +10,8 @@ import {
   getDerniersMouvements,
   getStatistiquesMaintenanceMois
 } from '@/lib/firebase'
-import type { ArticleStock, MouvementStock } from '@/lib/types/stock-flotte'
+import type { ArticleStock } from '@/lib/firebase/stock-articles'
+import type { MouvementStock } from '@/lib/types/stock-flotte'
 
 // Import dynamique des composants graphiques (client-side only)
 const GraphiqueConsommation = dynamic(() => import('@/components/stock-flotte/GraphiqueConsommation'), {

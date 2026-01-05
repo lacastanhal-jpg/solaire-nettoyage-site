@@ -1,0 +1,867 @@
+import { db } from './config'
+import { Facture } from './factures'
+import { FactureFournisseur } from './factures-fournisseurs'
+import { 
+  collection, 
+  doc, 
+  getDoc, 
+  getDocs, 
+  setDoc, 
+  updateDoc, 
+  deleteDoc,
+  query,
+  orderBy,
+  where,
+  Timestamp
+} from 'firebase/firestore'
+
+export interface LigneBancaire {
+  id: string
+  
+  // INFORMATIONS BANCAIRES
+  compteBancaireId: string
+  date: string
+  dateValeur: string
+  
+  // TRANSACTION
+  libelle: string
+  montant: number // Positif = crédit, Négatif = débit
+  reference?: string
+  
+  // CATÉGORISATION AUTOMATIQUE
+  categorieAuto?: string
+  typeTransaction?: 'virement' | 'prelevement' | 'carte' | 'cheque' | 'autre'
+  
+  // RAPPROCHEMENT
+  statut: 'a_rapprocher' | 'rapproche' | 'ignore'
+  
+  // LIENS AVEC DOCUMENTS
+  factureClientId?: string // Facture client payée
+  factureClientNumero?: string
+  
+  factureFournisseurId?: string // Facture fournisseur payée
+  factureFournisseurNumero?: string
+  
+  noteFraisId?: string // Note de frais remboursée
+  noteFraisNumero?: string
+  
+  chargeFixeId?: string // Charge fixe prélevée
+  
+  // RAPPROCHEMENT MANUEL
+  dateRapprochement?: string
+  rapprochePar?: string
+  commentaireRapprochement?: string
+  
+  // METADATA
+  importId?: string // ID de l'import CSV
+  dateImport?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CompteBancaire {
+  id: string
+  nom: string
+  banque: string
+  numeroCompte: string
+  iban?: string
+  bic?: string
+  solde: number
+  devise: string
+  dateMAJ: string
+  actif: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+/**
+ * Récupérer tous les comptes bancaires
+ */
+export async function getAllComptesBancaires(): Promise<CompteBancaire[]> {
+  try {
+    const comptesRef = collection(db, 'comptes_bancaires')
+    const q = query(comptesRef, orderBy('nom', 'asc'))
+    const snapshot = await getDocs(q)
+    
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as CompteBancaire))
+  } catch (error) {
+    console.error('Erreur récupération comptes bancaires:', error)
+    throw error
+  }
+}
+
+/**
+ * Créer un compte bancaire
+ */
+export async function createCompteBancaire(compte: Omit<CompteBancaire, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  try {
+    const compteData = {
+      ...compte,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+    
+    const compteRef = doc(collection(db, 'comptes_bancaires'))
+    await setDoc(compteRef, compteData)
+    
+    return compteRef.id
+  } catch (error) {
+    console.error('Erreur création compte bancaire:', error)
+    throw error
+  }
+}
+
+/**
+ * Mettre à jour un compte bancaire
+ */
+export async function updateCompteBancaire(
+  compteId: string, 
+  data: Partial<Omit<CompteBancaire, 'id' | 'createdAt' | 'updatedAt'>>
+): Promise<void> {
+  try {
+    await updateDoc(doc(db, 'comptes_bancaires', compteId), {
+      ...data,
+      updatedAt: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Erreur mise à jour compte bancaire:', error)
+    throw error
+  }
+}
+
+/**
+ * Mettre à jour le solde d'un compte
+ */
+export async function updateSoldeCompte(compteId: string, nouveauSolde: number): Promise<void> {
+  try {
+    await updateDoc(doc(db, 'comptes_bancaires', compteId), {
+      solde: nouveauSolde,
+      dateMAJ: new Date().toISOString().split('T')[0],
+      updatedAt: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Erreur mise à jour solde:', error)
+    throw error
+  }
+}
+
+/**
+ * Récupérer toutes les lignes bancaires
+ */
+export async function getAllLignesBancaires(): Promise<LigneBancaire[]> {
+  try {
+    const lignesRef = collection(db, 'lignes_bancaires')
+    const q = query(lignesRef, orderBy('date', 'desc'))
+    const snapshot = await getDocs(q)
+    
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as LigneBancaire))
+  } catch (error) {
+    console.error('Erreur récupération lignes bancaires:', error)
+    throw error
+  }
+}
+
+/**
+ * Récupérer les lignes d'un compte
+ */
+export async function getLignesByCompte(compteId: string): Promise<LigneBancaire[]> {
+  try {
+    const lignesRef = collection(db, 'lignes_bancaires')
+    const q = query(
+      lignesRef,
+      where('compteBancaireId', '==', compteId),
+      orderBy('date', 'desc')
+    )
+    const snapshot = await getDocs(q)
+    
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as LigneBancaire))
+  } catch (error) {
+    console.error('Erreur récupération lignes compte:', error)
+    throw error
+  }
+}
+
+/**
+ * Récupérer les lignes à rapprocher
+ */
+export async function getLignesARapprocher(): Promise<LigneBancaire[]> {
+  try {
+    const lignesRef = collection(db, 'lignes_bancaires')
+    const q = query(
+      lignesRef,
+      where('statut', '==', 'a_rapprocher'),
+      orderBy('date', 'desc')
+    )
+    const snapshot = await getDocs(q)
+    
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as LigneBancaire))
+  } catch (error) {
+    console.error('Erreur récupération lignes à rapprocher:', error)
+    throw error
+  }
+}
+
+/**
+ * Importer des lignes bancaires depuis CSV
+ */
+export async function importLignesBancaires(
+  compteBancaireId: string,
+  lignes: Omit<LigneBancaire, 'id' | 'compteBancaireId' | 'createdAt' | 'updatedAt'>[]
+): Promise<number> {
+  try {
+    const importId = `import_${Date.now()}`
+    const dateImport = new Date().toISOString()
+    let compteur = 0
+    
+    for (const ligne of lignes) {
+      const ligneData = {
+        ...ligne,
+        compteBancaireId,
+        statut: 'a_rapprocher' as const,
+        importId,
+        dateImport,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+      
+      const ligneRef = doc(collection(db, 'lignes_bancaires'))
+      await setDoc(ligneRef, ligneData)
+      compteur++
+    }
+    
+    return compteur
+  } catch (error) {
+    console.error('Erreur import lignes bancaires:', error)
+    throw error
+  }
+}
+
+/**
+ * Rapprocher une ligne avec une facture client
+ */
+export async function rapprocherAvecFactureClient(
+  ligneId: string,
+  factureId: string,
+  factureNumero: string,
+  rapprochePar: string
+): Promise<void> {
+  try {
+    await updateDoc(doc(db, 'lignes_bancaires', ligneId), {
+      statut: 'rapproche',
+      factureClientId: factureId,
+      factureClientNumero: factureNumero,
+      dateRapprochement: new Date().toISOString().split('T')[0],
+      rapprochePar,
+      updatedAt: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Erreur rapprochement facture client:', error)
+    throw error
+  }
+}
+
+/**
+ * Rapprocher une ligne avec une facture fournisseur
+ */
+export async function rapprocherAvecFactureFournisseur(
+  ligneId: string,
+  factureId: string,
+  factureNumero: string,
+  rapprochePar: string
+): Promise<void> {
+  try {
+    await updateDoc(doc(db, 'lignes_bancaires', ligneId), {
+      statut: 'rapproche',
+      factureFournisseurId: factureId,
+      factureFournisseurNumero: factureNumero,
+      dateRapprochement: new Date().toISOString().split('T')[0],
+      rapprochePar,
+      updatedAt: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Erreur rapprochement facture fournisseur:', error)
+    throw error
+  }
+}
+
+/**
+ * Rapprocher une ligne avec une note de frais
+ */
+export async function rapprocherAvecNoteFrais(
+  ligneId: string,
+  noteFraisId: string,
+  noteFraisNumero: string,
+  rapprochePar: string
+): Promise<void> {
+  try {
+    await updateDoc(doc(db, 'lignes_bancaires', ligneId), {
+      statut: 'rapproche',
+      noteFraisId,
+      noteFraisNumero,
+      dateRapprochement: new Date().toISOString().split('T')[0],
+      rapprochePar,
+      updatedAt: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Erreur rapprochement note de frais:', error)
+    throw error
+  }
+}
+
+/**
+ * Rapprocher une ligne avec une charge fixe
+ */
+export async function rapprocherAvecChargeFixe(
+  ligneId: string,
+  chargeFixeId: string,
+  rapprochePar: string
+): Promise<void> {
+  try {
+    await updateDoc(doc(db, 'lignes_bancaires', ligneId), {
+      statut: 'rapproche',
+      chargeFixeId,
+      dateRapprochement: new Date().toISOString().split('T')[0],
+      rapprochePar,
+      updatedAt: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Erreur rapprochement charge fixe:', error)
+    throw error
+  }
+}
+
+/**
+ * Dé-rapprocher une ligne
+ */
+export async function deRapprocherLigne(ligneId: string): Promise<void> {
+  try {
+    await updateDoc(doc(db, 'lignes_bancaires', ligneId), {
+      statut: 'a_rapprocher',
+      factureClientId: null,
+      factureClientNumero: null,
+      factureFournisseurId: null,
+      factureFournisseurNumero: null,
+      noteFraisId: null,
+      noteFraisNumero: null,
+      chargeFixeId: null,
+      dateRapprochement: null,
+      rapprochePar: null,
+      commentaireRapprochement: null,
+      updatedAt: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Erreur dé-rapprochement:', error)
+    throw error
+  }
+}
+
+/**
+ * Ignorer une ligne (ne pas rapprocher)
+ */
+export async function ignorerLigne(ligneId: string, commentaire?: string): Promise<void> {
+  try {
+    await updateDoc(doc(db, 'lignes_bancaires', ligneId), {
+      statut: 'ignore',
+      commentaireRapprochement: commentaire || 'Ligne ignorée',
+      updatedAt: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Erreur ignorer ligne:', error)
+    throw error
+  }
+}
+
+/**
+ * Matching automatique : Rechercher factures clients correspondantes
+ */
+export async function findMatchingFacturesClients(ligne: LigneBancaire): Promise<any[]> {
+  try {
+    // Si c'est un crédit (montant positif), chercher dans les factures clients
+    if (ligne.montant <= 0) return []
+    
+    const facturesRef = collection(db, 'factures')
+    const q = query(
+      facturesRef,
+      where('statut', 'in', ['envoyee', 'partiellement_payee', 'en_retard'])
+    )
+    const snapshot = await getDocs(q)
+    
+    const matches: any[] = []
+    
+    snapshot.docs.forEach(doc => {
+      const facture = { id: doc.id, ...doc.data() } as Facture
+      
+      // Matching par montant (tolérance ±5€)
+      const diff = Math.abs(facture.resteAPayer - ligne.montant)
+      if (diff <= 5) {
+        matches.push({
+          factureId: facture.id,
+          factureNumero: facture.numero,
+          clientNom: facture.clientNom,
+          montant: facture.resteAPayer,
+          difference: diff,
+          confidence: diff === 0 ? 100 : Math.max(0, 100 - (diff * 20))
+        })
+      }
+      
+      // Matching par référence (numéro facture dans libellé)
+      if (ligne.libelle && ligne.libelle.includes(facture.numero)) {
+        if (!matches.find(m => m.factureId === facture.id)) {
+          matches.push({
+            factureId: facture.id,
+            factureNumero: facture.numero,
+            clientNom: facture.clientNom,
+            montant: facture.resteAPayer,
+            difference: Math.abs(facture.resteAPayer - ligne.montant),
+            confidence: 95
+          })
+        }
+      }
+    })
+    
+    // Trier par confiance décroissante
+    return matches.sort((a, b) => b.confidence - a.confidence)
+  } catch (error) {
+    console.error('Erreur matching factures clients:', error)
+    return []
+  }
+}
+
+/**
+ * Matching automatique : Rechercher factures fournisseurs correspondantes
+ */
+export async function findMatchingFacturesFournisseurs(ligne: LigneBancaire): Promise<any[]> {
+  try {
+    // Si c'est un débit (montant négatif), chercher dans les factures fournisseurs
+    if (ligne.montant >= 0) return []
+    
+    const montantAbsolu = Math.abs(ligne.montant)
+    
+    const facturesRef = collection(db, 'factures_fournisseurs')
+    const q = query(
+      facturesRef,
+      where('statut', '==', 'a_payer')
+    )
+    const snapshot = await getDocs(q)
+    
+    const matches: any[] = []
+    
+    snapshot.docs.forEach(doc => {
+      const facture = { id: doc.id, ...doc.data() } as FactureFournisseur
+      
+      // Matching par montant (tolérance ±5€)
+      const diff = Math.abs(facture.montantTTC - montantAbsolu)
+      if (diff <= 5) {
+        matches.push({
+          factureId: facture.id,
+          factureNumero: facture.numero,
+          fournisseur: facture.fournisseur,
+          montant: facture.montantTTC,
+          difference: diff,
+          confidence: diff === 0 ? 100 : Math.max(0, 100 - (diff * 20))
+        })
+      }
+      
+      // Matching par référence
+      if (ligne.libelle && ligne.libelle.includes(facture.numero)) {
+        if (!matches.find(m => m.factureId === facture.id)) {
+          matches.push({
+            factureId: facture.id,
+            factureNumero: facture.numero,
+            fournisseur: facture.fournisseur,
+            montant: facture.montantTTC,
+            difference: Math.abs(facture.montantTTC - montantAbsolu),
+            confidence: 95
+          })
+        }
+      }
+    })
+    
+    return matches.sort((a, b) => b.confidence - a.confidence)
+  } catch (error) {
+    console.error('Erreur matching factures fournisseurs:', error)
+    return []
+  }
+}
+
+/**
+ * Catégoriser automatiquement une ligne
+ */
+export function categoriserLigneAuto(ligne: LigneBancaire): {
+  categorie: string
+  type: LigneBancaire['typeTransaction']
+} {
+  const libelle = ligne.libelle.toLowerCase()
+  
+  // Carburant
+  if (libelle.includes('total') || libelle.includes('esso') || libelle.includes('bp') || libelle.includes('carburant')) {
+    return { categorie: 'carburant', type: 'carte' }
+  }
+  
+  // Péage
+  if (libelle.includes('autoroute') || libelle.includes('peage') || libelle.includes('sanef') || libelle.includes('aprr')) {
+    return { categorie: 'peage', type: 'prelevement' }
+  }
+  
+  // Salaires
+  if (libelle.includes('salaire') || libelle.includes('paie') || libelle.includes('urssaf')) {
+    return { categorie: 'salaires', type: 'virement' }
+  }
+  
+  // Assurances
+  if (libelle.includes('assurance') || libelle.includes('axa') || libelle.includes('maif')) {
+    return { categorie: 'assurances', type: 'prelevement' }
+  }
+  
+  // Virement client
+  if (ligne.montant > 0 && (libelle.includes('virement') || libelle.includes('vir'))) {
+    return { categorie: 'facturation', type: 'virement' }
+  }
+  
+  // Par défaut
+  return { 
+    categorie: ligne.montant > 0 ? 'recette' : 'depense',
+    type: 'autre'
+  }
+}
+
+/**
+ * Calculer statistiques rapprochement
+ */
+export async function getStatistiquesRapprochement(): Promise<{
+  total: number
+  aRapprocher: number
+  rapprochees: number
+  ignorees: number
+  tauxRapprochement: number
+}> {
+  try {
+    const lignes = await getAllLignesBancaires()
+    
+    const stats = {
+      total: lignes.length,
+      aRapprocher: lignes.filter(l => l.statut === 'a_rapprocher').length,
+      rapprochees: lignes.filter(l => l.statut === 'rapproche').length,
+      ignorees: lignes.filter(l => l.statut === 'ignore').length,
+      tauxRapprochement: 0
+    }
+    
+    if (stats.total > 0) {
+      stats.tauxRapprochement = Math.round((stats.rapprochees / stats.total) * 100)
+    }
+    
+    return stats
+  } catch (error) {
+    console.error('Erreur calcul statistiques rapprochement:', error)
+    throw error
+  }
+}
+
+/**
+ * Exporter les transactions en CSV pour Excel
+ */
+export async function exportTransactionsCSV(
+  dateDebut?: string,
+  dateFin?: string,
+  compteBancaireId?: string
+): Promise<string> {
+  try {
+    // Récupérer les lignes bancaires
+    let lignes = await getAllLignesBancaires()
+    
+    // Filtrer par date si fournie
+    if (dateDebut) {
+      lignes = lignes.filter(l => l.date >= dateDebut)
+    }
+    if (dateFin) {
+      lignes = lignes.filter(l => l.date <= dateFin)
+    }
+    
+    // Filtrer par compte si fourni
+    if (compteBancaireId) {
+      lignes = lignes.filter(l => l.compteBancaireId === compteBancaireId)
+    }
+    
+    // Récupérer les comptes pour avoir les noms
+    const comptes = await getAllComptesBancaires()
+    const comptesMap = new Map(comptes.map(c => [c.id, c]))
+    
+    // Trier par date décroissante
+    lignes.sort((a, b) => b.date.localeCompare(a.date))
+    
+    // Générer le CSV
+    const headers = [
+      'Date',
+      'Date Valeur',
+      'Compte',
+      'Libellé',
+      'Référence',
+      'Catégorie',
+      'Type',
+      'Montant',
+      'Statut',
+      'Facture Client',
+      'Facture Fournisseur',
+      'Note de Frais',
+      'Commentaire'
+    ]
+    
+    const rows = lignes.map(ligne => {
+      const compte = comptesMap.get(ligne.compteBancaireId)
+      
+      return [
+        ligne.date,
+        ligne.dateValeur || ligne.date,
+        compte?.nom || '',
+        ligne.libelle,
+        ligne.reference || '',
+        ligne.categorieAuto || '',
+        ligne.typeTransaction || '',
+        ligne.montant.toFixed(2),
+        ligne.statut === 'a_rapprocher' ? 'À rapprocher' :
+        ligne.statut === 'rapproche' ? 'Rapproché' : 'Ignoré',
+        ligne.factureClientNumero || '',
+        ligne.factureFournisseurNumero || '',
+        ligne.noteFraisNumero || '',
+        ligne.commentaireRapprochement || ''
+      ]
+    })
+    
+    // Construire le CSV
+    const csvContent = [
+      headers.join(';'),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(';'))
+    ].join('\n')
+    
+    return csvContent
+  } catch (error) {
+    console.error('Erreur export CSV:', error)
+    throw error
+  }
+}
+
+/**
+ * Matching amélioré avec détection numéro facture dans libellé
+ */
+export async function findMatchingFacturesClientsAmeliore(
+  ligne: LigneBancaire
+): Promise<Array<{
+  factureId: string
+  factureNumero: string
+  clientNom: string
+  montant: number
+  difference: number
+  confidence: number
+}>> {
+  try {
+    // Récupérer toutes les factures non payées
+    const facturesRef = collection(db, 'factures')
+    const q = query(
+      facturesRef,
+      where('statut', 'in', ['envoyée', 'partiellement_payée', 'en_retard', 'relancée'])
+    )
+    const snapshot = await getDocs(q)
+    
+    const matches: any[] = []
+    
+    snapshot.forEach(doc => {
+      const facture = { id: doc.id, ...doc.data() } as Facture
+      
+      // Critère 1 : Montant exact (confidence 100%)
+      const montantMatch = Math.abs(facture.totalTTC - ligne.montant) < 0.01
+      
+      // Critère 2 : Numéro facture dans libellé (confidence 90%)
+      const numeroInLibelle = ligne.libelle.toUpperCase().includes(facture.numero.toUpperCase())
+      
+      // Critère 3 : Nom client dans libellé (confidence 70%)
+      const clientNomInLibelle = ligne.libelle.toUpperCase().includes(facture.clientNom.toUpperCase().substring(0, 8))
+      
+      // Critère 4 : Date proche (±7 jours)
+      const dateFacture = new Date(facture.date)
+      const dateLigne = new Date(ligne.date)
+      const diffJours = Math.abs((dateLigne.getTime() - dateFacture.getTime()) / (1000 * 60 * 60 * 24))
+      const dateProche = diffJours <= 7
+      
+      // Calculer confidence
+      let confidence = 0
+      
+      if (montantMatch && numeroInLibelle) {
+        confidence = 100 // PARFAIT
+      } else if (montantMatch && clientNomInLibelle) {
+        confidence = 95
+      } else if (montantMatch && dateProche) {
+        confidence = 90
+      } else if (numeroInLibelle) {
+        confidence = 85
+      } else if (montantMatch) {
+        confidence = 70
+      } else if (clientNomInLibelle && dateProche) {
+        confidence = 60
+      }
+      
+      // Ajouter si confidence > 50%
+      if (confidence >= 50) {
+        matches.push({
+          factureId: facture.id,
+          factureNumero: facture.numero,
+          clientNom: facture.clientNom,
+          montant: facture.totalTTC,
+          difference: Math.abs(facture.totalTTC - ligne.montant),
+          confidence
+        })
+      }
+    })
+    
+    // Trier par confidence décroissante
+    matches.sort((a, b) => b.confidence - a.confidence)
+    
+    return matches
+  } catch (error) {
+    console.error('Erreur matching factures clients amélioré:', error)
+    return []
+  }
+}
+
+/**
+ * Matching amélioré pour factures fournisseurs
+ */
+export async function findMatchingFacturesFournisseursAmeliore(
+  ligne: LigneBancaire
+): Promise<Array<{
+  factureId: string
+  factureNumero: string
+  fournisseurNom: string
+  montant: number
+  difference: number
+  confidence: number
+}>> {
+  try {
+    const facturesRef = collection(db, 'factures_fournisseurs')
+    const q = query(
+      facturesRef,
+      where('statut', 'in', ['validée', 'a_payer'])
+    )
+    const snapshot = await getDocs(q)
+    
+    const matches: any[] = []
+    
+    snapshot.forEach(doc => {
+      const facture = { id: doc.id, ...doc.data() } as FactureFournisseur
+      
+      // Critères matching
+      const montantMatch = Math.abs(facture.montantTTC + ligne.montant) < 0.01 // ligne négative pour fournisseur
+      const numeroInLibelle = ligne.libelle.toUpperCase().includes(facture.numero.toUpperCase())
+      const fournisseurInLibelle = ligne.libelle.toUpperCase().includes(facture.fournisseur.toUpperCase().substring(0, 8))
+      
+      const dateFacture = new Date(facture.dateFacture)
+      const dateLigne = new Date(ligne.date)
+      const diffJours = Math.abs((dateLigne.getTime() - dateFacture.getTime()) / (1000 * 60 * 60 * 24))
+      const dateProche = diffJours <= 30
+      
+      let confidence = 0
+      
+      if (montantMatch && numeroInLibelle) {
+        confidence = 100
+      } else if (montantMatch && fournisseurInLibelle) {
+        confidence = 95
+      } else if (montantMatch && dateProche) {
+        confidence = 90
+      } else if (numeroInLibelle) {
+        confidence = 85
+      } else if (montantMatch) {
+        confidence = 70
+      } else if (fournisseurInLibelle && dateProche) {
+        confidence = 60
+      }
+      
+      if (confidence >= 50) {
+        matches.push({
+          factureId: facture.id,
+          factureNumero: facture.numero,
+          fournisseurNom: facture.fournisseur,
+          montant: facture.montantTTC,
+          difference: Math.abs(facture.montantTTC + ligne.montant),
+          confidence
+        })
+      }
+    })
+    
+    matches.sort((a, b) => b.confidence - a.confidence)
+    
+    return matches
+  } catch (error) {
+    console.error('Erreur matching factures fournisseurs amélioré:', error)
+    return []
+  }
+}
+
+/**
+ * Auto-rapprocher les lignes avec confidence 100%
+ */
+export async function autoRapprocherLignes(): Promise<{
+  nombreRapprochees: number
+  details: Array<{
+    ligneId: string
+    factureNumero: string
+    type: 'client' | 'fournisseur'
+  }>
+}> {
+  try {
+    const lignes = await getLignesARapprocher()
+    const rapprochees: any[] = []
+    
+    for (const ligne of lignes) {
+      // Chercher matches clients
+      const matchesClients = await findMatchingFacturesClientsAmeliore(ligne)
+      if (matchesClients.length > 0 && matchesClients[0].confidence === 100) {
+        await rapprocherAvecFactureClient(
+          ligne.id,
+          matchesClients[0].factureId,
+          matchesClients[0].factureNumero,
+          'Auto-rapprochement (confidence 100%)'
+        )
+        rapprochees.push({
+          ligneId: ligne.id,
+          factureNumero: matchesClients[0].factureNumero,
+          type: 'client'
+        })
+        continue
+      }
+      
+      // Chercher matches fournisseurs
+      const matchesFournisseurs = await findMatchingFacturesFournisseursAmeliore(ligne)
+      if (matchesFournisseurs.length > 0 && matchesFournisseurs[0].confidence === 100) {
+        await rapprocherAvecFactureFournisseur(
+          ligne.id,
+          matchesFournisseurs[0].factureId,
+          'Auto-rapprochement (confidence 100%)'
+        )
+        rapprochees.push({
+          ligneId: ligne.id,
+          factureNumero: matchesFournisseurs[0].factureNumero,
+          type: 'fournisseur'
+        })
+      }
+    }
+    
+    return {
+      nombreRapprochees: rapprochees.length,
+      details: rapprochees
+    }
+  } catch (error) {
+    console.error('Erreur auto-rapprochement:', error)
+    throw error
+  }
+}

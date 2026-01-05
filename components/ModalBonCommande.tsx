@@ -7,7 +7,7 @@ import {
   calculerQuantiteSuggeree,
   type LigneBonCommande
 } from '@/lib/firebase/bons-commande-fournisseurs'
-import type { ArticleStock } from '@/lib/types/stock-flotte'
+import type { ArticleStock } from '@/lib/firebase/stock-articles'
 
 type ArticleManquant = {
   article: ArticleStock

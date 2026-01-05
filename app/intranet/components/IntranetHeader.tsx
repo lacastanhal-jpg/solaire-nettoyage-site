@@ -12,6 +12,7 @@ export default function IntranetHeader() {
   // États pour les menus déroulants
   const [crmOpen, setCrmOpen] = useState(false)
   const [financesOpen, setFinancesOpen] = useState(false)
+  const [comptabiliteOpen, setComptabiliteOpen] = useState(false)
   const [stockFlotteOpen, setStockFlotteOpen] = useState(false)
   const [operationsOpen, setOperationsOpen] = useState(false)
   const [conformiteOpen, setConformiteOpen] = useState(false)
@@ -35,6 +36,7 @@ export default function IntranetHeader() {
   const closeAllMenus = () => {
     setCrmOpen(false)
     setFinancesOpen(false)
+    setComptabiliteOpen(false)
     setStockFlotteOpen(false)
     setOperationsOpen(false)
     setConformiteOpen(false)
@@ -75,6 +77,7 @@ export default function IntranetHeader() {
                 onClick={() => {
                   setCrmOpen(!crmOpen)
                   setFinancesOpen(false)
+                  setComptabiliteOpen(false)
                   setStockFlotteOpen(false)
                   setOperationsOpen(false)
                   setConformiteOpen(false)
@@ -118,6 +121,7 @@ export default function IntranetHeader() {
                 onClick={() => {
                   setFinancesOpen(!financesOpen)
                   setCrmOpen(false)
+                  setComptabiliteOpen(false)
                   setStockFlotteOpen(false)
                   setOperationsOpen(false)
                   setConformiteOpen(false)
@@ -159,13 +163,71 @@ export default function IntranetHeader() {
                   <Link href="/admin/finances/charges" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
                     💵 Charges Fixes
                   </Link>
-                  <div className="px-4 py-2 text-xs text-gray-500 italic">
-                    📥 Factures Fournisseurs (à venir)
-                  </div>
+                  <Link href="/admin/finances/fournisseurs" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
+                    🏭 Fournisseurs
+                  </Link>
                   <div className="border-t border-gray-200 my-1"></div>
                   <div className="px-4 py-2 text-xs text-gray-500 italic">
                     📊 Dashboard Finances (à venir)
                   </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 💰 COMPTABILITÉ - ADMIN UNIQUEMENT - 🆕 PHASE 3 */}
+          {isAdmin && (
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setComptabiliteOpen(!comptabiliteOpen)
+                  setCrmOpen(false)
+                  setFinancesOpen(false)
+                  setStockFlotteOpen(false)
+                  setOperationsOpen(false)
+                  setConformiteOpen(false)
+                  setAdminMenuOpen(false)
+                }}
+                className="flex items-center gap-1 text-sm font-medium text-gray-300 hover:text-white transition-colors"
+              >
+                💰 Comptabilité
+                <svg className={`w-4 h-4 transition-transform ${comptabiliteOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              {comptabiliteOpen && (
+                <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-lg shadow-xl py-2 border border-gray-200">
+                  <Link href="/admin/comptabilite" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600 font-semibold">
+                    📊 Dashboard Comptabilité
+                  </Link>
+                  <div className="border-t border-gray-200 my-1"></div>
+                  <Link href="/admin/comptabilite/plan-comptable" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
+                    📋 Plan Comptable
+                  </Link>
+                  <Link href="/admin/comptabilite/factures-fournisseurs" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
+                    📥 Factures Fournisseurs
+                  </Link>
+                  <div className="border-t border-gray-200 my-1"></div>
+                  <Link href="/admin/comptabilite/journal" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
+                    📚 Journal Comptable
+                  </Link>
+                  <Link href="/admin/comptabilite/grand-livre" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
+                    📖 Grand Livre
+                  </Link>
+                  <Link href="/admin/comptabilite/balance" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
+                    ⚖️ Balance Générale
+                  </Link>
+                  <div className="border-t border-gray-200 my-1"></div>
+                  <Link href="/admin/comptabilite/exports/fec" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
+                    📤 Export FEC
+                  </Link>
+                  <Link href="/admin/comptabilite/tva" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
+                    💶 Dashboard TVA
+                  </Link>
+                  <Link href="/admin/comptabilite/tva/ca3" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
+                    📋 Déclaration CA3
+                  </Link>
                 </div>
               )}
             </div>
@@ -179,6 +241,7 @@ export default function IntranetHeader() {
                   setStockFlotteOpen(!stockFlotteOpen)
                   setCrmOpen(false)
                   setFinancesOpen(false)
+                  setComptabiliteOpen(false)
                   setOperationsOpen(false)
                   setConformiteOpen(false)
                   setAdminMenuOpen(false)
@@ -235,6 +298,7 @@ export default function IntranetHeader() {
                 setOperationsOpen(!operationsOpen)
                 setCrmOpen(false)
                 setFinancesOpen(false)
+                setComptabiliteOpen(false)
                 setStockFlotteOpen(false)
                 setConformiteOpen(false)
                 setAdminMenuOpen(false)
@@ -277,6 +341,7 @@ export default function IntranetHeader() {
                 setConformiteOpen(!conformiteOpen)
                 setCrmOpen(false)
                 setFinancesOpen(false)
+                setComptabiliteOpen(false)
                 setStockFlotteOpen(false)
                 setOperationsOpen(false)
                 setAdminMenuOpen(false)
@@ -312,6 +377,7 @@ export default function IntranetHeader() {
                   setAdminMenuOpen(!adminMenuOpen)
                   setCrmOpen(false)
                   setFinancesOpen(false)
+                  setComptabiliteOpen(false)
                   setStockFlotteOpen(false)
                   setOperationsOpen(false)
                   setConformiteOpen(false)

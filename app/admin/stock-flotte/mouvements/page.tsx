@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { getAllMouvementsStock, getAllArticlesStock } from '@/lib/firebase'
-import type { MouvementStock, ArticleStock } from '@/lib/types/stock-flotte'
+import type { ArticleStock } from '@/lib/firebase/stock-articles'
+import type { MouvementStock } from '@/lib/types/stock-flotte'
 
 export default function MouvementsStockPage() {
   const [mouvements, setMouvements] = useState<MouvementStock[]>([])

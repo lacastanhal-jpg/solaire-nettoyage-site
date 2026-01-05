@@ -9,7 +9,8 @@ import {
   getDerniersMouvements,
   getStatistiquesMaintenanceMois
 } from '@/lib/firebase'
-import type { ArticleStock, MouvementStock } from '@/lib/types/stock-flotte'
+import type { ArticleStock } from '@/lib/firebase/stock-articles'
+import type { MouvementStock } from '@/lib/types/stock-flotte'
 
 export default function StockFlotteDashboard() {
   const [loading, setLoading] = useState(true)

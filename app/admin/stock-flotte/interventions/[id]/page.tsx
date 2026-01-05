@@ -10,7 +10,8 @@ import {
   compterMouvementsIntervention 
 } from '@/lib/firebase/interventions-gestion-stock'
 import { finaliserIntervention } from '@/lib/firebase/stock-interventions'
-import type { Equipement, ArticleStock } from '@/lib/types/stock-flotte'
+import type { ArticleStock } from '@/lib/firebase/stock-articles'
+import type { Equipement } from '@/lib/types/stock-flotte'
 import { db } from '@/lib/firebase/config'
 import { doc, getDoc } from 'firebase/firestore'
 

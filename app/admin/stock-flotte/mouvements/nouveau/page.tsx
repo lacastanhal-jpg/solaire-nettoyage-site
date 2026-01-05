@@ -4,7 +4,8 @@ import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createMouvementStock, getAllArticlesStock, getAllEquipements } from '@/lib/firebase'
-import type { ArticleStock, Equipement } from '@/lib/types/stock-flotte'
+import type { ArticleStock } from '@/lib/firebase/stock-articles'
+import type { Equipement } from '@/lib/types/stock-flotte'
 import { DEPOTS, OPERATEURS } from '@/lib/types/stock-flotte'
 
 function NouveauMouvementForm() {

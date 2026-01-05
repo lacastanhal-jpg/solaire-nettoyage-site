@@ -100,3 +100,37 @@ export async function uploadFile(file: File, path: string): Promise<string> {
     throw error
   }
 }
+
+// Uploader PDF facture fournisseur
+export async function uploadFactureFournisseurPDF(
+  file: File,
+  factureNumero: string
+): Promise<string> {
+  try {
+    // Chemin: factures-fournisseurs/{factureNumero}.pdf
+    const filePath = `factures-fournisseurs/${factureNumero}.pdf`
+    const storageRef = ref(storage, filePath)
+    
+    // Upload le fichier
+    await uploadBytes(storageRef, file)
+    
+    // Récupérer l'URL de téléchargement
+    const downloadURL = await getDownloadURL(storageRef)
+    
+    return downloadURL
+  } catch (error) {
+    console.error('Erreur upload PDF facture fournisseur:', error)
+    throw error
+  }
+}
+
+// Supprimer PDF facture fournisseur
+export async function deleteFactureFournisseurPDF(pdfUrl: string): Promise<void> {
+  try {
+    const storageRef = ref(storage, pdfUrl)
+    await deleteObject(storageRef)
+  } catch (error) {
+    console.error('Erreur suppression PDF facture:', error)
+    throw error
+  }
+}

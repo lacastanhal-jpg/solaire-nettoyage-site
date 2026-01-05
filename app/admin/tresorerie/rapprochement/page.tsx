@@ -5,8 +5,8 @@ import Link from 'next/link'
 import { 
   getLignesARapprocher,
   getAllComptesBancaires,
-  findMatchingFacturesClients,
-  findMatchingFacturesFournisseurs,
+  findMatchingFacturesClientsAmeliore,
+  findMatchingFacturesFournisseursAmeliore,
   rapprocherAvecFactureClient,
   rapprocherAvecFactureFournisseur,
   ignorerLigne,
@@ -61,9 +61,36 @@ export default function RapprochementPage() {
       setLignes(lignesData)
       setComptes(comptesData)
       setFactures(facturesData.filter(f => ['envoyee', 'partiellement_payee', 'en_retard'].includes(f.statut)))
-      setFacturesFournisseurs(facturesFournisseursData.filter(f => f.statut === 'a_payer'))
+      setFacturesFournisseurs(facturesFournisseursData.filter(f => f.statut === 'validee'))
     } catch (error) {
       console.error('Erreur chargement données:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleAutoRapprochement() {
+    if (!confirm('Lancer l\'auto-rapprochement pour toutes les lignes avec une correspondance certaine (confidence 100%) ?')) {
+      return
+    }
+    
+    try {
+      setLoading(true)
+      const response = await fetch('/api/tresorerie/auto-rapprocher', {
+        method: 'POST'
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        alert(`✅ ${data.nombreRapprochees} ligne(s) rapprochée(s) automatiquement !`)
+        await loadData() // Recharger les données
+      } else {
+        alert('Erreur lors de l\'auto-rapprochement')
+      }
+    } catch (error) {
+      console.error('Erreur auto-rapprochement:', error)
+      alert('Erreur lors de l\'auto-rapprochement')
     } finally {
       setLoading(false)
     }
@@ -78,8 +105,8 @@ export default function RapprochementPage() {
     setLoadingSuggestions(true)
     try {
       const [matchClients, matchFournisseurs] = await Promise.all([
-        findMatchingFacturesClients(ligne),
-        findMatchingFacturesFournisseurs(ligne)
+        findMatchingFacturesClientsAmeliore(ligne),
+        findMatchingFacturesFournisseursAmeliore(ligne)
       ])
       
       const allSuggestions: SuggestionMatch[] = [
@@ -196,12 +223,20 @@ export default function RapprochementPage() {
             {lignesFiltrees.length} ligne{lignesFiltrees.length > 1 ? 's' : ''} à rapprocher
           </p>
         </div>
-        <Link 
-          href="/admin/tresorerie"
-          className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
-        >
-          ← Retour
-        </Link>
+        <div className="flex gap-3">
+          <button
+            onClick={handleAutoRapprochement}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2"
+          >
+            ⚡ Auto-Rapprocher
+          </button>
+          <Link 
+            href="/admin/tresorerie"
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+          >
+            ← Retour
+          </Link>
+        </div>
       </div>
 
       {/* Filtres */}

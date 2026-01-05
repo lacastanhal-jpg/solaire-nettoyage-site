@@ -8,8 +8,7 @@ import {
   updateDoc, 
   deleteDoc,
   query,
-  orderBy,
-  Timestamp 
+  orderBy
 } from 'firebase/firestore'
 
 export interface Article {
@@ -21,6 +20,8 @@ export interface Article {
   unite: string
   tva: number
   actif: boolean
+  compteComptable?: string      // 🆕 NOUVEAU - Numéro compte (ex: "6064")
+  compteIntitule?: string        // 🆕 NOUVEAU - Intitulé compte (ex: "Fournitures admin")
   createdAt: string
   updatedAt: string
 }
@@ -33,6 +34,8 @@ export interface ArticleInput {
   unite: string
   tva?: number
   actif?: boolean
+  compteComptable?: string      // 🆕 NOUVEAU
+  compteIntitule?: string        // 🆕 NOUVEAU
 }
 
 /**
@@ -84,19 +87,29 @@ export async function createArticle(articleData: ArticleInput): Promise<string> 
     // Générer un ID unique basé sur le code
     const articleId = articleData.code.toUpperCase().replace(/\s/g, '_')
     
-    const article: Omit<Article, 'id'> = {
+    // Nettoyer les undefined (Firebase ne les accepte pas)
+    const cleanData = Object.entries({
       code: articleData.code.toUpperCase(),
       nom: articleData.nom,
-      description: articleData.description || '',
+      description: articleData.description,
       prix: articleData.prix,
       unite: articleData.unite,
       tva: articleData.tva || 20,
       actif: articleData.actif !== undefined ? articleData.actif : true,
+      compteComptable: articleData.compteComptable,
+      compteIntitule: articleData.compteIntitule,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
-    }
+    }).reduce((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = value
+      }
+      return acc
+    }, {} as any)
     
-    await setDoc(doc(db, 'articles', articleId), article)
+    const articleRef = doc(db, 'articles', articleId)
+    await setDoc(articleRef, cleanData)
+    
     return articleId
   } catch (error) {
     console.error('Erreur création article:', error)
@@ -105,25 +118,28 @@ export async function createArticle(articleData: ArticleInput): Promise<string> 
 }
 
 /**
- * Modifier un article existant
+ * Mettre à jour un article
  */
-export async function updateArticle(id: string, articleData: Partial<ArticleInput>): Promise<void> {
+export async function updateArticle(
+  id: string, 
+  articleData: Partial<ArticleInput>
+): Promise<void> {
   try {
-    const articleRef = doc(db, 'articles', id)
-    
-    const updates: any = {
+    // Nettoyer les undefined (Firebase ne les accepte pas)
+    const cleanData = Object.entries({
       ...articleData,
       updatedAt: new Date().toISOString()
-    }
+    }).reduce((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = value
+      }
+      return acc
+    }, {} as any)
     
-    // Normaliser le code si présent
-    if (updates.code) {
-      updates.code = updates.code.toUpperCase()
-    }
-    
-    await updateDoc(articleRef, updates)
+    const articleRef = doc(db, 'articles', id)
+    await updateDoc(articleRef, cleanData)
   } catch (error) {
-    console.error('Erreur modification article:', error)
+    console.error('Erreur mise à jour article:', error)
     throw error
   }
 }
@@ -133,7 +149,8 @@ export async function updateArticle(id: string, articleData: Partial<ArticleInpu
  */
 export async function deleteArticle(id: string): Promise<void> {
   try {
-    await deleteDoc(doc(db, 'articles', id))
+    const articleRef = doc(db, 'articles', id)
+    await deleteDoc(articleRef)
   } catch (error) {
     console.error('Erreur suppression article:', error)
     throw error
@@ -141,25 +158,46 @@ export async function deleteArticle(id: string): Promise<void> {
 }
 
 /**
- * Désactiver un article (soft delete)
+ * 🆕 Migrer les articles existants vers un compte comptable par défaut
  */
-export async function deactivateArticle(id: string): Promise<void> {
+export async function migrateArticlesComptesComptables(
+  compteParDefaut: string = '6064',
+  intituleParDefaut: string = 'Fournitures administratives'
+): Promise<{ total: number, migres: number }> {
   try {
-    await updateArticle(id, { actif: false })
+    const articles = await getAllArticles()
+    let migres = 0
+    
+    for (const article of articles) {
+      // Si pas de compte comptable, assigner le compte par défaut
+      if (!article.compteComptable) {
+        await updateArticle(article.id, {
+          compteComptable: compteParDefaut,
+          compteIntitule: intituleParDefaut
+        })
+        migres++
+      }
+    }
+    
+    return {
+      total: articles.length,
+      migres
+    }
   } catch (error) {
-    console.error('Erreur désactivation article:', error)
+    console.error('Erreur migration articles:', error)
     throw error
   }
 }
 
 /**
- * Activer un article
+ * 🆕 Rechercher articles par compte comptable
  */
-export async function activateArticle(id: string): Promise<void> {
+export async function getArticlesByCompteComptable(compteComptable: string): Promise<Article[]> {
   try {
-    await updateArticle(id, { actif: true })
+    const articles = await getAllArticles()
+    return articles.filter(a => a.compteComptable === compteComptable)
   } catch (error) {
-    console.error('Erreur activation article:', error)
+    console.error('Erreur recherche articles par compte:', error)
     throw error
   }
 }
@@ -170,11 +208,7 @@ export async function activateArticle(id: string): Promise<void> {
 export async function articleCodeExists(code: string, excludeId?: string): Promise<boolean> {
   try {
     const articles = await getAllArticles()
-    const normalizedCode = code.toUpperCase()
-    
-    return articles.some(article => 
-      article.code === normalizedCode && article.id !== excludeId
-    )
+    return articles.some(a => a.code === code && a.id !== excludeId)
   } catch (error) {
     console.error('Erreur vérification code article:', error)
     throw error

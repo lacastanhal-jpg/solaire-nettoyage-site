@@ -17,7 +17,12 @@ import {
   validerNotesEnMasse,
   refuserNotesEnMasse
 } from '@/lib/firebase/notes-frais-validation-masse'
-import { Plus, Eye, Check, X, DollarSign, Clock, CheckCircle, AlertCircle } from 'lucide-react'
+import { 
+  exporterNotesExcel,
+  exporterStatistiquesOperateurs,
+  exporterStatistiquesCategories
+} from '@/lib/utils/export-excel-notes-frais'
+import { Plus, Eye, Check, X, DollarSign, Clock, CheckCircle, AlertCircle, Download, ArrowUpDown, ArrowUp, ArrowDown, Search } from 'lucide-react'
 
 export default function NotesFraisPage() {
   const [loading, setLoading] = useState(true)
@@ -31,6 +36,11 @@ export default function NotesFraisPage() {
   const [statutFilter, setStatutFilter] = useState<string>('all')
   const [operateurFilter, setOperateurFilter] = useState<string>('all')
   const [moisFilter, setMoisFilter] = useState<string>('all')
+  const [searchTerm, setSearchTerm] = useState<string>('')
+  
+  // Tri
+  const [sortColumn, setSortColumn] = useState<'date' | 'montant' | 'operateur' | null>(null)
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   
   // Modal validation individuelle
   const [showModalValidation, setShowModalValidation] = useState(false)
@@ -73,15 +83,54 @@ export default function NotesFraisPage() {
 
   const operateurs = Array.from(new Set(notes.map(n => n.operateurNom))).sort()
   
-  const notesFiltrees = notes.filter(note => {
+  // Fonction de tri
+  function handleSort(column: 'date' | 'montant' | 'operateur') {
+    if (sortColumn === column) {
+      // Toggle direction
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      // Nouvelle colonne
+      setSortColumn(column)
+      setSortDirection('desc')
+    }
+  }
+  
+  // Filtrage et recherche
+  let notesFiltrees = notes.filter(note => {
     if (statutFilter !== 'all' && note.statut !== statutFilter) return false
     if (operateurFilter !== 'all' && note.operateurNom !== operateurFilter) return false
     if (moisFilter !== 'all') {
       const noteMois = note.date.substring(0, 7)
       if (noteMois !== moisFilter) return false
     }
+    // Recherche dans description
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase()
+      return (
+        note.description.toLowerCase().includes(search) ||
+        note.numero.toLowerCase().includes(search) ||
+        note.operateurNom.toLowerCase().includes(search)
+      )
+    }
     return true
   })
+  
+  // Tri
+  if (sortColumn) {
+    notesFiltrees = [...notesFiltrees].sort((a, b) => {
+      let comparison = 0
+      
+      if (sortColumn === 'date') {
+        comparison = a.date.localeCompare(b.date)
+      } else if (sortColumn === 'montant') {
+        comparison = a.montantTTC - b.montantTTC
+      } else if (sortColumn === 'operateur') {
+        comparison = a.operateurNom.localeCompare(b.operateurNom)
+      }
+      
+      return sortDirection === 'asc' ? comparison : -comparison
+    })
+  }
 
   const totalMois = notesFiltrees
     .filter(n => n.date.substring(0, 7) === new Date().toISOString().substring(0, 7))
@@ -253,6 +302,14 @@ export default function NotesFraisPage() {
           </p>
         </div>
         <div className="flex gap-3">
+          <button
+            onClick={() => exporterNotesExcel({ notes: notesFiltrees, mois: moisFilter, operateur: operateurFilter, statut: statutFilter })}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            title="Exporter en Excel"
+          >
+            <Download className="w-4 h-4" />
+            Export Excel
+          </button>
           <Link
             href="/admin"
             className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
@@ -386,7 +443,17 @@ export default function NotesFraisPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">🏷️ Par catégorie</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-900">🏷️ Par catégorie</h3>
+                <button
+                  onClick={() => exporterStatistiquesCategories(notes)}
+                  className="flex items-center gap-1 px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
+                  title="Exporter stats catégories"
+                >
+                  <Download className="w-3 h-3" />
+                  Excel
+                </button>
+              </div>
               <div className="space-y-3">
                 {stats.parCategorie.map((cat, i) => (
                   <div key={i}>
@@ -407,7 +474,17 @@ export default function NotesFraisPage() {
             </div>
 
             <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">👥 Par opérateur</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-900">👥 Par opérateur</h3>
+                <button
+                  onClick={() => exporterStatistiquesOperateurs(notes)}
+                  className="flex items-center gap-1 px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
+                  title="Exporter stats opérateurs"
+                >
+                  <Download className="w-3 h-3" />
+                  Excel
+                </button>
+              </div>
               <div className="space-y-3">
                 {stats.parOperateur.map((op, i) => (
                   <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded">
@@ -458,7 +535,7 @@ export default function NotesFraisPage() {
 
       {/* Filtres */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Statut</label>
             <select
@@ -487,7 +564,58 @@ export default function NotesFraisPage() {
               ))}
             </select>
           </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Search className="w-4 h-4 inline mr-1" />
+              Recherche
+            </label>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="N°, description, opérateur..."
+              className="w-full px-3 py-2 border rounded-lg"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Action rapide</label>
+            <button
+              onClick={() => {
+                const notesMoisSoumises = notesFiltrees.filter(n => 
+                  n.statut === 'soumise' && 
+                  n.date.startsWith(new Date().toISOString().substring(0, 7))
+                )
+                if (notesMoisSoumises.length === 0) {
+                  alert('Aucune note soumise ce mois')
+                  return
+                }
+                setNotesSelectionnees(notesMoisSoumises.map(n => n.id))
+                setActionMasse('valider')
+                setCommentaireMasse('Validation masse mois en cours')
+                setShowModalMasse(true)
+              }}
+              className="w-full px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium"
+              title="Sélectionner toutes les notes soumises ce mois"
+            >
+              ⚡ Valider mois
+            </button>
+          </div>
         </div>
+        
+        {searchTerm && (
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <Search className="w-4 h-4" />
+            <span>{notesFiltrees.length} résultat{notesFiltrees.length > 1 ? 's' : ''} pour "{searchTerm}"</span>
+            <button
+              onClick={() => setSearchTerm('')}
+              className="text-blue-600 hover:text-blue-800 underline"
+            >
+              Effacer
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Barre actions en masse */}
@@ -552,11 +680,50 @@ export default function NotesFraisPage() {
                 />
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Numéro</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Opérateur</th>
+              <th 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 transition-colors"
+                onClick={() => handleSort('date')}
+                title="Cliquer pour trier"
+              >
+                <div className="flex items-center gap-1">
+                  Date
+                  {sortColumn === 'date' ? (
+                    sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                  ) : (
+                    <ArrowUpDown className="w-3 h-3 opacity-40" />
+                  )}
+                </div>
+              </th>
+              <th 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 transition-colors"
+                onClick={() => handleSort('operateur')}
+                title="Cliquer pour trier"
+              >
+                <div className="flex items-center gap-1">
+                  Opérateur
+                  {sortColumn === 'operateur' ? (
+                    sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                  ) : (
+                    <ArrowUpDown className="w-3 h-3 opacity-40" />
+                  )}
+                </div>
+              </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Catégorie</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Montant TTC</th>
+              <th 
+                className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 transition-colors"
+                onClick={() => handleSort('montant')}
+                title="Cliquer pour trier"
+              >
+                <div className="flex items-center justify-end gap-1">
+                  Montant TTC
+                  {sortColumn === 'montant' ? (
+                    sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                  ) : (
+                    <ArrowUpDown className="w-3 h-3 opacity-40" />
+                  )}
+                </div>
+              </th>
               <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Statut</th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>

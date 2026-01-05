@@ -1,0 +1,842 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { createFactureFournisseur, updateFactureFournisseur, type LigneFactureFournisseur } from '@/lib/firebase/factures-fournisseurs'
+import { getFournisseursActifs, createFournisseur, type Fournisseur } from '@/lib/firebase/fournisseurs'
+import { getAllArticlesStock, type ArticleStock } from '@/lib/firebase/stock-articles'
+import { getComptesActifs, type CompteComptable } from '@/lib/firebase/plan-comptable'
+import { uploadFactureFournisseurPDF } from '@/lib/firebase/storage'
+
+interface LigneForm {
+  id: string
+  type: 'article' | 'manuel'
+  articleStockId?: string
+  designation: string
+  quantite: number
+  prixUnitaireHT: number
+  tauxTVA: number
+  compteComptable: string
+  compteIntitule: string
+  depotDestination: string
+  montantHT: number
+  montantTVA: number
+  montantTTC: number
+}
+
+export default function NouvelleFactureFournisseurPage() {
+  const router = useRouter()
+  const [loading, setLoading] = useState(false)
+  const [loadingData, setLoadingData] = useState(true)
+  const [pdfFile, setPdfFile] = useState<File | null>(null)
+  const [uploadingPdf, setUploadingPdf] = useState(false)
+
+  // Données de référence
+  const [fournisseurs, setFournisseurs] = useState<Fournisseur[]>([])
+  const [articlesStock, setArticlesStock] = useState<ArticleStock[]>([])
+  const [comptes, setComptes] = useState<CompteComptable[]>([])
+  const [depots, setDepots] = useState<string[]>([])
+
+  // Formulaire
+  const [formData, setFormData] = useState({
+    fournisseurId: '',
+    fournisseurNom: '',
+    numeroFournisseur: '',
+    dateFacture: new Date().toISOString().split('T')[0],
+    dateEcheance: '',
+    notes: ''
+  })
+
+  const [lignes, setLignes] = useState<LigneForm[]>([
+    {
+      id: '1',
+      type: 'article',
+      designation: '',
+      quantite: 1,
+      prixUnitaireHT: 0,
+      tauxTVA: 20,
+      compteComptable: '',
+      compteIntitule: '',
+      depotDestination: 'Atelier',
+      montantHT: 0,
+      montantTVA: 0,
+      montantTTC: 0
+    }
+  ])
+
+  // Modal nouveau fournisseur
+  const [showModalFournisseur, setShowModalFournisseur] = useState(false)
+  const [newFournisseur, setNewFournisseur] = useState({
+    nom: '',
+    siret: '',
+    telephone: '',
+    email: ''
+  })
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  useEffect(() => {
+    // Calculer date échéance à 30 jours
+    if (formData.dateFacture) {
+      const date = new Date(formData.dateFacture)
+      date.setDate(date.getDate() + 30)
+      setFormData(prev => ({
+        ...prev,
+        dateEcheance: date.toISOString().split('T')[0]
+      }))
+    }
+  }, [formData.dateFacture])
+
+  async function loadData() {
+    setLoadingData(true)
+    try {
+      const [fournisseursData, articlesData, comptesData] = await Promise.all([
+        getFournisseursActifs(),
+        getAllArticlesStock(),
+        getComptesActifs()
+      ])
+
+      setFournisseurs(fournisseursData)
+      setArticlesStock(articlesData)
+      setComptes(comptesData)
+
+      // Extraire les dépôts depuis articles_stock
+      const depotsSet = new Set<string>()
+      articlesData.forEach(article => {
+        Object.keys(article.stockParDepot || {}).forEach(depot => {
+          depotsSet.add(depot)
+        })
+      })
+      setDepots(['Atelier', ...Array.from(depotsSet).filter(d => d !== 'Atelier')])
+    } catch (error) {
+      console.error('Erreur chargement données:', error)
+      alert('Erreur lors du chargement des données')
+    } finally {
+      setLoadingData(false)
+    }
+  }
+
+  function handleFournisseurChange(fournisseurId: string) {
+    const fournisseur = fournisseurs.find(f => f.id === fournisseurId)
+    setFormData({
+      ...formData,
+      fournisseurId,
+      fournisseurNom: fournisseur?.nom || ''
+    })
+  }
+
+  function handleLigneTypeChange(ligneId: string, type: 'article' | 'manuel') {
+    setLignes(lignes.map(ligne => {
+      if (ligne.id === ligneId) {
+        return {
+          ...ligne,
+          type,
+          articleStockId: undefined,
+          designation: '',
+          compteComptable: '',
+          compteIntitule: '',
+          prixUnitaireHT: 0
+        }
+      }
+      return ligne
+    }))
+  }
+
+  function handleArticleChange(ligneId: string, articleId: string) {
+    const article = articlesStock.find(a => a.id === articleId)
+    if (!article) return
+
+    setLignes(lignes.map(ligne => {
+      if (ligne.id === ligneId) {
+        const updatedLigne = {
+          ...ligne,
+          articleStockId: articleId,
+          designation: article.description,
+          prixUnitaireHT: article.prixUnitaire || 0,
+          compteComptable: article.compteComptable || '',
+          compteIntitule: article.compteIntitule || ''
+        }
+        return calculerMontantsLigne(updatedLigne)
+      }
+      return ligne
+    }))
+  }
+
+  function handleCompteChange(ligneId: string, compteNumero: string) {
+    const compte = comptes.find(c => c.numero === compteNumero)
+    if (!compte) return
+
+    setLignes(lignes.map(ligne => {
+      if (ligne.id === ligneId) {
+        return {
+          ...ligne,
+          compteComptable: compte.numero,
+          compteIntitule: compte.intitule
+        }
+      }
+      return ligne
+    }))
+  }
+
+  function handleLigneChange(ligneId: string, field: string, value: any) {
+    setLignes(lignes.map(ligne => {
+      if (ligne.id === ligneId) {
+        const updatedLigne = { ...ligne, [field]: value }
+        return calculerMontantsLigne(updatedLigne)
+      }
+      return ligne
+    }))
+  }
+
+  function calculerMontantsLigne(ligne: LigneForm): LigneForm {
+    const montantHT = ligne.quantite * ligne.prixUnitaireHT
+    const montantTVA = montantHT * (ligne.tauxTVA / 100)
+    const montantTTC = montantHT + montantTVA
+
+    return {
+      ...ligne,
+      montantHT: Number(montantHT.toFixed(2)),
+      montantTVA: Number(montantTVA.toFixed(2)),
+      montantTTC: Number(montantTTC.toFixed(2))
+    }
+  }
+
+  function ajouterLigne() {
+    const newId = (Math.max(...lignes.map(l => parseInt(l.id))) + 1).toString()
+    setLignes([
+      ...lignes,
+      {
+        id: newId,
+        type: 'article',
+        designation: '',
+        quantite: 1,
+        prixUnitaireHT: 0,
+        tauxTVA: 20,
+        compteComptable: '',
+        compteIntitule: '',
+        depotDestination: 'Atelier',
+        montantHT: 0,
+        montantTVA: 0,
+        montantTTC: 0
+      }
+    ])
+  }
+
+  function supprimerLigne(ligneId: string) {
+    if (lignes.length === 1) {
+      alert('Impossible de supprimer la dernière ligne')
+      return
+    }
+    setLignes(lignes.filter(l => l.id !== ligneId))
+  }
+
+  async function handleCreateFournisseur() {
+    if (!newFournisseur.nom.trim()) {
+      alert('Le nom du fournisseur est obligatoire')
+      return
+    }
+
+    try {
+      const id = await createFournisseur({
+        nom: newFournisseur.nom,
+        siret: newFournisseur.siret,
+        telephone: newFournisseur.telephone,
+        email: newFournisseur.email
+      })
+
+      // Recharger les fournisseurs
+      const fournisseursData = await getFournisseursActifs()
+      setFournisseurs(fournisseursData)
+
+      // Sélectionner le nouveau fournisseur
+      setFormData({
+        ...formData,
+        fournisseurId: id,
+        fournisseurNom: newFournisseur.nom
+      })
+
+      // Fermer modal
+      setShowModalFournisseur(false)
+      setNewFournisseur({ nom: '', siret: '', telephone: '', email: '' })
+    } catch (error) {
+      alert('Erreur lors de la création du fournisseur')
+    }
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+
+    // Validation
+    if (!formData.fournisseurNom) {
+      alert('Veuillez sélectionner un fournisseur')
+      return
+    }
+
+    if (!formData.numeroFournisseur) {
+      alert('Veuillez saisir le numéro de facture fournisseur')
+      return
+    }
+
+    if (lignes.some(l => !l.designation || !l.compteComptable)) {
+      alert('Toutes les lignes doivent avoir une désignation et un compte comptable')
+      return
+    }
+
+    if (lignes.some(l => l.quantite <= 0 || l.prixUnitaireHT < 0)) {
+      alert('Quantités et prix doivent être valides')
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      const lignesFacture: LigneFactureFournisseur[] = lignes.map(ligne => ({ id: crypto.randomUUID(),
+        articleStockId: ligne.type === 'article' ? ligne.articleStockId : undefined,
+        articleCode: ligne.type === 'article' && ligne.articleStockId 
+          ? articlesStock.find(a => a.id === ligne.articleStockId)?.code 
+          : undefined,
+        designation: ligne.designation,
+        quantite: ligne.quantite,
+        prixUnitaireHT: ligne.prixUnitaireHT,
+        tauxTVA: ligne.tauxTVA,
+        montantHT: ligne.montantHT,
+        montantTVA: ligne.montantTVA,
+        montantTTC: ligne.montantTTC,
+        compteComptable: ligne.compteComptable,
+        compteIntitule: ligne.compteIntitule,
+        depotDestination: ligne.depotDestination,
+        genererMouvementStock: ligne.type === 'article'
+      }))
+
+      // 1. Créer la facture
+      const id = await createFactureFournisseur({
+        fournisseur: formData.fournisseurNom,
+        siretFournisseur: formData.fournisseurId 
+          ? fournisseurs.find(f => f.id === formData.fournisseurId)?.siret 
+          : undefined,
+        numeroFournisseur: formData.numeroFournisseur,
+        dateFacture: formData.dateFacture,
+        dateEcheance: formData.dateEcheance,
+        lignes: lignesFacture,
+        notes: formData.notes,
+        statut: 'brouillon',
+        createdBy: localStorage.getItem('user_name') || 'Inconnu'
+      })
+
+      // 2. Upload PDF si présent
+      if (pdfFile) {
+        setUploadingPdf(true)
+        try {
+          const pdfURL = await uploadFactureFournisseurPDF(pdfFile, id)
+          
+          // 3. Mettre à jour la facture avec l'URL du PDF
+          await updateFactureFournisseur(id, { pdfURL })
+        } catch (pdfError) {
+          console.error('Erreur upload PDF:', pdfError)
+          alert('Facture créée mais erreur lors de l\'upload du PDF. Vous pouvez le rajouter en modification.')
+        } finally {
+          setUploadingPdf(false)
+        }
+      }
+
+      alert('Facture fournisseur créée avec succès')
+      router.push(`/admin/comptabilite/factures-fournisseurs/${id}`)
+    } catch (error: any) {
+      console.error('Erreur création facture:', error)
+      alert(error.message || 'Erreur lors de la création de la facture')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const totaux = lignes.reduce((acc, ligne) => ({
+    ht: acc.ht + ligne.montantHT,
+    tva: acc.tva + ligne.montantTVA,
+    ttc: acc.ttc + ligne.montantTTC
+  }), { ht: 0, tva: 0, ttc: 0 })
+
+  if (loadingData) {
+    return (
+      <div className="p-8">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
+          <div className="h-64 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-8">
+      {/* Header */}
+      <div className="mb-6">
+        <Link 
+          href="/admin/comptabilite/factures-fournisseurs"
+          className="text-blue-600 hover:text-blue-800 flex items-center gap-2 mb-4"
+        >
+          ← Retour aux factures
+        </Link>
+        <h1 className="text-3xl font-bold text-gray-900">Nouvelle Facture Fournisseur</h1>
+        <p className="text-gray-600 mt-1">Module Comptabilité - Phase 3</p>
+      </div>
+
+      <form onSubmit={handleSubmit}>
+        {/* Informations générales */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Informations générales</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Fournisseur */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Fournisseur *
+              </label>
+              <div className="flex gap-2">
+                <select
+                  value={formData.fournisseurId}
+                  onChange={(e) => handleFournisseurChange(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  required
+                >
+                  <option value="">Sélectionner un fournisseur</option>
+                  {fournisseurs.map(f => (
+                    <option key={f.id} value={f.id}>{f.nom}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setShowModalFournisseur(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  + Nouveau
+                </button>
+              </div>
+            </div>
+
+            {/* N° Facture Fournisseur */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                N° Facture Fournisseur *
+              </label>
+              <input
+                type="text"
+                value={formData.numeroFournisseur}
+                onChange={(e) => setFormData({ ...formData, numeroFournisseur: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                placeholder="Ex: FAC-2026-001"
+                required
+              />
+            </div>
+
+            {/* Date Facture */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Date Facture *
+              </label>
+              <input
+                type="date"
+                value={formData.dateFacture}
+                onChange={(e) => setFormData({ ...formData, dateFacture: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                required
+              />
+            </div>
+
+            {/* Date Échéance */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Date Échéance *
+              </label>
+              <input
+                type="date"
+                value={formData.dateEcheance}
+                onChange={(e) => setFormData({ ...formData, dateEcheance: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Notes
+            </label>
+            <textarea
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              rows={3}
+              placeholder="Notes internes..."
+            />
+          </div>
+
+          {/* Upload PDF */}
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              📄 PDF Facture Fournisseur
+            </label>
+            <input
+              type="file"
+              accept=".pdf"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) {
+                  if (file.type !== 'application/pdf') {
+                    alert('Seuls les fichiers PDF sont acceptés')
+                    e.target.value = ''
+                    return
+                  }
+                  if (file.size > 10 * 1024 * 1024) { // 10 MB max
+                    alert('Le fichier ne doit pas dépasser 10 MB')
+                    e.target.value = ''
+                    return
+                  }
+                  setPdfFile(file)
+                }
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            />
+            {pdfFile && (
+              <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">
+                <span className="text-green-600">✓</span>
+                <span>{pdfFile.name}</span>
+                <span className="text-gray-400">({(pdfFile.size / 1024).toFixed(0)} KB)</span>
+                <button
+                  type="button"
+                  onClick={() => setPdfFile(null)}
+                  className="text-red-600 hover:text-red-800 ml-2"
+                >
+                  ✕ Retirer
+                </button>
+              </div>
+            )}
+            <p className="mt-1 text-xs text-gray-500">
+              Format accepté : PDF • Taille max : 10 MB
+            </p>
+          </div>
+        </div>
+
+        {/* Lignes de facture */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-gray-900">Lignes de facture</h2>
+            <button
+              type="button"
+              onClick={ajouterLigne}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+            >
+              + Ajouter ligne
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            {lignes.map((ligne, index) => (
+              <div key={ligne.id} className="border border-gray-200 rounded-lg p-4">
+                <div className="flex justify-between items-start mb-4">
+                  <span className="text-sm font-medium text-gray-700">Ligne {index + 1}</span>
+                  {lignes.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => supprimerLigne(ligne.id)}
+                      className="text-red-600 hover:text-red-800 text-sm"
+                    >
+                      🗑️ Supprimer
+                    </button>
+                  )}
+                </div>
+
+                {/* Toggle Article / Manuel */}
+                <div className="flex gap-4 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => handleLigneTypeChange(ligne.id, 'article')}
+                    className={`flex-1 py-2 rounded-lg font-medium ${
+                      ligne.type === 'article'
+                        ? 'bg-orange-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    📦 Article Stock
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleLigneTypeChange(ligne.id, 'manuel')}
+                    className={`flex-1 py-2 rounded-lg font-medium ${
+                      ligne.type === 'manuel'
+                        ? 'bg-orange-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    ✏️ Saisie Manuelle
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Article Stock OU Désignation */}
+                  {ligne.type === 'article' ? (
+                    <div className="lg:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Article Stock *
+                      </label>
+                      <select
+                        value={ligne.articleStockId || ''}
+                        onChange={(e) => handleArticleChange(ligne.id, e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        required
+                      >
+                        <option value="">Sélectionner un article</option>
+                        {articlesStock.filter(a => a.actif).map(article => (
+                          <option key={article.id} value={article.id}>
+                            {article.code} - {article.description}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : (
+                    <div className="lg:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Désignation *
+                      </label>
+                      <input
+                        type="text"
+                        value={ligne.designation}
+                        onChange={(e) => handleLigneChange(ligne.id, 'designation', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        placeholder="Description de la ligne"
+                        required
+                      />
+                    </div>
+                  )}
+
+                  {/* Quantité */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Quantité *
+                    </label>
+                    <input
+                      type="number"
+                      value={ligne.quantite}
+                      onChange={(e) => handleLigneChange(ligne.id, 'quantite', parseFloat(e.target.value))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      min="0.01"
+                      step="0.01"
+                      required
+                    />
+                  </div>
+
+                  {/* Prix unitaire HT */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Prix unitaire HT *
+                    </label>
+                    <input
+                      type="number"
+                      value={ligne.prixUnitaireHT}
+                      onChange={(e) => handleLigneChange(ligne.id, 'prixUnitaireHT', parseFloat(e.target.value))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      min="0"
+                      step="0.01"
+                      required
+                    />
+                  </div>
+
+                  {/* Compte Comptable */}
+                  <div className="lg:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Compte Comptable *
+                    </label>
+                    <select
+                      value={ligne.compteComptable}
+                      onChange={(e) => handleCompteChange(ligne.id, e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      required
+                      disabled={ligne.type === 'article' && !!ligne.articleStockId}
+                    >
+                      <option value="">Sélectionner un compte</option>
+                      {comptes.filter(c => c.actif).map(compte => (
+                        <option key={compte.numero} value={compte.numero}>
+                          {compte.numero} - {compte.intitule}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* TVA */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      TVA (%) *
+                    </label>
+                    <select
+                      value={ligne.tauxTVA}
+                      onChange={(e) => handleLigneChange(ligne.id, 'tauxTVA', parseFloat(e.target.value))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      required
+                    >
+                      <option value={20}>20%</option>
+                      <option value={10}>10%</option>
+                      <option value={5.5}>5.5%</option>
+                      <option value={0}>0%</option>
+                    </select>
+                  </div>
+
+                  {/* Dépôt */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Dépôt *
+                    </label>
+                    <select
+                      value={ligne.depotDestination}
+                      onChange={(e) => handleLigneChange(ligne.id, 'depotDestination', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      required
+                    >
+                      {depots.map(depot => (
+                        <option key={depot} value={depot}>{depot}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Montants calculés */}
+                <div className="mt-4 pt-4 border-t border-gray-200 flex justify-end gap-6 text-sm">
+                  <div>
+                    <span className="text-gray-600">Montant HT:</span>
+                    <span className="ml-2 font-medium">{ligne.montantHT.toFixed(2)} €</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">TVA:</span>
+                    <span className="ml-2 font-medium">{ligne.montantTVA.toFixed(2)} €</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Montant TTC:</span>
+                    <span className="ml-2 font-bold text-lg">{ligne.montantTTC.toFixed(2)} €</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Totaux */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Totaux</h2>
+          <div className="space-y-2">
+            <div className="flex justify-between text-lg">
+              <span className="text-gray-700">Total HT:</span>
+              <span className="font-medium">{totaux.ht.toFixed(2)} €</span>
+            </div>
+            <div className="flex justify-between text-lg">
+              <span className="text-gray-700">Total TVA:</span>
+              <span className="font-medium">{totaux.tva.toFixed(2)} €</span>
+            </div>
+            <div className="flex justify-between text-2xl font-bold pt-2 border-t border-gray-300">
+              <span className="text-gray-900">Total TTC:</span>
+              <span className="text-orange-600">{totaux.ttc.toFixed(2)} €</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex justify-end gap-4">
+          <Link
+            href="/admin/comptabilite/factures-fournisseurs"
+            className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium"
+          >
+            Annuler
+          </Link>
+          <button
+            type="submit"
+            disabled={loading || uploadingPdf}
+            className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {uploadingPdf ? '📤 Upload PDF...' : loading ? 'Enregistrement...' : '💾 Enregistrer en brouillon'}
+          </button>
+        </div>
+      </form>
+
+      {/* Modal Nouveau Fournisseur */}
+      {showModalFournisseur && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-xl font-bold mb-4">Nouveau Fournisseur</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nom *
+                </label>
+                <input
+                  type="text"
+                  value={newFournisseur.nom}
+                  onChange={(e) => setNewFournisseur({ ...newFournisseur, nom: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  placeholder="Nom du fournisseur"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  SIRET
+                </label>
+                <input
+                  type="text"
+                  value={newFournisseur.siret}
+                  onChange={(e) => setNewFournisseur({ ...newFournisseur, siret: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  placeholder="SIRET"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Téléphone
+                </label>
+                <input
+                  type="tel"
+                  value={newFournisseur.telephone}
+                  onChange={(e) => setNewFournisseur({ ...newFournisseur, telephone: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  placeholder="Téléphone"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={newFournisseur.email}
+                  onChange={(e) => setNewFournisseur({ ...newFournisseur, email: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  placeholder="Email"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setShowModalFournisseur(false)}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateFournisseur}
+                className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+              >
+                Créer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

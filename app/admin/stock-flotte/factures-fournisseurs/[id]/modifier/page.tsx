@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { type FactureFournisseur, type LigneFactureFournisseur, type ArticleStock } from '@/lib/types/stock-flotte'
+import { type FactureFournisseur, type LigneFactureFournisseur } from '@/lib/types/stock-flotte'
+import type { ArticleStock } from '@/lib/firebase/stock-articles'
 import { 
   getFactureFournisseurById,
   updateFactureFournisseur

@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getArticleStock, desactiverArticleStock, getMouvementsStockByArticle } from '@/lib/firebase'
-import type { ArticleStock, MouvementStock } from '@/lib/types/stock-flotte'
+import type { ArticleStock } from '@/lib/firebase/stock-articles'
+import type { MouvementStock } from '@/lib/types/stock-flotte'
 
 export default function FicheArticlePage({ params }: { params: { id: string } }) {
   const router = useRouter()

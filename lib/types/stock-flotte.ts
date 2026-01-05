@@ -66,6 +66,12 @@ export interface MouvementStock {
   equipementId?: string           // Si lié à équipement
   interventionId?: string         // Si lié à intervention
   factureId?: string              // Si lié à facture fournisseur
+  
+  // 🆕 PHASE 3 - Traçabilité complète
+  sourceType?: 'facture_fournisseur' | 'intervention' | 'transfert' | 'manuel'
+  sourceId?: string               // ID du document source (facture, intervention...)
+  ligneFactureId?: string         // ID de la ligne dans la facture fournisseur
+  
   notes?: string
   createdAt: string
 }
@@ -83,6 +89,12 @@ export interface MouvementStockInput {
   equipementId?: string
   interventionId?: string
   factureId?: string
+  
+  // 🆕 PHASE 3 - Traçabilité complète
+  sourceType?: 'facture_fournisseur' | 'intervention' | 'transfert' | 'manuel'
+  sourceId?: string
+  ligneFactureId?: string
+  
   notes?: string
 }
 

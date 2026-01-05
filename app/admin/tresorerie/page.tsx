@@ -11,7 +11,8 @@ import {
   Upload,
   Plus,
   Link as LinkIcon,
-  Building2
+  Building2,
+  FileText
 } from 'lucide-react'
 import {
   getAllComptesBancaires,
@@ -85,6 +86,25 @@ export default function TresoreriePage() {
     })
   }
 
+  const handleExportExcel = async () => {
+    try {
+      // Obtenir le premier et dernier jour du mois en cours
+      const now = new Date()
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+      
+      const dateDebut = firstDay.toISOString().split('T')[0]
+      const dateFin = lastDay.toISOString().split('T')[0]
+      
+      // Télécharger le fichier
+      const url = `/api/tresorerie/export-excel?dateDebut=${dateDebut}&dateFin=${dateFin}`
+      window.open(url, '_blank')
+    } catch (error) {
+      console.error('Erreur export Excel:', error)
+      alert('Erreur lors de l\'export')
+    }
+  }
+
   if (loading) {
     return (
       <div className="p-8">
@@ -114,6 +134,13 @@ export default function TresoreriePage() {
             <Building2 className="w-4 h-4" />
             Comptes
           </Link>
+          <button
+            onClick={handleExportExcel}
+            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+          >
+            <FileText className="w-4 h-4" />
+            Export Excel
+          </button>
           <Link
             href="/admin/tresorerie/import-csv"
             className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"

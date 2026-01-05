@@ -1,0 +1,377 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import dynamic from 'next/dynamic'
+import { 
+  getStatistiquesStock,
+  getStatistiquesFlotte,
+  getArticlesEnAlerte,
+  getDerniersMouvements,
+  getStatistiquesMaintenanceMois
+} from '@/lib/firebase'
+import type { ArticleStock, MouvementStock } from '@/lib/types/stock-flotte'
+
+// Import dynamique des composants graphiques (client-side only)
+const GraphiqueConsommation = dynamic(() => import('@/components/stock-flotte/GraphiqueConsommation'), {
+  ssr: false,
+  loading: () => <div className="h-80 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900"></div></div>
+})
+
+const GraphiqueCoutsMaintenance = dynamic(() => import('@/components/stock-flotte/GraphiqueCoutsMaintenance'), {
+  ssr: false,
+  loading: () => <div className="h-80 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900"></div></div>
+})
+
+const PrevisionsReapprovisionnement = dynamic(() => import('@/components/stock-flotte/PrevisionsReapprovisionnement'), {
+  ssr: false,
+  loading: () => <div className="h-40 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900"></div></div>
+})
+
+export default function StockFlotteDashboard() {
+  const [loading, setLoading] = useState(true)
+  const [statsStock, setStatsStock] = useState<any>(null)
+  const [statsFlotte, setStatsFlotte] = useState<any>(null)
+  const [statsMaintenance, setStatsMaintenance] = useState<any>(null)
+  const [alertes, setAlertes] = useState<ArticleStock[]>([])
+  const [derniersMouvements, setDerniersMouvements] = useState<MouvementStock[]>([])
+  const [ongletActif, setOngletActif] = useState<'overview' | 'consommation' | 'maintenance' | 'previsions'>('overview')
+
+  useEffect(() => {
+    loadDashboardData()
+  }, [])
+
+  async function loadDashboardData() {
+    try {
+      setLoading(true)
+      
+      const [stock, flotte, maintenance, articlesAlerte, mouvements] = await Promise.all([
+        getStatistiquesStock(),
+        getStatistiquesFlotte(),
+        getStatistiquesMaintenanceMois(),
+        getArticlesEnAlerte(),
+        getDerniersMouvements(5)
+      ])
+      
+      setStatsStock(stock)
+      setStatsFlotte(flotte)
+      setStatsMaintenance(maintenance)
+      setAlertes(articlesAlerte)
+      setDerniersMouvements(mouvements)
+    } catch (error) {
+      console.error('Erreur chargement dashboard:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Chargement du dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Stock & Flotte</h1>
+        <p className="text-gray-600 mt-2">Gestion du stock et de la flotte d'équipements</p>
+      </div>
+
+      {/* KPIs principaux */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Valeur stock */}
+        <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Valeur Stock</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                {statsStock?.valeurTotaleStock?.toLocaleString('fr-FR', { 
+                  style: 'currency', 
+                  currency: 'EUR' 
+                })}
+              </p>
+            </div>
+            <div className="bg-blue-100 p-3 rounded-full">
+              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+            </div>
+          </div>
+          <Link href="/admin/stock-flotte/articles" className="text-sm text-blue-600 hover:text-blue-800 mt-4 inline-block">
+            Voir les articles →
+          </Link>
+        </div>
+
+        {/* Alertes stock */}
+        <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Alertes Stock</p>
+              <p className="text-2xl font-bold text-red-600 mt-1">
+                {statsStock?.nombreAlertes || 0}
+              </p>
+            </div>
+            <div className="bg-red-100 p-3 rounded-full">
+              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+          </div>
+          <Link href="/admin/stock-flotte/alertes" className="text-sm text-red-600 hover:text-red-800 mt-4 inline-block">
+            Voir les alertes →
+          </Link>
+        </div>
+
+        {/* Équipements */}
+        <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Équipements</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                {statsFlotte?.nombreEquipements || 0}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {statsFlotte?.nombreVehicules || 0} véhicules · {statsFlotte?.nombreAccessoires || 0} accessoires
+              </p>
+            </div>
+            <div className="bg-green-100 p-3 rounded-full">
+              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+          <Link href="/admin/stock-flotte/equipements" className="text-sm text-green-600 hover:text-green-800 mt-4 inline-block">
+            Voir les équipements →
+          </Link>
+        </div>
+
+        {/* Coût maintenance mois */}
+        <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Maintenance (mois)</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                {statsMaintenance?.coutMaintenanceMois?.toLocaleString('fr-FR', { 
+                  style: 'currency', 
+                  currency: 'EUR' 
+                }) || '0 €'}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {statsMaintenance?.nombreInterventionsMois || 0} interventions
+              </p>
+            </div>
+            <div className="bg-purple-100 p-3 rounded-full">
+              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+          </div>
+          <Link href="/admin/stock-flotte/interventions" className="text-sm text-purple-600 hover:text-purple-800 mt-4 inline-block">
+            Voir la maintenance →
+          </Link>
+        </div>
+      </div>
+
+      {/* Actions rapides */}
+      <div className="bg-white rounded-lg shadow p-6 border border-gray-200 mb-8">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Actions rapides</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Link 
+            href="/admin/stock-flotte/mouvements/nouveau"
+            className="flex flex-col items-center p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition"
+          >
+            <svg className="w-8 h-8 text-blue-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            <span className="text-sm font-medium text-gray-900">Nouveau mouvement</span>
+          </Link>
+
+          <Link 
+            href="/admin/stock-flotte/interventions/nouveau"
+            className="flex flex-col items-center p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition"
+          >
+            <svg className="w-8 h-8 text-purple-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            </svg>
+            <span className="text-sm font-medium text-gray-900">Nouvelle intervention</span>
+          </Link>
+
+          <Link 
+            href="/admin/stock-flotte/articles/nouveau"
+            className="flex flex-col items-center p-4 bg-green-50 hover:bg-green-100 rounded-lg transition"
+          >
+            <svg className="w-8 h-8 text-green-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+            <span className="text-sm font-medium text-gray-900">Nouvel article</span>
+          </Link>
+
+          <Link 
+            href="/admin/stock-flotte/equipements/nouveau"
+            className="flex flex-col items-center p-4 bg-yellow-50 hover:bg-yellow-100 rounded-lg transition"
+          >
+            <svg className="w-8 h-8 text-yellow-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-sm font-medium text-gray-900">Nouvel équipement</span>
+          </Link>
+        </div>
+      </div>
+
+      {/* Onglets */}
+      <div className="bg-white rounded-lg shadow border border-gray-200 mb-8">
+        <div className="border-b border-gray-200">
+          <nav className="flex -mb-px">
+            <button
+              onClick={() => setOngletActif('overview')}
+              className={`px-6 py-3 text-sm font-medium border-b-2 transition ${
+                ongletActif === 'overview'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Vue d'ensemble
+            </button>
+            <button
+              onClick={() => setOngletActif('consommation')}
+              className={`px-6 py-3 text-sm font-medium border-b-2 transition ${
+                ongletActif === 'consommation'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              📊 Consommation
+            </button>
+            <button
+              onClick={() => setOngletActif('maintenance')}
+              className={`px-6 py-3 text-sm font-medium border-b-2 transition ${
+                ongletActif === 'maintenance'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              🔧 Maintenance
+            </button>
+            <button
+              onClick={() => setOngletActif('previsions')}
+              className={`px-6 py-3 text-sm font-medium border-b-2 transition ${
+                ongletActif === 'previsions'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              🔮 Prévisions
+            </button>
+          </nav>
+        </div>
+
+        <div className="p-6">
+          {/* Onglet Vue d'ensemble */}
+          {ongletActif === 'overview' && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Alertes stock */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900">Alertes Stock</h2>
+                  <Link href="/admin/stock-flotte/alertes" className="text-sm text-blue-600 hover:text-blue-800">
+                    Tout voir →
+                  </Link>
+                </div>
+                {alertes.length === 0 ? (
+                  <p className="text-sm text-gray-500 text-center py-4">✅ Aucune alerte</p>
+                ) : (
+                  <div className="space-y-3">
+                    {alertes.slice(0, 5).map(article => (
+                      <div key={article.id} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                        <div className="flex-1">
+                          <p className="font-medium text-sm text-gray-900">{article.code}</p>
+                          <p className="text-xs text-gray-600">{article.description}</p>
+                          <p className="text-xs text-red-600 mt-1">
+                            Stock: {article.stockTotal} / Min: {article.stockMin}
+                          </p>
+                        </div>
+                        <Link 
+                          href={`/admin/stock-flotte/articles/${article.id}`}
+                          className="text-sm text-blue-600 hover:text-blue-800 ml-4"
+                        >
+                          Voir
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Derniers mouvements */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900">Derniers Mouvements</h2>
+                  <Link href="/admin/stock-flotte/mouvements" className="text-sm text-blue-600 hover:text-blue-800">
+                    Tout voir →
+                  </Link>
+                </div>
+                {derniersMouvements.length === 0 ? (
+                  <p className="text-sm text-gray-500 text-center py-4">Aucun mouvement</p>
+                ) : (
+                  <div className="space-y-3">
+                    {derniersMouvements.map(mouvement => (
+                      <div key={mouvement.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-1 text-xs rounded font-medium ${
+                              mouvement.type === 'entree' ? 'bg-green-100 text-green-800' :
+                              mouvement.type === 'sortie' ? 'bg-red-100 text-red-800' :
+                              'bg-blue-100 text-blue-800'
+                            }`}>
+                              {mouvement.type}
+                            </span>
+                            <p className="text-sm font-medium text-gray-900">{mouvement.articleCode}</p>
+                          </div>
+                          <p className="text-xs text-gray-600 mt-1">
+                            {mouvement.quantite} unités · {new Date(mouvement.date).toLocaleDateString('fr-FR')}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Onglet Consommation */}
+          {ongletActif === 'consommation' && (
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Consommation des articles sur 6 mois
+              </h3>
+              <GraphiqueConsommation nombreMois={6} />
+            </div>
+          )}
+
+          {/* Onglet Maintenance */}
+          {ongletActif === 'maintenance' && (
+            <div>
+              <GraphiqueCoutsMaintenance nombreMois={6} />
+            </div>
+          )}
+
+          {/* Onglet Prévisions */}
+          {ongletActif === 'previsions' && (
+            <div>
+              <PrevisionsReapprovisionnement />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}

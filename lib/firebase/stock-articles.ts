@@ -11,9 +11,43 @@ import {
   where,
   orderBy 
 } from 'firebase/firestore'
-import type { ArticleStock, ArticleStockInput, Depot } from '@/lib/types/stock-flotte'
 
 const COLLECTION = 'articles_stock'
+
+/**
+ * Interface Article Stock avec comptes comptables
+ */
+export interface ArticleStock {
+  id: string
+  code: string
+  description: string
+  fournisseur: string
+  prixUnitaire: number
+  stockParDepot: { [depot: string]: number }
+  stockTotal: number
+  stockMin: number
+  equipementsAffectes: string[]
+  photoUrl?: string
+  actif: boolean
+  compteComptable?: string      // 🆕 NOUVEAU - Numéro compte (ex: "6063")
+  compteIntitule?: string        // 🆕 NOUVEAU - Intitulé compte (ex: "Fournitures d'entretien")
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ArticleStockInput {
+  code: string
+  description: string
+  fournisseur: string
+  prixUnitaire: number
+  stockParDepot?: { [depot: string]: number }
+  stockMin?: number
+  equipementsAffectes?: string[]
+  photoUrl?: string
+  actif?: boolean
+  compteComptable?: string      // 🆕 NOUVEAU
+  compteIntitule?: string        // 🆕 NOUVEAU
+}
 
 /**
  * Calculer le stock total à partir des stocks par dépôt
@@ -38,7 +72,8 @@ export async function createArticleStock(data: ArticleStockInput): Promise<strin
       'Semi Remorque': data.stockParDepot?.['Semi Remorque'] || 0
     }
     
-    const article: Omit<ArticleStock, 'id'> = {
+    // Nettoyer les undefined (Firebase ne les accepte pas)
+    const cleanData = Object.entries({
       code: data.code.toUpperCase(),
       description: data.description,
       fournisseur: data.fournisseur,
@@ -47,13 +82,20 @@ export async function createArticleStock(data: ArticleStockInput): Promise<strin
       stockTotal: calculerStockTotal(stockParDepot),
       stockMin: data.stockMin || 0,
       equipementsAffectes: data.equipementsAffectes || [],
-      photoUrl: data.photoUrl || undefined,
+      photoUrl: data.photoUrl,
       actif: data.actif !== undefined ? data.actif : true,
+      compteComptable: data.compteComptable,
+      compteIntitule: data.compteIntitule,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
-    }
+    }).reduce((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = value
+      }
+      return acc
+    }, {} as any)
     
-    await setDoc(doc(db, COLLECTION, articleId), article)
+    await setDoc(doc(db, COLLECTION, articleId), cleanData)
     return articleId
   } catch (error) {
     console.error('Erreur création article stock:', error)
@@ -103,67 +145,31 @@ export async function getArticleStockById(id: string): Promise<ArticleStock | nu
 }
 
 /**
- * Récupérer les articles en alerte (stock < minimum)
- */
-export async function getArticlesEnAlerte(): Promise<ArticleStock[]> {
-  try {
-    const articles = await getAllArticlesStock()
-    return articles.filter(article => article.stockTotal < article.stockMin && article.actif)
-  } catch (error) {
-    console.error('Erreur récupération articles en alerte:', error)
-    throw error
-  }
-}
-
-/**
- * Récupérer les articles par fournisseur
- */
-export async function getArticlesParFournisseur(fournisseur: string): Promise<ArticleStock[]> {
-  try {
-    const articlesRef = collection(db, COLLECTION)
-    const q = query(
-      articlesRef, 
-      where('fournisseur', '==', fournisseur),
-      orderBy('code', 'asc')
-    )
-    const snapshot = await getDocs(q)
-    
-    return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    } as ArticleStock))
-  } catch (error) {
-    console.error('Erreur récupération articles par fournisseur:', error)
-    throw error
-  }
-}
-
-/**
  * Mettre à jour un article stock
  */
 export async function updateArticleStock(
-  id: string, 
-  data: Partial<ArticleStockInput>
+  id: string,
+  updates: Partial<ArticleStockInput>
 ): Promise<void> {
   try {
-    const articleRef = doc(db, COLLECTION, id)
-    
-    const updates: any = {
-      ...data,
+    // Nettoyer les undefined
+    const cleanUpdates = Object.entries({
+      ...updates,
       updatedAt: new Date().toISOString()
-    }
+    }).reduce((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = value
+      }
+      return acc
+    }, {} as any)
     
-    // Normaliser le code si présent
-    if (updates.code) {
-      updates.code = updates.code.toUpperCase()
-    }
-    
-    // Recalculer stock total si stock par dépôt modifié
+    // Recalculer stock total si stockParDepot modifié
     if (updates.stockParDepot) {
-      updates.stockTotal = calculerStockTotal(updates.stockParDepot)
+      cleanUpdates.stockTotal = calculerStockTotal(updates.stockParDepot)
     }
     
-    await updateDoc(articleRef, updates)
+    const articleRef = doc(db, COLLECTION, id)
+    await updateDoc(articleRef, cleanUpdates)
   } catch (error) {
     console.error('Erreur mise à jour article stock:', error)
     throw error
@@ -171,17 +177,17 @@ export async function updateArticleStock(
 }
 
 /**
- * Mettre à jour le stock d'un dépôt spécifique
+ * Mettre à jour le stock d'un dépôt
  */
 export async function updateStockDepot(
   articleId: string,
-  depot: Depot,
+  depot: string,
   nouvelleQuantite: number
 ): Promise<void> {
   try {
     const article = await getArticleStockById(articleId)
     if (!article) {
-      throw new Error('Article non trouvé')
+      throw new Error('Article introuvable')
     }
     
     const nouveauStockParDepot = {
@@ -199,87 +205,12 @@ export async function updateStockDepot(
 }
 
 /**
- * Ajouter/Retirer du stock (utilisé par les mouvements)
- */
-export async function ajusterStock(
-  articleId: string,
-  depot: Depot,
-  quantite: number  // Positif = ajout, Négatif = retrait
-): Promise<void> {
-  try {
-    const article = await getArticleStockById(articleId)
-    if (!article) {
-      throw new Error('Article non trouvé')
-    }
-    
-    const stockActuel = article.stockParDepot[depot]
-    const nouveauStock = stockActuel + quantite
-    
-    if (nouveauStock < 0) {
-      throw new Error(`Stock insuffisant dans ${depot}. Stock actuel: ${stockActuel}, demandé: ${Math.abs(quantite)}`)
-    }
-    
-    await updateStockDepot(articleId, depot, nouveauStock)
-  } catch (error) {
-    console.error('Erreur ajustement stock:', error)
-    throw error
-  }
-}
-
-/**
- * Affecter un article à un équipement
- */
-export async function affecterArticleEquipement(
-  articleId: string,
-  equipementId: string
-): Promise<void> {
-  try {
-    const article = await getArticleStockById(articleId)
-    if (!article) {
-      throw new Error('Article non trouvé')
-    }
-    
-    if (article.equipementsAffectes.includes(equipementId)) {
-      return // Déjà affecté
-    }
-    
-    await updateArticleStock(articleId, {
-      equipementsAffectes: [...article.equipementsAffectes, equipementId]
-    })
-  } catch (error) {
-    console.error('Erreur affectation article:', error)
-    throw error
-  }
-}
-
-/**
- * Retirer l'affectation d'un article à un équipement
- */
-export async function retirerAffectationArticle(
-  articleId: string,
-  equipementId: string
-): Promise<void> {
-  try {
-    const article = await getArticleStockById(articleId)
-    if (!article) {
-      throw new Error('Article non trouvé')
-    }
-    
-    await updateArticleStock(articleId, {
-      equipementsAffectes: article.equipementsAffectes.filter(id => id !== equipementId)
-    })
-  } catch (error) {
-    console.error('Erreur retrait affectation article:', error)
-    throw error
-  }
-}
-
-/**
  * Supprimer un article stock
  */
 export async function deleteArticleStock(id: string): Promise<void> {
   try {
-    await deleteDoc(doc(db, COLLECTION, id))
+    const articleRef = doc(db, COLLECTION, id)
+    await deleteDoc(articleRef)
   } catch (error) {
     console.error('Erreur suppression article stock:', error)
     throw error
@@ -287,68 +218,251 @@ export async function deleteArticleStock(id: string): Promise<void> {
 }
 
 /**
- * Désactiver un article (soft delete)
+ * Récupérer les articles en alerte (stock < minimum)
+ */
+export async function getArticlesEnAlerte(): Promise<ArticleStock[]> {
+  try {
+    const articles = await getAllArticlesStock()
+    return articles.filter(a => a.actif && a.stockTotal < a.stockMin)
+  } catch (error) {
+    console.error('Erreur récupération articles en alerte:', error)
+    throw error
+  }
+}
+
+/**
+ * Récupérer les articles affectés à un équipement
+ */
+export async function getArticlesAffectesEquipement(equipementId: string): Promise<ArticleStock[]> {
+  try {
+    const articles = await getAllArticlesStock()
+    return articles.filter(a => a.equipementsAffectes.includes(equipementId))
+  } catch (error) {
+    console.error('Erreur récupération articles équipement:', error)
+    throw error
+  }
+}
+
+/**
+ * 🆕 Migrer les articles stock existants vers un compte comptable par défaut
+ */
+export async function migrateArticlesStockComptesComptables(
+  compteParDefaut: string = '6063',
+  intituleParDefaut: string = 'Fournitures d\'entretien et de petit équipement'
+): Promise<{ total: number, migres: number }> {
+  try {
+    const articles = await getAllArticlesStock()
+    let migres = 0
+    
+    for (const article of articles) {
+      // Si pas de compte comptable, assigner le compte par défaut
+      if (!article.compteComptable) {
+        await updateArticleStock(article.id, {
+          compteComptable: compteParDefaut,
+          compteIntitule: intituleParDefaut
+        })
+        migres++
+      }
+    }
+    
+    return {
+      total: articles.length,
+      migres
+    }
+  } catch (error) {
+    console.error('Erreur migration articles stock:', error)
+    throw error
+  }
+}
+
+/**
+ * 🆕 Rechercher articles stock par compte comptable
+ */
+export async function getArticlesStockByCompteComptable(compteComptable: string): Promise<ArticleStock[]> {
+  try {
+    const articles = await getAllArticlesStock()
+    return articles.filter(a => a.compteComptable === compteComptable)
+  } catch (error) {
+    console.error('Erreur recherche articles stock par compte:', error)
+    throw error
+  }
+}
+
+/**
+ * 🆕 Statistiques par compte comptable
+ */
+export async function getStatistiquesParCompteComptable(): Promise<{
+  compte: string
+  intitule: string
+  nombreArticles: number
+  valeurStockTotale: number
+}[]> {
+  try {
+    const articles = await getAllArticlesStock()
+    
+    // Grouper par compte comptable
+    const parCompte = articles.reduce((acc, article) => {
+      const compte = article.compteComptable || 'NON_DEFINI'
+      const intitule = article.compteIntitule || 'Non défini'
+      
+      if (!acc[compte]) {
+        acc[compte] = {
+          compte,
+          intitule,
+          nombreArticles: 0,
+          valeurStockTotale: 0
+        }
+      }
+      
+      acc[compte].nombreArticles++
+      acc[compte].valeurStockTotale += article.stockTotal * article.prixUnitaire
+      
+      return acc
+    }, {} as Record<string, any>)
+    
+    return Object.values(parCompte)
+  } catch (error) {
+    console.error('Erreur statistiques par compte:', error)
+    throw error
+  }
+}
+
+/**
+ * Ajuster stock (wrapper pour updateStockDepot)
+ */
+export async function ajusterStock(
+  articleId: string,
+  depot: string,
+  quantite: number,
+  motif?: string
+): Promise<void> {
+  return updateStockDepot(articleId, depot, quantite)
+}
+
+/**
+ * Affecter article à équipement
+ */
+export async function affecterArticleEquipement(
+  articleId: string,
+  equipementId: string
+): Promise<void> {
+  try {
+    const articleRef = doc(db, 'articles_stock', articleId)
+    const articleDoc = await getDoc(articleRef)
+    
+    if (!articleDoc.exists()) {
+      throw new Error('Article introuvable')
+    }
+    
+    const article = articleDoc.data() as ArticleStock
+    const equipementsAffectes = article.equipementsAffectes || []
+    
+    if (!equipementsAffectes.includes(equipementId)) {
+      equipementsAffectes.push(equipementId)
+      await updateDoc(articleRef, {
+        equipementsAffectes,
+        updatedAt: new Date().toISOString()
+      })
+    }
+  } catch (error) {
+    console.error('Erreur affectation article équipement:', error)
+    throw error
+  }
+}
+
+/**
+ * Retirer affectation article équipement
+ */
+export async function retirerAffectationArticle(
+  articleId: string,
+  equipementId: string
+): Promise<void> {
+  try {
+    const articleRef = doc(db, 'articles_stock', articleId)
+    const articleDoc = await getDoc(articleRef)
+    
+    if (!articleDoc.exists()) {
+      throw new Error('Article introuvable')
+    }
+    
+    const article = articleDoc.data() as ArticleStock
+    const equipementsAffectes = (article.equipementsAffectes || []).filter(
+      id => id !== equipementId
+    )
+    
+    await updateDoc(articleRef, {
+      equipementsAffectes,
+      updatedAt: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Erreur retrait affectation:', error)
+    throw error
+  }
+}
+
+/**
+ * Désactiver article stock
  */
 export async function desactiverArticleStock(id: string): Promise<void> {
   try {
-    await updateArticleStock(id, { actif: false })
-  } catch (error) {
-    console.error('Erreur désactivation article stock:', error)
-    throw error
-  }
-}
-
-/**
- * Vérifier si un code article existe déjà
- */
-export async function articleStockCodeExists(
-  code: string, 
-  excludeId?: string
-): Promise<boolean> {
-  try {
-    const articles = await getAllArticlesStock()
-    const normalizedCode = code.toUpperCase()
-    
-    return articles.some(article => 
-      article.code === normalizedCode && article.id !== excludeId
-    )
-  } catch (error) {
-    console.error('Erreur vérification code article:', error)
-    throw error
-  }
-}
-
-/**
- * Récupérer les statistiques stock
- */
-export async function getStatistiquesStock() {
-  try {
-    const articles = await getAllArticlesStock()
-    
-    const valeurParDepot: { [key: string]: number } = {
-      'Atelier': 0,
-      'Porteur 26 T': 0,
-      'Porteur 32 T': 0,
-      'Semi Remorque': 0
-    }
-    
-    articles.forEach(article => {
-      Object.entries(article.stockParDepot).forEach(([depot, quantite]) => {
-        valeurParDepot[depot] += quantite * article.prixUnitaire
-      })
+    const articleRef = doc(db, 'articles_stock', id)
+    await updateDoc(articleRef, {
+      actif: false,
+      updatedAt: new Date().toISOString()
     })
-    
-    const valeurTotaleStock = Object.values(valeurParDepot).reduce((sum, val) => sum + val, 0)
-    const alertes = articles.filter(a => a.stockTotal < a.stockMin && a.actif)
+  } catch (error) {
+    console.error('Erreur désactivation article:', error)
+    throw error
+  }
+}
+
+/**
+ * Vérifier si code article existe
+ */
+export async function articleStockCodeExists(code: string, excludeId?: string): Promise<boolean> {
+  try {
+    const articles = await getAllArticlesStock()
+    return articles.some(a => a.code === code && a.id !== excludeId)
+  } catch (error) {
+    console.error('Erreur vérification code:', error)
+    throw error
+  }
+}
+
+/**
+ * Statistiques stock globales
+ */
+export async function getStatistiquesStock(): Promise<{
+  totalArticles: number
+  totalValeur: number
+  articlesEnAlerte: number
+  articlesActifs: number
+}> {
+  try {
+    const articles = await getAllArticlesStock()
+    const alertes = await getArticlesEnAlerte()
     
     return {
-      valeurTotaleStock,
-      valeurParDepot,
-      nombreArticles: articles.filter(a => a.actif).length,
-      nombreAlertes: alertes.length
+      totalArticles: articles.length,
+      totalValeur: articles.reduce((sum, a) => sum + (a.stockTotal * a.prixUnitaire), 0),
+      articlesEnAlerte: alertes.length,
+      articlesActifs: articles.filter(a => a.actif).length
     }
   } catch (error) {
-    console.error('Erreur calcul statistiques stock:', error)
+    console.error('Erreur statistiques stock:', error)
+    throw error
+  }
+}
+
+/**
+ * Articles par fournisseur
+ */
+export async function getArticlesParFournisseur(fournisseur: string): Promise<ArticleStock[]> {
+  try {
+    const articles = await getAllArticlesStock()
+    return articles.filter(a => a.fournisseur === fournisseur)
+  } catch (error) {
+    console.error('Erreur articles par fournisseur:', error)
     throw error
   }
 }

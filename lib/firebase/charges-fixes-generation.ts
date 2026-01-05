@@ -1,0 +1,322 @@
+import { db } from './config'
+import { collection, addDoc, getDocs, query, where, deleteDoc } from 'firebase/firestore'
+import { getChargesFixesActives, type ChargeFixe } from './charges-fixes'
+import { getAllComptesBancaires } from './lignes-bancaires'
+
+/**
+ * Interface pour une charge générée
+ */
+export interface ChargeGeneree {
+  chargeFixeId: string
+  chargeNom: string
+  montant: number
+  datePrelevement: string
+  beneficiaire: string
+  type: ChargeFixe['type']
+}
+
+/**
+ * Résultat de la génération
+ */
+export interface ResultatGeneration {
+  success: boolean
+  chargesGenerees: ChargeGeneree[]
+  lignesBancairesCreees: number
+  erreurs: string[]
+  mois: string
+  montantTotal: number
+}
+
+/**
+ * Calculer la date de prélèvement pour une charge dans un mois donné
+ */
+function calculateDatePrelevement(
+  charge: ChargeFixe,
+  annee: number,
+  mois: number // 0-11 (JavaScript)
+): Date | null {
+  const jourPrelevement = charge.jourPrelevement || 1
+  
+  switch (charge.recurrence) {
+    case 'mensuel':
+      // Tous les mois
+      return new Date(annee, mois, jourPrelevement)
+    
+    case 'trimestriel':
+      // Mois 0, 3, 6, 9 (janvier, avril, juillet, octobre)
+      const moisTrimestre = [0, 3, 6, 9]
+      if (moisTrimestre.includes(mois)) {
+        return new Date(annee, mois, jourPrelevement)
+      }
+      return null
+    
+    case 'annuel':
+      // Même mois que la date de début
+      const dateDebut = new Date(charge.dateDebut)
+      const moisAnnuel = dateDebut.getMonth()
+      if (mois === moisAnnuel) {
+        return new Date(annee, mois, jourPrelevement)
+      }
+      return null
+    
+    default:
+      return null
+  }
+}
+
+/**
+ * Vérifier si une charge a déjà été générée pour un mois
+ */
+async function chargeDejaGeneree(
+  chargeFixeId: string,
+  annee: number,
+  mois: number // 0-11
+): Promise<boolean> {
+  try {
+    // Format de la date pour la recherche
+    const debutMois = new Date(annee, mois, 1).toISOString().split('T')[0]
+    const finMois = new Date(annee, mois + 1, 0).toISOString().split('T')[0]
+    
+    const lignesRef = collection(db, 'lignes_bancaires')
+    const q = query(
+      lignesRef,
+      where('chargeFixeId', '==', chargeFixeId),
+      where('date', '>=', debutMois),
+      where('date', '<=', finMois)
+    )
+    
+    const snapshot = await getDocs(q)
+    return !snapshot.empty
+  } catch (error) {
+    console.error('Erreur vérification charge générée:', error)
+    return false
+  }
+}
+
+/**
+ * Générer les charges fixes pour un mois donné
+ */
+export async function genererChargesMois(
+  annee: number,
+  mois: number, // 1-12 (interface utilisateur)
+  compteBancaireId?: string // Optionnel, sinon premier compte actif
+): Promise<ResultatGeneration> {
+  const moisJS = mois - 1 // Convertir en 0-11 pour JavaScript
+  const moisStr = `${annee}-${String(mois).padStart(2, '0')}`
+  
+  const resultat: ResultatGeneration = {
+    success: false,
+    chargesGenerees: [],
+    lignesBancairesCreees: 0,
+    erreurs: [],
+    mois: moisStr,
+    montantTotal: 0
+  }
+
+  try {
+    // 1. Récupérer les charges fixes actives
+    const charges = await getChargesFixesActives()
+    
+    if (charges.length === 0) {
+      resultat.erreurs.push('Aucune charge fixe active trouvée')
+      return resultat
+    }
+
+    // 2. Déterminer le compte bancaire
+    let compteId = compteBancaireId
+    if (!compteId) {
+      const comptes = await getAllComptesBancaires()
+      const compteActif = comptes.find(c => c.actif)
+      if (!compteActif) {
+        resultat.erreurs.push('Aucun compte bancaire actif trouvé')
+        return resultat
+      }
+      compteId = compteActif.id
+    }
+
+    // 3. Générer les charges pour le mois
+    for (const charge of charges) {
+      try {
+        // Vérifier si la charge doit être générée ce mois
+        const datePrelevement = calculateDatePrelevement(charge, annee, moisJS)
+        
+        if (!datePrelevement) {
+          // Cette charge n'est pas prévue ce mois (ex: trimestrielle ou annuelle)
+          continue
+        }
+
+        // Vérifier si déjà générée
+        const dejaGeneree = await chargeDejaGeneree(charge.id, annee, moisJS)
+        if (dejaGeneree) {
+          resultat.erreurs.push(`Charge "${charge.nom}" déjà générée pour ${moisStr}`)
+          continue
+        }
+
+        // Calculer le montant
+        let montant = charge.montant
+        if (charge.recurrence === 'trimestriel') {
+          // Le montant stocké est trimestriel, on le divise par 3 si on veut mensuel
+          // Mais généralement on prélève le montant trimestriel en 1 fois
+          // On garde donc le montant tel quel
+        }
+
+        // Créer la ligne bancaire prévisionnelle
+        const ligneBancaire = {
+          compteBancaireId: compteId,
+          date: datePrelevement.toISOString().split('T')[0],
+          dateValeur: datePrelevement.toISOString().split('T')[0],
+          libelle: `${charge.nom} - ${charge.beneficiaire}`,
+          montant: -Math.abs(montant), // Négatif = débit
+          reference: `CHARGE_FIXE_${charge.id}_${moisStr}`,
+          categorieAuto: charge.type,
+          typeTransaction: 'prelevement' as const,
+          statut: 'a_rapprocher' as const,
+          chargeFixeId: charge.id,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+
+        // Ajouter à Firestore
+        await addDoc(collection(db, 'lignes_bancaires'), ligneBancaire)
+
+        // Ajouter au résultat
+        resultat.chargesGenerees.push({
+          chargeFixeId: charge.id,
+          chargeNom: charge.nom,
+          montant: montant,
+          datePrelevement: datePrelevement.toISOString().split('T')[0],
+          beneficiaire: charge.beneficiaire,
+          type: charge.type
+        })
+
+        resultat.lignesBancairesCreees++
+        resultat.montantTotal += montant
+
+      } catch (error: any) {
+        resultat.erreurs.push(`Erreur pour "${charge.nom}": ${error.message}`)
+      }
+    }
+
+    resultat.success = resultat.lignesBancairesCreees > 0
+
+    return resultat
+
+  } catch (error: any) {
+    resultat.erreurs.push(`Erreur générale: ${error.message}`)
+    return resultat
+  }
+}
+
+/**
+ * Obtenir un aperçu des charges qui seront générées (sans les créer)
+ */
+export async function previsualiserChargesMois(
+  annee: number,
+  mois: number // 1-12
+): Promise<{
+  charges: Array<{
+    nom: string
+    type: ChargeFixe['type']
+    montant: number
+    datePrelevement: string
+    beneficiaire: string
+    recurrence: ChargeFixe['recurrence']
+    dejaGeneree: boolean
+  }>
+  montantTotal: number
+  nombreCharges: number
+}> {
+  const moisJS = mois - 1
+  const charges = await getChargesFixesActives()
+  
+  const chargesAPrevisionner: Array<{
+    nom: string
+    type: ChargeFixe['type']
+    montant: number
+    datePrelevement: string
+    beneficiaire: string
+    recurrence: ChargeFixe['recurrence']
+    dejaGeneree: boolean
+  }> = []
+
+  let montantTotal = 0
+
+  for (const charge of charges) {
+    const datePrelevement = calculateDatePrelevement(charge, annee, moisJS)
+    
+    if (datePrelevement) {
+      const dejaGeneree = await chargeDejaGeneree(charge.id, annee, moisJS)
+      
+      chargesAPrevisionner.push({
+        nom: charge.nom,
+        type: charge.type,
+        montant: charge.montant,
+        datePrelevement: datePrelevement.toISOString().split('T')[0],
+        beneficiaire: charge.beneficiaire,
+        recurrence: charge.recurrence,
+        dejaGeneree
+      })
+
+      if (!dejaGeneree) {
+        montantTotal += charge.montant
+      }
+    }
+  }
+
+  return {
+    charges: chargesAPrevisionner,
+    montantTotal,
+    nombreCharges: chargesAPrevisionner.filter(c => !c.dejaGeneree).length
+  }
+}
+
+/**
+ * Supprimer les charges générées pour un mois (annuler la génération)
+ */
+export async function annulerChargesMois(
+  annee: number,
+  mois: number // 1-12
+): Promise<{
+  success: boolean
+  nombreSupprimees: number
+  erreur?: string
+}> {
+  try {
+    const moisJS = mois - 1
+    const debutMois = new Date(annee, moisJS, 1).toISOString().split('T')[0]
+    const finMois = new Date(annee, moisJS + 1, 0).toISOString().split('T')[0]
+
+    // Récupérer toutes les lignes de charges fixes du mois
+    const lignesRef = collection(db, 'lignes_bancaires')
+    const q = query(
+      lignesRef,
+      where('date', '>=', debutMois),
+      where('date', '<=', finMois)
+    )
+
+    const snapshot = await getDocs(q)
+    const lignesCharges = snapshot.docs.filter(doc => {
+      const data = doc.data()
+      return data.chargeFixeId && data.statut === 'a_rapprocher'
+    })
+
+    // Supprimer les lignes non rapprochées uniquement
+    let nombreSupprimees = 0
+    for (const doc of lignesCharges) {
+      await deleteDoc(doc.ref)
+      nombreSupprimees++
+    }
+
+    return {
+      success: true,
+      nombreSupprimees
+    }
+
+  } catch (error: any) {
+    return {
+      success: false,
+      nombreSupprimees: 0,
+      erreur: error.message
+    }
+  }
+}

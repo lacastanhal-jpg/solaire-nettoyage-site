@@ -7,7 +7,8 @@ import {
   getAllEquipements,
   getAllInterventionsMaintenance
 } from '@/lib/firebase'
-import type { ArticleStock, Equipement } from '@/lib/types/stock-flotte'
+import type { ArticleStock } from '@/lib/firebase/stock-articles'
+import type { Equipement } from '@/lib/types/stock-flotte'
 
 interface AlerteEquipement {
   id: string
