@@ -52,9 +52,38 @@ export default function DeclarationCA3Page() {
     }
   }
 
-  function exporterPDF() {
-    // TODO: Générer PDF CA3
-    alert('Export PDF CA3 - À implémenter\n\nLe PDF sera généré avec les données pré-remplies selon le format officiel DGFiP.')
+  async function exporterPDF() {
+    try {
+      const response = await fetch('/api/comptabilite/ca3/pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          periode,
+          societeId
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la génération du PDF')
+      }
+
+      // Télécharger le PDF
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `CA3-${periode}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+
+    } catch (error) {
+      console.error('Erreur export PDF:', error)
+      alert('❌ Erreur lors de la génération du PDF CA3')
+    }
   }
 
   if (loading) {

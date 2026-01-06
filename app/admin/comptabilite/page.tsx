@@ -101,6 +101,11 @@ export default function ComptabiliteDashboard() {
       const data = dataMap.get(date)!
       
       ecriture.lignes.forEach(ligne => {
+        // Vérifier que le compte comptable existe
+        if (!ligne.compteComptable || typeof ligne.compteComptable !== 'string') {
+          return
+        }
+        
         const classe = ligne.compteComptable.charAt(0)
         
         if (classe === '7') {
