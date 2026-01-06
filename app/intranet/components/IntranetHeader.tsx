@@ -17,9 +17,6 @@ export default function IntranetHeader() {
   const [operationsOpen, setOperationsOpen] = useState(false)
   const [conformiteOpen, setConformiteOpen] = useState(false)
   const [adminMenuOpen, setAdminMenuOpen] = useState(false)
-  
-  // NOUVEAU : État pour le menu mobile
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
     const name = localStorage.getItem('user_name')
@@ -45,47 +42,25 @@ export default function IntranetHeader() {
     setConformiteOpen(false)
     setAdminMenuOpen(false)
   }
-  
-  const closeMobileMenu = () => {
-    setMobileMenuOpen(false)
-    closeAllMenus()
-  }
 
   return (
     <header className="bg-[#1e3a8a] border-b border-[#1e3a8a]/20 sticky top-0 z-50">
-      <div className="max-w-[1800px] mx-auto px-4 sm:px-6 py-3 flex justify-between items-center">
-        
-        {/* GAUCHE : Burger Mobile + Logo */}
-        <div className="flex items-center gap-3">
-          {/* Bouton Burger - VISIBLE uniquement sur mobile/tablette */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden text-white p-2 hover:bg-white/10 rounded transition-colors"
-            aria-label="Menu"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              {mobileMenuOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              )}
-            </svg>
-          </button>
-
-          {/* Logo */}
-          <Link href="/intranet/dashboard" className="flex items-center gap-2 sm:gap-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white flex items-center justify-center text-[#1e3a8a] font-bold rounded text-sm sm:text-base">
+      <div className="max-w-[1800px] mx-auto px-6 py-3 flex justify-between items-center">
+        {/* Logo + Badge */}
+        <div className="flex items-center gap-4">
+          <Link href="/intranet/dashboard" className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white flex items-center justify-center text-[#1e3a8a] font-bold rounded">
               SN
             </div>
-            <span className="hidden sm:inline text-base font-semibold text-white">Solaire Nettoyage</span>
+            <span className="text-base font-semibold text-white">Solaire Nettoyage</span>
           </Link>
-          <span className="hidden sm:inline bg-yellow-500 text-[#1e3a8a] px-3 py-1 rounded text-xs font-bold uppercase tracking-wide">
+          <span className="bg-yellow-500 text-[#1e3a8a] px-3 py-1 rounded text-xs font-bold uppercase tracking-wide">
             Intranet
           </span>
         </div>
 
-        {/* CENTRE : Navigation Desktop - MASQUÉE sur mobile/tablette */}
-        <nav className="hidden lg:flex items-center gap-5">
+        {/* Navigation */}
+        <nav className="flex items-center gap-5">
           
           {/* 🏠 ACCUEIL */}
           <Link 
@@ -185,18 +160,22 @@ export default function IntranetHeader() {
                   <Link href="/admin/finances/categories" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
                     🗂️ Catégories Dépenses
                   </Link>
+                  <Link href="/admin/finances/charges" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
+                    💵 Charges Fixes
+                  </Link>
                   <Link href="/admin/finances/fournisseurs" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
                     🏭 Fournisseurs
                   </Link>
-                  <Link href="/admin/finances/charges" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
-                    💸 Charges Fixes
-                  </Link>
+                  <div className="border-t border-gray-200 my-1"></div>
+                  <div className="px-4 py-2 text-xs text-gray-500 italic">
+                    📊 Dashboard Finances (à venir)
+                  </div>
                 </div>
               )}
             </div>
           )}
 
-          {/* 📊 COMPTABILITÉ - ADMIN UNIQUEMENT */}
+          {/* 💰 COMPTABILITÉ - ADMIN UNIQUEMENT - 🆕 PHASE 3 */}
           {isAdmin && (
             <div className="relative">
               <button
@@ -211,7 +190,7 @@ export default function IntranetHeader() {
                 }}
                 className="flex items-center gap-1 text-sm font-medium text-gray-300 hover:text-white transition-colors"
               >
-                📊 Comptabilité
+                💰 Comptabilité
                 <svg className={`w-4 h-4 transition-transform ${comptabiliteOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -224,30 +203,30 @@ export default function IntranetHeader() {
                   </Link>
                   <div className="border-t border-gray-200 my-1"></div>
                   <Link href="/admin/comptabilite/plan-comptable" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
-                    📚 Plan Comptable
+                    📋 Plan Comptable
                   </Link>
-                  <Link href="/admin/comptabilite/journal" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
-                    📖 Journal
-                  </Link>
-                  <Link href="/admin/comptabilite/grand-livre" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
-                    📗 Grand Livre
-                  </Link>
-                  <Link href="/admin/comptabilite/balance" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
-                    ⚖️ Balance
+                  <Link href="/admin/comptabilite/factures-fournisseurs" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
+                    📥 Factures Fournisseurs
                   </Link>
                   <div className="border-t border-gray-200 my-1"></div>
+                  <Link href="/admin/comptabilite/journal" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
+                    📚 Journal Comptable
+                  </Link>
+                  <Link href="/admin/comptabilite/grand-livre" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
+                    📖 Grand Livre
+                  </Link>
+                  <Link href="/admin/comptabilite/balance" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
+                    ⚖️ Balance Générale
+                  </Link>
+                  <div className="border-t border-gray-200 my-1"></div>
+                  <Link href="/admin/comptabilite/exports/fec" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
+                    📤 Export FEC
+                  </Link>
                   <Link href="/admin/comptabilite/tva" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
-                    💶 TVA
+                    💶 Dashboard TVA
                   </Link>
                   <Link href="/admin/comptabilite/tva/ca3" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
                     📋 Déclaration CA3
-                  </Link>
-                  <div className="border-t border-gray-200 my-1"></div>
-                  <Link href="/admin/comptabilite/factures-fournisseurs" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
-                    📄 Factures Fournisseurs
-                  </Link>
-                  <Link href="/admin/comptabilite/exports/fec" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
-                    💾 Export FEC
                   </Link>
                 </div>
               )}
@@ -280,18 +259,18 @@ export default function IntranetHeader() {
                   <Link href="/admin/stock-flotte" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
                     📊 Dashboard
                   </Link>
+                  <Link href="/admin/stock-flotte/alertes" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
+                    🚨 Alertes
+                  </Link>
                   <div className="border-t border-gray-200 my-1"></div>
                   <Link href="/admin/stock-flotte/articles" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
                     📦 Articles
                   </Link>
                   <Link href="/admin/stock-flotte/mouvements" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
-                    📊 Mouvements
-                  </Link>
-                  <Link href="/admin/stock-flotte/alertes" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
-                    ⚠️ Alertes Stock
+                    🔄 Mouvements Stock
                   </Link>
                   <Link href="/admin/stock-flotte/affectations" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
-                    🔗 Affectations
+                    🔗 Affectations (Stock Embarqué)
                   </Link>
                   <div className="border-t border-gray-200 my-1"></div>
                   <Link href="/admin/stock-flotte/equipements" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
@@ -440,188 +419,21 @@ export default function IntranetHeader() {
           </Link>
         </nav>
 
-        {/* DROITE : Menu utilisateur - TOUJOURS VISIBLE */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="flex items-center gap-2 px-2 sm:px-4 py-2 bg-white/10 rounded-lg">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-yellow-500 text-[#1e3a8a] flex items-center justify-center font-bold text-xs sm:text-sm">
-              {userName.charAt(0).toUpperCase()}
-            </div>
-            <span className="hidden sm:inline text-sm font-semibold text-white">{userName}</span>
-            <button
-              onClick={handleLogout}
-              className="text-xs text-gray-300 hover:text-red-400 transition-colors font-semibold"
-              title="Se déconnecter"
-            >
-              ⚠️
-            </button>
+        {/* Menu utilisateur */}
+        <div className="flex items-center gap-3 px-4 py-2 bg-white/10 rounded-lg">
+          <div className="w-8 h-8 rounded-full bg-yellow-500 text-[#1e3a8a] flex items-center justify-center font-bold text-sm">
+            {userName.charAt(0).toUpperCase()}
           </div>
+          <span className="text-sm font-semibold text-white">{userName}</span>
+          <button
+            onClick={handleLogout}
+            className="ml-2 text-xs text-gray-300 hover:text-red-400 transition-colors font-semibold"
+            title="Se déconnecter"
+          >
+            ⚠️ Déconnexion
+          </button>
         </div>
       </div>
-
-      {/* MENU MOBILE SLIDE-OUT - VISIBLE uniquement quand ouvert */}
-      {mobileMenuOpen && (
-        <>
-          {/* Overlay noir transparent */}
-          <div 
-            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-            onClick={closeMobileMenu}
-          ></div>
-          
-          {/* Menu slide */}
-          <div className="fixed top-0 left-0 h-full w-80 max-w-[85vw] bg-white shadow-2xl z-50 lg:hidden overflow-y-auto">
-            {/* Header du menu */}
-            <div className="bg-[#1e3a8a] p-4 flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 bg-white flex items-center justify-center text-[#1e3a8a] font-bold rounded">
-                  SN
-                </div>
-                <div>
-                  <div className="text-white font-semibold text-sm">Solaire Nettoyage</div>
-                  <div className="text-yellow-400 text-xs">Intranet</div>
-                </div>
-              </div>
-              <button onClick={closeMobileMenu} className="text-white p-2">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Contenu menu mobile */}
-            <div className="p-4 space-y-2">
-              <Link 
-                href="/intranet/dashboard" 
-                onClick={closeMobileMenu}
-                className="block py-3 px-4 text-gray-900 hover:bg-blue-50 rounded-lg font-medium"
-              >
-                🏠 Accueil
-              </Link>
-
-              {isAdmin && (
-                <>
-                  {/* CRM */}
-                  <div className="border-t pt-2 mt-2">
-                    <div className="text-xs font-semibold text-gray-500 px-4 mb-2">💼 CRM CLIENTS</div>
-                    <Link href="/admin/gestion-groupes" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                      🏢 Groupes
-                    </Link>
-                    <Link href="/admin/gestion-clients" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                      👥 Clients (600+)
-                    </Link>
-                    <Link href="/admin/gestion-sites" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                      📍 Sites (3600)
-                    </Link>
-                    <Link href="/admin/import-sites" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                      📥 Import Sites Excel
-                    </Link>
-                  </div>
-
-                  {/* Finances */}
-                  <div className="border-t pt-2 mt-2">
-                    <div className="text-xs font-semibold text-gray-500 px-4 mb-2">💰 FINANCES</div>
-                    <Link href="/admin/devis" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                      📝 Devis
-                    </Link>
-                    <Link href="/admin/finances/factures" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                      📄 Factures
-                    </Link>
-                    <Link href="/admin/finances/avoirs" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                      🔴 Avoirs
-                    </Link>
-                    <Link href="/admin/tarification" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                      💰 Tarification
-                    </Link>
-                    <Link href="/admin/tresorerie" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                      🏦 Trésorerie
-                    </Link>
-                    <Link href="/admin/finances/notes-frais" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                      💳 Notes de Frais
-                    </Link>
-                  </div>
-
-                  {/* Comptabilité */}
-                  <div className="border-t pt-2 mt-2">
-                    <div className="text-xs font-semibold text-gray-500 px-4 mb-2">📊 COMPTABILITÉ</div>
-                    <Link href="/admin/comptabilite" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg font-medium">
-                      📊 Dashboard Comptabilité
-                    </Link>
-                    <Link href="/admin/comptabilite/plan-comptable" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                      📚 Plan Comptable
-                    </Link>
-                    <Link href="/admin/comptabilite/journal" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                      📖 Journal
-                    </Link>
-                    <Link href="/admin/comptabilite/grand-livre" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                      📗 Grand Livre
-                    </Link>
-                    <Link href="/admin/comptabilite/balance" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                      ⚖️ Balance
-                    </Link>
-                    <Link href="/admin/comptabilite/tva" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                      💶 TVA
-                    </Link>
-                    <Link href="/admin/comptabilite/factures-fournisseurs" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                      📄 Factures Fournisseurs
-                    </Link>
-                  </div>
-
-                  {/* Stock & Flotte */}
-                  <div className="border-t pt-2 mt-2">
-                    <div className="text-xs font-semibold text-gray-500 px-4 mb-2">📦 STOCK & FLOTTE</div>
-                    <Link href="/admin/stock-flotte" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                      📊 Dashboard
-                    </Link>
-                    <Link href="/admin/stock-flotte/articles" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                      📦 Articles
-                    </Link>
-                    <Link href="/admin/stock-flotte/mouvements" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                      📊 Mouvements
-                    </Link>
-                    <Link href="/admin/stock-flotte/equipements" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                      🚗 Équipements
-                    </Link>
-                    <Link href="/admin/stock-flotte/bons-commande" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                      📋 Bons Commande
-                    </Link>
-                  </div>
-                </>
-              )}
-
-              {/* Opérations */}
-              <div className="border-t pt-2 mt-2">
-                <div className="text-xs font-semibold text-gray-500 px-4 mb-2">🚀 OPÉRATIONS</div>
-                <Link href="/admin/calendrier" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                  📅 Planning Interventions
-                </Link>
-                <Link href="/admin/nouvelle-intervention" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                  ➕ Nouvelle Intervention
-                </Link>
-                <Link href="/admin/interventions" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                  📄 Liste Interventions
-                </Link>
-              </div>
-
-              {/* Conformité */}
-              <div className="border-t pt-2 mt-2">
-                <div className="text-xs font-semibold text-gray-500 px-4 mb-2">🎓 CONFORMITÉ</div>
-                <Link href="/intranet/certifications" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                  🎓 Certifications
-                </Link>
-                <Link href="/intranet/extincteurs" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                  🧯 Extincteurs
-                </Link>
-              </div>
-
-              {/* Site public */}
-              <div className="border-t pt-2 mt-2">
-                <Link href="/" onClick={closeMobileMenu} className="block py-3 px-4 text-yellow-600 hover:bg-yellow-50 rounded-lg font-medium">
-                  🌐 Site public
-                </Link>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
     </header>
   )
 }
