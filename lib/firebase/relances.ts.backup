@@ -1,0 +1,793 @@
+/**
+ * SYSTÈME DE RELANCES AUTOMATIQUES - BACKEND
+ * Fonctions principales de gestion des relances
+ */
+
+import { db } from './config'
+import { 
+  collection, 
+  doc, 
+  getDoc, 
+  getDocs, 
+  setDoc, 
+  updateDoc, 
+  deleteDoc,
+  query,
+  where,
+  orderBy,
+  limit,
+  Timestamp
+} from 'firebase/firestore'
+import type {
+  ConfigurationRelances,
+  TemplateRelance,
+  ConfigRelanceClient,
+  HistoriqueRelance,
+  StatistiquesRelances,
+  DashboardRelances,
+  TypeRelance,
+  StatutRelance,
+  CategorieClient,
+  ResultatEnvoiRelance,
+  ResultatGenerationRelances,
+  VariablesTemplate
+} from './relances-types'
+
+// ============================================
+// CONFIGURATION GLOBALE
+// ============================================
+
+/**
+ * Récupérer la configuration globale des relances
+ */
+export async function getConfigurationRelances(): Promise<ConfigurationRelances> {
+  try {
+    const docRef = doc(db, 'relances_config', 'global')
+    const docSnap = await getDoc(docRef)
+    
+    if (docSnap.exists()) {
+      return { id: docSnap.id, ...docSnap.data() } as ConfigurationRelances
+    }
+    
+    // Configuration par défaut si pas encore créée
+    const configDefaut: ConfigurationRelances = {
+      id: 'global',
+      systemActif: true,
+      
+      // Délais standard
+      delaiRappelAmiable: 15,
+      delaiRelanceFerme: 30,
+      delaiMiseEnDemeure: 45,
+      delaiContentieux: 60,
+      
+      // Seuils
+      montantMinimumRelance: 50,
+      montantAlerteCritique: 10000,
+      
+      // Automatisation
+      envoyerRappelAmiableAuto: true,
+      envoyerRelanceFermeAuto: true,
+      envoyerMiseEnDemeureAuto: false, // Validation requise
+      
+      // Jours envoi
+      joursEnvoi: [1, 2, 3, 4, 5], // Lun-Ven
+      heureEnvoi: '08:00',
+      
+      // Jours fériés 2026 France
+      joursFeries: [
+        '2026-01-01', // Nouvel An
+        '2026-04-06', // Lundi de Pâques
+        '2026-05-01', // Fête du travail
+        '2026-05-08', // Victoire 1945
+        '2026-05-14', // Ascension
+        '2026-05-25', // Lundi de Pentecôte
+        '2026-07-14', // Fête nationale
+        '2026-08-15', // Assomption
+        '2026-11-01', // Toussaint
+        '2026-11-11', // Armistice
+        '2026-12-25'  // Noël
+      ],
+      
+      // Contacts
+      emailExpediteur: 'comptabilite@solaire-nettoyage.com',
+      emailCopie: 'direction@solaire-nettoyage.com',
+      telephoneContact: '+33 1 23 45 67 89',
+      
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      createdBy: 'system',
+      updatedBy: 'system'
+    }
+    
+    await setDoc(docRef, configDefaut)
+    return configDefaut
+  } catch (error) {
+    console.error('Erreur récupération configuration relances:', error)
+    throw error
+  }
+}
+
+/**
+ * Mettre à jour la configuration globale
+ */
+export async function updateConfigurationRelances(
+  updates: Partial<ConfigurationRelances>,
+  userId: string
+): Promise<void> {
+  try {
+    const docRef = doc(db, 'relances_config', 'global')
+    
+    await updateDoc(docRef, {
+      ...updates,
+      updatedAt: new Date().toISOString(),
+      updatedBy: userId
+    })
+  } catch (error) {
+    console.error('Erreur mise à jour configuration:', error)
+    throw error
+  }
+}
+
+// ============================================
+// TEMPLATES EMAILS
+// ============================================
+
+/**
+ * Récupérer tous les templates
+ */
+export async function getTemplatesRelances(): Promise<TemplateRelance[]> {
+  try {
+    const templatesRef = collection(db, 'relances_templates')
+    const q = query(templatesRef, orderBy('type'))
+    const snapshot = await getDocs(q)
+    
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as TemplateRelance[]
+  } catch (error) {
+    console.error('Erreur récupération templates:', error)
+    throw error
+  }
+}
+
+/**
+ * Récupérer un template par type
+ */
+export async function getTemplateByType(type: TypeRelance): Promise<TemplateRelance | null> {
+  try {
+    const templatesRef = collection(db, 'relances_templates')
+    const q = query(
+      templatesRef,
+      where('type', '==', type),
+      where('actif', '==', true),
+      limit(1)
+    )
+    const snapshot = await getDocs(q)
+    
+    if (snapshot.empty) {
+      return null
+    }
+    
+    const doc = snapshot.docs[0]
+    return { id: doc.id, ...doc.data() } as TemplateRelance
+  } catch (error) {
+    console.error('Erreur récupération template:', error)
+    throw error
+  }
+}
+
+/**
+ * Créer un template
+ */
+export async function createTemplate(
+  template: Omit<TemplateRelance, 'id' | 'createdAt' | 'nombreEnvois'>,
+  userId: string
+): Promise<string> {
+  try {
+    const templatesRef = collection(db, 'relances_templates')
+    const newDocRef = doc(templatesRef)
+    
+    const newTemplate: TemplateRelance = {
+      ...template,
+      id: newDocRef.id,
+      createdAt: new Date().toISOString(),
+      createdBy: userId,
+      nombreEnvois: 0
+    }
+    
+    await setDoc(newDocRef, newTemplate)
+    return newDocRef.id
+  } catch (error) {
+    console.error('Erreur création template:', error)
+    throw error
+  }
+}
+
+/**
+ * Mettre à jour un template
+ */
+export async function updateTemplate(
+  templateId: string,
+  updates: Partial<TemplateRelance>
+): Promise<void> {
+  try {
+    const docRef = doc(db, 'relances_templates', templateId)
+    
+    await updateDoc(docRef, {
+      ...updates,
+      updatedAt: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Erreur mise à jour template:', error)
+    throw error
+  }
+}
+
+/**
+ * Remplacer les variables dans un template
+ */
+export function remplacerVariablesTemplate(
+  texte: string,
+  variables: VariablesTemplate
+): string {
+  let resultat = texte
+  
+  // Remplacer toutes les variables {{variable}}
+  Object.entries(variables).forEach(([key, value]) => {
+    const regex = new RegExp(`{{${key}}}`, 'g')
+    resultat = resultat.replace(regex, String(value))
+  })
+  
+  return resultat
+}
+
+// ============================================
+// CONFIGURATION PAR CLIENT
+// ============================================
+
+/**
+ * Récupérer la configuration d'un client
+ */
+export async function getConfigClient(clientId: string): Promise<ConfigRelanceClient | null> {
+  try {
+    const docRef = doc(db, 'relances_clients', clientId)
+    const docSnap = await getDoc(docRef)
+    
+    if (docSnap.exists()) {
+      return { id: docSnap.id, ...docSnap.data() } as ConfigRelanceClient
+    }
+    
+    return null
+  } catch (error) {
+    console.error('Erreur récupération config client:', error)
+    throw error
+  }
+}
+
+/**
+ * Créer ou mettre à jour la configuration d'un client
+ */
+export async function upsertConfigClient(
+  config: Partial<ConfigRelanceClient> & { clientId: string, clientNom: string }
+): Promise<void> {
+  try {
+    const docRef = doc(db, 'relances_clients', config.clientId)
+    const docSnap = await getDoc(docRef)
+    
+    if (docSnap.exists()) {
+      // Mise à jour
+      await updateDoc(docRef, {
+        ...config,
+        updatedAt: new Date().toISOString()
+      })
+    } else {
+      // Création avec valeurs par défaut
+      const newConfig: ConfigRelanceClient = {
+        id: config.clientId,
+        clientId: config.clientId,
+        clientNom: config.clientNom,
+        categorie: config.categorie || 'standard',
+        relancesDesactivees: config.relancesDesactivees || false,
+        delaisPersonnalises: config.delaisPersonnalises || false,
+        scoreFiabilite: config.scoreFiabilite || 50,
+        delaiPaiementMoyen: config.delaiPaiementMoyen || 0,
+        nombreRetardsPaiement: config.nombreRetardsPaiement || 0,
+        montantTotalImpaye: config.montantTotalImpaye || 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+      
+      await setDoc(docRef, newConfig)
+    }
+  } catch (error) {
+    console.error('Erreur upsert config client:', error)
+    throw error
+  }
+}
+
+/**
+ * Calculer le score de fiabilité d'un client
+ * Basé sur historique paiements
+ */
+export async function calculerScoreFiabilite(clientId: string): Promise<number> {
+  try {
+    // Récupérer toutes les factures du client
+    const facturesRef = collection(db, 'factures')
+    const q = query(
+      facturesRef,
+      where('clientId', '==', clientId),
+      where('statut', 'in', ['payee', 'en_retard', 'partiellement_payee'])
+    )
+    const snapshot = await getDocs(q)
+    
+    if (snapshot.empty) {
+      return 50 // Score neutre si pas d'historique
+    }
+    
+    let scoreTotal = 100
+    let nombreFactures = 0
+    let sommedelaisRetar = 0
+    
+    snapshot.docs.forEach(doc => {
+      const facture = doc.data()
+      nombreFactures++
+      
+      // Pénalités
+      if (facture.statut === 'en_retard') {
+        scoreTotal -= 10
+        
+        // Calculer jours de retard
+        const dateEcheance = new Date(facture.dateEcheance)
+        const aujourdhui = new Date()
+        const joursRetard = Math.floor((aujourdhui.getTime() - dateEcheance.getTime()) / (1000 * 60 * 60 * 24))
+        
+        if (joursRetard > 30) scoreTotal -= 5
+        if (joursRetard > 60) scoreTotal -= 10
+        if (joursRetard > 90) scoreTotal -= 15
+        
+        sommedelaisRetard += joursRetard
+      }
+      
+      // Bonus si payé à temps
+      if (facture.statut === 'payee' && facture.datePaiement) {
+        const dateEcheance = new Date(facture.dateEcheance)
+        const datePaiement = new Date(facture.datePaiement)
+        
+        if (datePaiement <= dateEcheance) {
+          scoreTotal += 2
+        }
+      }
+    })
+    
+    // Score entre 0 et 100
+    const scoreFinal = Math.max(0, Math.min(100, scoreTotal))
+    
+    return Math.round(scoreFinal)
+  } catch (error) {
+    console.error('Erreur calcul score fiabilité:', error)
+    return 50
+  }
+}
+
+// ============================================
+// GÉNÉRATION RELANCES
+// ============================================
+
+/**
+ * Générer les relances pour toutes les factures impayées
+ * Fonction principale appelée par le cron job quotidien
+ */
+export async function genererRelancesAutomatiques(): Promise<ResultatGenerationRelances> {
+  try {
+    const config = await getConfigurationRelances()
+    
+    if (!config.systemActif) {
+      return {
+        success: true,
+        nombreRelancesGenerees: 0,
+        relancesGenerees: [],
+        erreurs: ['Système de relances désactivé']
+      }
+    }
+    
+    // Vérifier si jour ouvré
+    const aujourdhui = new Date()
+    const jourSemaine = aujourdhui.getDay() // 0=Dimanche, 1=Lundi, ...
+    const dateISO = aujourdhui.toISOString().split('T')[0]
+    
+    if (!config.joursEnvoi.includes(jourSemaine)) {
+      return {
+        success: true,
+        nombreRelancesGenerees: 0,
+        relancesGenerees: [],
+        erreurs: [`Jour ${jourSemaine} non configuré pour envoi`]
+      }
+    }
+    
+    if (config.joursFeries.includes(dateISO)) {
+      return {
+        success: true,
+        nombreRelancesGenerees: 0,
+        relancesGenerees: [],
+        erreurs: ['Jour férié - pas d\'envoi']
+      }
+    }
+    
+    // Récupérer toutes les factures impayées
+    const facturesImpayees = await getFacturesImpayees()
+    
+    const relancesGenerees: HistoriqueRelance[] = []
+    const erreurs: string[] = []
+    
+    for (const facture of facturesImpayees) {
+      try {
+        // Vérifier config client
+        const configClient = await getConfigClient(facture.clientId)
+        
+        // Skip si relances désactivées pour ce client
+        if (configClient?.relancesDesactivees) {
+          continue
+        }
+        
+        // Skip si client VIP
+        if (configClient?.categorie === 'vip') {
+          continue
+        }
+        
+        // Skip si montant trop faible
+        if (facture.resteAPayer < config.montantMinimumRelance) {
+          continue
+        }
+        
+        // Déterminer le type de relance nécessaire
+        const typeRelance = determinerTypeRelance(facture, config, configClient)
+        
+        if (!typeRelance) {
+          continue // Pas de relance nécessaire pour le moment
+        }
+        
+        // Vérifier si relance déjà envoyée aujourd'hui
+        const dejaEnvoyeeAujourdhui = await verifierRelanceEnvoyeeAujourdhui(
+          facture.id,
+          typeRelance
+        )
+        
+        if (dejaEnvoyeeAujourdhui) {
+          continue
+        }
+        
+        // Générer la relance
+        const relance = await creerRelance(facture, typeRelance, config)
+        
+        if (relance) {
+          relancesGenerees.push(relance)
+        }
+      } catch (error: any) {
+        erreurs.push(`Facture ${facture.numero}: ${error.message}`)
+      }
+    }
+    
+    return {
+      success: true,
+      nombreRelancesGenerees: relancesGenerees.length,
+      relancesGenerees,
+      erreurs
+    }
+  } catch (error: any) {
+    console.error('Erreur génération relances automatiques:', error)
+    return {
+      success: false,
+      nombreRelancesGenerees: 0,
+      relancesGenerees: [],
+      erreurs: [error.message]
+    }
+  }
+}
+
+/**
+ * Récupérer toutes les factures impayées
+ */
+async function getFacturesImpayees(): Promise<any[]> {
+  try {
+    const facturesRef = collection(db, 'factures')
+    const q = query(
+      facturesRef,
+      where('statut', 'in', ['envoyee', 'partiellement_payee', 'en_retard']),
+      where('resteAPayer', '>', 0)
+    )
+    
+    const snapshot = await getDocs(q)
+    
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }))
+  } catch (error) {
+    console.error('Erreur récupération factures impayées:', error)
+    throw error
+  }
+}
+
+/**
+ * Déterminer le type de relance nécessaire pour une facture
+ */
+function determinerTypeRelance(
+  facture: any,
+  config: ConfigurationRelances,
+  configClient: ConfigRelanceClient | null
+): TypeRelance | null {
+  const dateEcheance = new Date(facture.dateEcheance)
+  const aujourdhui = new Date()
+  const joursRetard = Math.floor((aujourdhui.getTime() - dateEcheance.getTime()) / (1000 * 60 * 60 * 24))
+  
+  // Utiliser délais personnalisés si définis
+  const delais = configClient?.delaisPersonnalises ? {
+    rappelAmiable: configClient.delaiRappelAmiable || config.delaiRappelAmiable,
+    relanceFerme: configClient.delaiRelanceFerme || config.delaiRelanceFerme,
+    miseEnDemeure: configClient.delaiMiseEnDemeure || config.delaiMiseEnDemeure,
+    contentieux: configClient.delaiContentieux || config.delaiContentieux
+  } : {
+    rappelAmiable: config.delaiRappelAmiable,
+    relanceFerme: config.delaiRelanceFerme,
+    miseEnDemeure: config.delaiMiseEnDemeure,
+    contentieux: config.delaiContentieux
+  }
+  
+  // Déterminer le type selon jours de retard
+  if (joursRetard >= delais.contentieux) {
+    return 'contentieux'
+  } else if (joursRetard >= delais.miseEnDemeure) {
+    return 'mise_en_demeure'
+  } else if (joursRetard >= delais.relanceFerme) {
+    return 'relance_ferme'
+  } else if (joursRetard >= delais.rappelAmiable) {
+    return 'rappel_amiable'
+  }
+  
+  return null
+}
+
+/**
+ * Vérifier si une relance a déjà été envoyée aujourd'hui
+ */
+async function verifierRelanceEnvoyeeAujourdhui(
+  factureId: string,
+  type: TypeRelance
+): Promise<boolean> {
+  try {
+    const aujourdhui = new Date().toISOString().split('T')[0]
+    
+    const relancesRef = collection(db, 'relances_historique')
+    const q = query(
+      relancesRef,
+      where('factureId', '==', factureId),
+      where('type', '==', type),
+      where('dateCreation', '>=', aujourdhui),
+      where('statut', 'in', ['envoyee', 'en_attente', 'planifiee'])
+    )
+    
+    const snapshot = await getDocs(q)
+    return !snapshot.empty
+  } catch (error) {
+    console.error('Erreur vérification relance:', error)
+    return false
+  }
+}
+
+/**
+ * Créer une relance pour une facture
+ */
+async function creerRelance(
+  facture: any,
+  type: TypeRelance,
+  config: ConfigurationRelances
+): Promise<HistoriqueRelance | null> {
+  try {
+    // Récupérer le template
+    const template = await getTemplateByType(type)
+    
+    if (!template) {
+      throw new Error(`Template non trouvé pour type: ${type}`)
+    }
+    
+    // Calculer jours de retard
+    const dateEcheance = new Date(facture.dateEcheance)
+    const aujourdhui = new Date()
+    const joursRetard = Math.floor((aujourdhui.getTime() - dateEcheance.getTime()) / (1000 * 60 * 60 * 24))
+    
+    // Préparer les variables
+    const variables: VariablesTemplate = {
+      clientNom: facture.clientNom,
+      clientContact: facture.clientNom, // TODO: Récupérer contact réel
+      clientEmail: facture.clientEmail || 'Non renseigné',
+      factureNumero: facture.numero,
+      factureDate: new Date(facture.date).toLocaleDateString('fr-FR'),
+      factureDateEcheance: new Date(facture.dateEcheance).toLocaleDateString('fr-FR'),
+      factureMontant: facture.totalTTC.toFixed(2) + ' €',
+      factureResteAPayer: facture.resteAPayer.toFixed(2) + ' €',
+      joursRetard,
+      entrepriseNom: 'SOLAIRE NETTOYAGE',
+      entrepriseEmail: config.emailExpediteur,
+      entrepriseTelephone: config.telephoneContact,
+      entrepriseAdresse: 'Toulouse, France',
+      dateRelance: aujourdhui.toLocaleDateString('fr-FR'),
+      numeroRelance: (facture.relances?.length || 0) + 1
+    }
+    
+    // Remplacer les variables dans objet et contenu
+    const objet = remplacerVariablesTemplate(template.objet, variables)
+    const contenu = remplacerVariablesTemplate(template.contenuHTML, variables)
+    
+    // Créer l'historique relance
+    const relancesRef = collection(db, 'relances_historique')
+    const newDocRef = doc(relancesRef)
+    
+    // Déterminer si envoi automatique
+    const envoyerAuto = (
+      (type === 'rappel_amiable' && config.envoyerRappelAmiableAuto) ||
+      (type === 'relance_ferme' && config.envoyerRelanceFermeAuto) ||
+      (type === 'mise_en_demeure' && config.envoyerMiseEnDemeureAuto)
+    )
+    
+    const relance: HistoriqueRelance = {
+      id: newDocRef.id,
+      type,
+      statut: envoyerAuto ? 'planifiee' : 'en_attente',
+      dateCreation: new Date().toISOString(),
+      datePlanification: new Date().toISOString(),
+      
+      factureId: facture.id,
+      factureNumero: facture.numero,
+      factureMontant: facture.totalTTC,
+      factureResteAPayer: facture.resteAPayer,
+      factureDateEcheance: facture.dateEcheance,
+      joursRetard,
+      
+      clientId: facture.clientId,
+      clientNom: facture.clientNom,
+      clientEmail: facture.clientEmail || '',
+      
+      templateUtilise: template.id,
+      objet,
+      contenu,
+      destinataires: [facture.clientEmail || ''],
+      copie: config.emailCopie ? [config.emailCopie] : [],
+      piecesJointes: template.inclureFacturePDF ? [`facture-${facture.numero}.pdf`] : [],
+      
+      emailEnvoye: false,
+      tentativesEnvoi: 0,
+      
+      emailOuvert: false,
+      lienClique: false,
+      paiementRecu: false,
+      
+      createdAt: new Date().toISOString(),
+      createdBy: 'system'
+    }
+    
+    await setDoc(newDocRef, relance)
+    
+    // Si envoi automatique, mettre en file d'envoi
+    if (envoyerAuto) {
+      // TODO: Ajouter à la file d'envoi
+      // Pour l'instant juste marquer comme planifiée
+    }
+    
+    return relance
+  } catch (error) {
+    console.error('Erreur création relance:', error)
+    throw error
+  }
+}
+
+// ============================================
+// ENVOI EMAILS
+// ============================================
+
+/**
+ * Envoyer une relance par email
+ */
+export async function envoyerRelance(
+  relanceId: string,
+  userId: string
+): Promise<ResultatEnvoiRelance> {
+  try {
+    // Récupérer la relance
+    const docRef = doc(db, 'relances_historique', relanceId)
+    const docSnap = await getDoc(docRef)
+    
+    if (!docSnap.exists()) {
+      throw new Error('Relance non trouvée')
+    }
+    
+    const relance = docSnap.data() as HistoriqueRelance
+    
+    // Vérifier statut
+    if (relance.statut === 'envoyee') {
+      throw new Error('Relance déjà envoyée')
+    }
+    
+    if (relance.statut === 'annulee') {
+      throw new Error('Relance annulée')
+    }
+    
+    // TODO: Implémenter envoi email réel via Resend
+    // Pour l'instant simuler l'envoi
+    
+    const maintenant = new Date().toISOString()
+    
+    // Mettre à jour la relance
+    await updateDoc(docRef, {
+      statut: 'envoyee',
+      emailEnvoye: true,
+      dateEnvoi: maintenant,
+      tentativesEnvoi: relance.tentativesEnvoi + 1,
+      validePar: userId
+    })
+    
+    // Mettre à jour les stats du template
+    const templateRef = doc(db, 'relances_templates', relance.templateUtilise)
+    const templateSnap = await getDoc(templateRef)
+    
+    if (templateSnap.exists()) {
+      const template = templateSnap.data() as TemplateRelance
+      await updateDoc(templateRef, {
+        nombreEnvois: (template.nombreEnvois || 0) + 1
+      })
+    }
+    
+    return {
+      success: true,
+      relanceId,
+      emailEnvoye: true,
+      details: {
+        destinataires: relance.destinataires,
+        dateEnvoi: maintenant
+      }
+    }
+  } catch (error: any) {
+    console.error('Erreur envoi relance:', error)
+    
+    // Logger l'échec
+    try {
+      const docRef = doc(db, 'relances_historique', relanceId)
+      await updateDoc(docRef, {
+        statut: 'echec',
+        erreurEnvoi: error.message,
+        tentativesEnvoi: (await getDoc(docRef)).data()?.tentativesEnvoi + 1 || 1
+      })
+    } catch (updateError) {
+      console.error('Erreur mise à jour statut échec:', updateError)
+    }
+    
+    return {
+      success: false,
+      relanceId,
+      emailEnvoye: false,
+      erreur: error.message
+    }
+  }
+}
+
+/**
+ * Annuler une relance
+ */
+export async function annulerRelance(
+  relanceId: string,
+  userId: string,
+  raison: string
+): Promise<void> {
+  try {
+    const docRef = doc(db, 'relances_historique', relanceId)
+    
+    await updateDoc(docRef, {
+      statut: 'annulee',
+      annulePar: userId,
+      raisonAnnulation: raison
+    })
+  } catch (error) {
+    console.error('Erreur annulation relance:', error)
+    throw error
+  }
+}

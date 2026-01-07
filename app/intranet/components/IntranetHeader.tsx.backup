@@ -174,9 +174,6 @@ export default function IntranetHeader() {
                   <Link href="/admin/finances/relances" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
                     📧 Relances Automatiques
                   </Link>
-                  <Link href="/admin/finances/contrats" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
-                    🔄 Contrats Récurrents ⭐
-                  </Link>
                   <div className="border-t border-gray-200 my-1"></div>
                   <Link href="/admin/tarification" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-900 hover:bg-blue-50 hover:text-blue-600">
                     💰 Tarification
@@ -536,9 +533,6 @@ export default function IntranetHeader() {
                     </Link>
                     <Link href="/admin/finances/relances" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
                       📧 Relances Automatiques
-                    </Link>
-                    <Link href="/admin/finances/contrats" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                      🔄 Contrats Récurrents ⭐
                     </Link>
                     <Link href="/admin/tarification" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
                       💰 Tarification

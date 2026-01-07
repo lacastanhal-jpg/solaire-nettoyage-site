@@ -113,6 +113,7 @@ export interface FactureInput {
   devisId?: string
   devisNumero?: string
   numeroBonCommandeClient?: string
+  date?: string  // Date de facturation (optionnel, défaut = aujourd'hui)
   dateEcheance?: string
   estAcompte?: boolean
   pourcentageAcompte?: number
@@ -304,7 +305,7 @@ export async function getFacturesByClient(clientId: string): Promise<Facture[]> 
 /**
  * Créer une nouvelle facture
  */
-export async function createFacture(factureData: FactureInput): Promise<string> {
+export async function createFacture(factureData: FactureInput): Promise<Facture> {
   try {
     const numero = await generateFactureNumero(factureData.estAcompte || false)
     const totals = calculateFactureTotals(factureData.lignes)
@@ -320,7 +321,7 @@ export async function createFacture(factureData: FactureInput): Promise<string> 
     const facture: any = {
       numero,
       societeId: factureData.societeId,  // AJOUT : Société émettrice
-      date: new Date().toISOString().split('T')[0],
+      date: factureData.date || new Date().toISOString().split('T')[0],  // Date personnalisée ou aujourd'hui
       dateEcheance,
       clientId: factureData.clientId,
       clientNom: factureData.clientNom,
@@ -352,7 +353,7 @@ export async function createFacture(factureData: FactureInput): Promise<string> 
     const factureRef = doc(collection(db, 'factures'))
     await setDoc(factureRef, facture)
     
-    return factureRef.id
+    return { id: factureRef.id, ...facture } as Facture
   } catch (error) {
     console.error('Erreur création facture:', error)
     throw error
