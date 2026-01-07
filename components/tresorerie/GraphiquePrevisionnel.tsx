@@ -353,6 +353,241 @@ export default function GraphiquePrevisionnel() {
           Les dates d'échéance sont utilisées pour répartir les montants dans le temps.
         </p>
       </div>
+
+      {/* Détail des encaissements prévisionnels */}
+      {stats.nombreFacturesClientsEnAttente > 0 && (
+        <div className="bg-white rounded-lg shadow border border-gray-200">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  💰 Factures Clients à Encaisser
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  {stats.nombreFacturesClientsEnAttente} facture(s) en attente • {formatterMontant(stats.totalEncaissementsPrevisionnels)}
+                </p>
+              </div>
+              <TrendingUp className="w-6 h-6 text-green-600" />
+            </div>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Facture</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Montant</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Échéance</th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Retard</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {previsions.flatMap(p => 
+                  p.details.facturesClientsAttendues.map((facture, idx) => {
+                    const dateEcheance = new Date(facture.dateEcheance)
+                    const aujourd_hui = new Date()
+                    const joursRetard = Math.floor((aujourd_hui.getTime() - dateEcheance.getTime()) / (1000 * 60 * 60 * 24))
+                    const enRetard = joursRetard > 0
+
+                    return (
+                      <tr key={`${facture.numero}-${idx}`} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          {facture.clientNom}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {facture.numero}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-right font-semibold text-green-600">
+                          {formatterMontant(facture.montant)}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {dateEcheance.toLocaleDateString('fr-FR')}
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          {enRetard ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                              <AlertCircle className="w-3 h-3 mr-1" />
+                              {joursRetard}j
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              ✓ OK
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })
+                ).slice(0, 20)}
+              </tbody>
+            </table>
+          </div>
+
+          {previsions.flatMap(p => p.details.facturesClientsAttendues).length > 20 && (
+            <div className="p-4 bg-gray-50 border-t border-gray-200 text-center">
+              <p className="text-sm text-gray-600">
+                + {previsions.flatMap(p => p.details.facturesClientsAttendues).length - 20} autres factures...
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Détail des décaissements prévisionnels */}
+      {stats.nombreFacturesFournisseursEnAttente > 0 && (
+        <div className="bg-white rounded-lg shadow border border-gray-200">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  📤 Factures Fournisseurs à Payer
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  {stats.nombreFacturesFournisseursEnAttente} facture(s) en attente • {formatterMontant(stats.totalDecaissementsPrevisionnels)}
+                </p>
+              </div>
+              <TrendingDown className="w-6 h-6 text-red-600" />
+            </div>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fournisseur</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Facture</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Montant</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Échéance</th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Retard</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {previsions.flatMap(p => 
+                  p.details.facturesFournisseursAttendues.map((facture, idx) => {
+                    const dateEcheance = new Date(facture.dateEcheance)
+                    const aujourd_hui = new Date()
+                    const joursRetard = Math.floor((aujourd_hui.getTime() - dateEcheance.getTime()) / (1000 * 60 * 60 * 24))
+                    const enRetard = joursRetard > 0
+
+                    return (
+                      <tr key={`${facture.numero}-${idx}`} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          {facture.fournisseurNom}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {facture.numero}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-right font-semibold text-red-600">
+                          {formatterMontant(facture.montant)}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {dateEcheance.toLocaleDateString('fr-FR')}
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          {enRetard ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                              <AlertCircle className="w-3 h-3 mr-1" />
+                              {joursRetard}j
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              ✓ OK
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })
+                ).slice(0, 20)}
+              </tbody>
+            </table>
+          </div>
+
+          {previsions.flatMap(p => p.details.facturesFournisseursAttendues).length > 20 && (
+            <div className="p-4 bg-gray-50 border-t border-gray-200 text-center">
+              <p className="text-sm text-gray-600">
+                + {previsions.flatMap(p => p.details.facturesFournisseursAttendues).length - 20} autres factures...
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Notes de frais à rembourser */}
+      {stats.nombreNotesFraisEnAttente > 0 && (
+        <div className="bg-white rounded-lg shadow border border-gray-200">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  🧾 Notes de Frais à Rembourser
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  {stats.nombreNotesFraisEnAttente} note(s) en attente de remboursement
+                </p>
+              </div>
+              <AlertCircle className="w-6 h-6 text-orange-600" />
+            </div>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Opérateur</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Catégorie</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Montant</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Remb. Prévu</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {previsions.flatMap(p => 
+                  p.details.notesDeFraisARembouser.map((note, idx) => (
+                    <tr key={`${note.operateurNom}-${idx}`} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {note.operateurNom}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {note.categorie}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-right font-semibold text-orange-600">
+                        {formatterMontant(note.montant)}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {new Date(note.dateRemboursementPrevue).toLocaleDateString('fr-FR')}
+                      </td>
+                    </tr>
+                  ))
+                ).slice(0, 10)}
+              </tbody>
+            </table>
+          </div>
+
+          {previsions.flatMap(p => p.details.notesDeFraisARembouser).length > 10 && (
+            <div className="p-4 bg-gray-50 border-t border-gray-200 text-center">
+              <p className="text-sm text-gray-600">
+                + {previsions.flatMap(p => p.details.notesDeFraisARembouser).length - 10} autres notes...
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Résumé si aucune donnée */}
+      {stats.nombreFacturesClientsEnAttente === 0 && 
+       stats.nombreFacturesFournisseursEnAttente === 0 && 
+       stats.nombreNotesFraisEnAttente === 0 && (
+        <div className="bg-green-50 rounded-lg p-8 border border-green-200 text-center">
+          <div className="text-4xl mb-3">✅</div>
+          <h3 className="text-lg font-semibold text-green-900 mb-2">
+            Aucune échéance à venir
+          </h3>
+          <p className="text-sm text-green-700">
+            Toutes les factures sont à jour. Aucun paiement ou encaissement en attente.
+          </p>
+        </div>
+      )}
     </div>
   )
 }

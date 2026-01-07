@@ -48,7 +48,26 @@ export default function TresoreriePage() {
 
   useEffect(() => {
     chargerDonnees()
+    
+    // Gérer l'onglet depuis l'URL
+    const urlParams = new URLSearchParams(window.location.search)
+    const tab = urlParams.get('tab')
+    if (tab === 'previsionnel') {
+      setOngletActif('previsionnel')
+    }
   }, [])
+
+  const changerOnglet = (onglet: 'dashboard' | 'previsionnel') => {
+    setOngletActif(onglet)
+    // Mettre à jour l'URL sans recharger la page
+    const url = new URL(window.location.href)
+    if (onglet === 'previsionnel') {
+      url.searchParams.set('tab', 'previsionnel')
+    } else {
+      url.searchParams.delete('tab')
+    }
+    window.history.pushState({}, '', url.toString())
+  }
 
   const chargerDonnees = async () => {
     try {
@@ -161,7 +180,7 @@ export default function TresoreriePage() {
       {/* Onglets */}
       <div className="flex gap-2 mb-8">
         <button
-          onClick={() => setOngletActif('dashboard')}
+          onClick={() => changerOnglet('dashboard')}
           className={`px-4 py-2 rounded-lg font-medium transition ${
             ongletActif === 'dashboard'
               ? 'bg-blue-600 text-white'
@@ -171,7 +190,7 @@ export default function TresoreriePage() {
           📊 Dashboard
         </button>
         <button
-          onClick={() => setOngletActif('previsionnel')}
+          onClick={() => changerOnglet('previsionnel')}
           className={`px-4 py-2 rounded-lg font-medium transition ${
             ongletActif === 'previsionnel'
               ? 'bg-blue-600 text-white'
@@ -185,6 +204,68 @@ export default function TresoreriePage() {
       {/* Onglet Dashboard */}
       {ongletActif === 'dashboard' && (
         <>
+          {/* Alertes */}
+          {(stats && (stats.soldeTotal < 0 || stats.aRapprocher > 10)) && (
+            <div className="mb-6 space-y-3">
+              {/* Alerte solde négatif */}
+              {stats.soldeTotal < 0 && (
+                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+                  <div className="flex items-start">
+                    <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 mr-3" />
+                    <div>
+                      <p className="font-medium text-red-900">
+                        🚨 Solde global négatif : {formatterMontant(stats.soldeTotal)}
+                      </p>
+                      <p className="text-sm text-red-700 mt-1">
+                        Attention : votre trésorerie globale est négative. Vérifiez vos comptes bancaires.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Alerte transactions à rapprocher */}
+              {stats.aRapprocher > 10 && (
+                <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg">
+                  <div className="flex items-start">
+                    <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 mr-3" />
+                    <div>
+                      <p className="font-medium text-yellow-900">
+                        ⚠️ {stats.aRapprocher} transactions à rapprocher
+                      </p>
+                      <p className="text-sm text-yellow-700 mt-1">
+                        De nombreuses transactions bancaires attendent d'être rapprochées.
+                        <Link href="/admin/tresorerie/rapprochement" className="underline ml-1 font-medium">
+                          Accéder au rapprochement →
+                        </Link>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Alerte solde faible */}
+              {stats.soldeTotal >= 0 && stats.soldeTotal < 10000 && (
+                <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-lg">
+                  <div className="flex items-start">
+                    <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5 mr-3" />
+                    <div>
+                      <p className="font-medium text-orange-900">
+                        💡 Solde global faible : {formatterMontant(stats.soldeTotal)}
+                      </p>
+                      <p className="text-sm text-orange-700 mt-1">
+                        Votre trésorerie est en dessous du seuil recommandé de 10 000€.
+                        <Link href="/admin/tresorerie?tab=previsionnel" className="underline ml-1 font-medium">
+                          Voir le prévisionnel →
+                        </Link>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* KPIs */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
             {/* Solde Total */}
