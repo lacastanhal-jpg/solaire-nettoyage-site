@@ -97,6 +97,34 @@ export default function HistoriqueRelancesPage() {
     setFilteredRelances(filtered)
   }
 
+
+  async function envoyerRelance(relanceId: string) {
+    if (!confirm("Envoyer cette relance par email ?")) return
+    
+    try {
+      setLoading(true)
+      const response = await fetch(`/api/relances/envoyer/${relanceId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: "admin" })
+      })
+      
+      const result = await response.json()
+      if (result.success) {
+        alert("✅ Relance envoyée avec succès !")
+        setSelectedRelance(null)
+        await loadHistorique()
+      } else {
+        alert(`❌ Erreur: ${result.error}`)
+      }
+    } catch (error) {
+      alert("❌ Erreur lors de l'envoi de la relance")
+      console.error(error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   function exportExcel() {
     // TODO: Implémenter export Excel
     alert('Export Excel à implémenter')
@@ -522,14 +550,36 @@ export default function HistoriqueRelancesPage() {
               )}
             </div>
 
-            <div className="p-6 border-t bg-gray-50">
-              <button
-                onClick={() => setSelectedRelance(null)}
-                className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-              >
-                Fermer
-              </button>
-            </div>
+
+            {/* Boutons d'action */}
+            {(selectedRelance.statut === 'planifiee' || selectedRelance.statut === 'en_attente') && (
+              <div className="p-6 border-t flex gap-3">
+                <button
+                  onClick={() => envoyerRelance(selectedRelance.id)}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center justify-center gap-2"
+                >
+                  <Mail className="w-4 h-4" />
+                  Envoyer la relance
+                </button>
+                <button
+                  onClick={() => setSelectedRelance(null)}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                >
+                  Annuler
+                </button>
+              </div>
+            )}
+
+            {(selectedRelance.statut === 'envoyee' || selectedRelance.statut === 'echec' || selectedRelance.statut === 'annulee') && (
+              <div className="p-6 border-t bg-gray-50">
+                <button
+                  onClick={() => setSelectedRelance(null)}
+                  className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                >
+                  Fermer
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

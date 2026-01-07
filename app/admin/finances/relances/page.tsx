@@ -80,6 +80,33 @@ export default function RelancesDashboardPage() {
               Gestion intelligente des impayés et recouvrement
             </p>
           </div>
+          <button
+            onClick={async () => {
+              if (!confirm('Générer les relances pour toutes les factures impayées ?')) return
+              try {
+                setLoading(true)
+                const response = await fetch('/api/relances/generer', {
+                  method: 'POST'
+                })
+                const result = await response.json()
+                if (result.success) {
+                  alert(`✅ ${result.message}`)
+                  await loadDashboard()
+                } else {
+                  alert(`❌ Erreur: ${result.error}`)
+                }
+              } catch (error) {
+                alert('❌ Erreur lors de la génération des relances')
+                console.error(error)
+              } finally {
+                setLoading(false)
+              }
+            }}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center gap-2 whitespace-nowrap"
+          >
+            <Send className="w-4 h-4" />
+            Générer les relances
+          </button>
         </div>
       </div>
 

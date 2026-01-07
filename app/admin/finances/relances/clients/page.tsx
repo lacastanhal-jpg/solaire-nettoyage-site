@@ -111,7 +111,7 @@ export default function ConfigClientsRelancesPage() {
       // Config par défaut
       setEditingConfig({
         clientId: client.id,
-        clientNom: client.nom,
+        clientNom: client.company,
         categorie: 'standard',
         relancesDesactivees: false,
         delaisPersonnalises: false,
@@ -359,7 +359,7 @@ export default function ConfigClientsRelancesPage() {
                   return (
                     <tr key={client.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
-                        <div className="font-medium text-gray-900">{client.nom}</div>
+                        <div className="font-medium text-gray-900">{client.company}</div>
                         {client.groupe && (
                           <div className="text-xs text-gray-500">{client.groupe}</div>
                         )}
@@ -419,7 +419,7 @@ export default function ConfigClientsRelancesPage() {
           <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b sticky top-0 bg-white">
               <h2 className="text-2xl font-bold text-gray-900">
-                Configuration - {selectedClient.nom}
+                Configuration - {selectedClient.company}
               </h2>
             </div>
 

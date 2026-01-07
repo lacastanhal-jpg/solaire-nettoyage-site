@@ -712,30 +712,27 @@ export async function envoyerRelance(
       throw new Error('Relance annulée')
     }
     
-    // TODO: Implémenter envoi email réel via Resend
-    // Pour l'instant simuler l'envoi
     
-    const maintenant = new Date().toISOString()
+    // Envoyer l'email via API route (nodemailer ne peut pas être utilisé côté client)
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+                     (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000')
     
-    // Mettre à jour la relance
-    await updateDoc(docRef, {
-      statut: 'envoyee',
-      emailEnvoye: true,
-      dateEnvoi: maintenant,
-      tentativesEnvoi: relance.tentativesEnvoi + 1,
-      validePar: userId
+    const response = await fetch(`${baseUrl}/api/relances/envoyer/${relanceId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ userId })
     })
     
-    // Mettre à jour les stats du template
-    const templateRef = doc(db, 'relances_templates', relance.templateUtilise)
-    const templateSnap = await getDoc(templateRef)
-    
-    if (templateSnap.exists()) {
-      const template = templateSnap.data() as TemplateRelance
-      await updateDoc(templateRef, {
-        nombreEnvois: (template.nombreEnvois || 0) + 1
-      })
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Erreur inconnue' }))
+      throw new Error(errorData.error || `HTTP ${response.status}`)
     }
+    
+    const result = await response.json()
+    console.log(`[Relances] Email envoyé avec succès: ${result.emailId}`)
+    
     
     return {
       success: true,
@@ -743,23 +740,11 @@ export async function envoyerRelance(
       emailEnvoye: true,
       details: {
         destinataires: relance.destinataires,
-        dateEnvoi: maintenant
+        dateEnvoi: new Date().toISOString()
       }
     }
   } catch (error: any) {
     console.error('Erreur envoi relance:', error)
-    
-    // Logger l'échec
-    try {
-      const docRef = doc(db, 'relances_historique', relanceId)
-      await updateDoc(docRef, {
-        statut: 'echec',
-        erreurEnvoi: error.message,
-        tentativesEnvoi: (await getDoc(docRef)).data()?.tentativesEnvoi + 1 || 1
-      })
-    } catch (updateError) {
-      console.error('Erreur mise à jour statut échec:', updateError)
-    }
     
     return {
       success: false,
