@@ -260,6 +260,17 @@ export default function IntranetHeader() {
             </div>
           )}
 
+          {/* 📈 ANALYSES & REPORTING - ADMIN UNIQUEMENT */}
+          {isAdmin && (
+            <Link 
+              href="/admin/analyses" 
+              onClick={closeAllMenus}
+              className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
+            >
+              📈 Analyses
+            </Link>
+          )}
+
           {/* 📦 STOCK & FLOTTE - ADMIN UNIQUEMENT */}
           {isAdmin && (
             <div className="relative">
@@ -574,6 +585,14 @@ export default function IntranetHeader() {
                     </Link>
                     <Link href="/admin/comptabilite/factures-fournisseurs" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
                       📄 Factures Fournisseurs
+                    </Link>
+                  </div>
+
+                  {/* Analyses & Reporting */}
+                  <div className="border-t pt-2 mt-2">
+                    <div className="text-xs font-semibold text-gray-500 px-4 mb-2">📈 ANALYSES & REPORTING</div>
+                    <Link href="/admin/analyses" onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-700 hover:bg-blue-50 rounded-lg font-medium">
+                      📊 Dashboard Analyses
                     </Link>
                   </div>
 
