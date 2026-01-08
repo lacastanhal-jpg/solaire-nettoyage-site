@@ -3,17 +3,17 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { type FactureFournisseur } from '@/lib/types/stock-flotte'
 import { 
-  getAllFacturesFournisseurs
-} from '@/lib/firebase/stock-factures-fournisseurs'
+  getAllFacturesFournisseurs,
+  type FactureFournisseur
+} from '@/lib/firebase/factures-fournisseurs-unifie'
 
 export default function FacturesFournisseursStockPage() {
   const router = useRouter()
   const [factures, setFactures] = useState<FactureFournisseur[]>([])
   const [loading, setLoading] = useState(true)
   const [filtreFournisseur, setFiltreFournisseur] = useState('')
-  const [filtreStatut, setFiltreStatut] = useState<'tous' | 'en_attente' | 'stock_genere' | 'payee'>('tous')
+  const [filtreStatut, setFiltreStatut] = useState<'tous' | 'brouillon' | 'validee' | 'payee'>('tous')
 
   useEffect(() => {
     chargerFactures()
@@ -87,16 +87,16 @@ export default function FacturesFournisseursStockPage() {
           <div className="text-sm text-gray-600">Total Factures</div>
           <div className="text-2xl font-bold text-gray-900">{factures.length}</div>
         </div>
-        <div className="bg-yellow-50 p-4 rounded-lg border-2 border-yellow-200">
-          <div className="text-sm text-gray-600">En attente</div>
-          <div className="text-2xl font-bold text-yellow-600">
-            {factures.filter(f => f.statut === 'en_attente').length}
+        <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200">
+          <div className="text-sm text-gray-600">Brouillon</div>
+          <div className="text-2xl font-bold text-gray-600">
+            {factures.filter(f => f.statut === 'brouillon').length}
           </div>
         </div>
         <div className="bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
-          <div className="text-sm text-gray-600">Stock généré</div>
+          <div className="text-sm text-gray-600">Validées</div>
           <div className="text-2xl font-bold text-blue-600">
-            {factures.filter(f => f.statut === 'stock_genere').length}
+            {factures.filter(f => f.statut === 'validee').length}
           </div>
         </div>
         <div className="bg-green-50 p-4 rounded-lg border-2 border-green-200">
@@ -132,8 +132,8 @@ export default function FacturesFournisseursStockPage() {
               className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="tous">Tous les statuts</option>
-              <option value="en_attente">En attente</option>
-              <option value="stock_genere">Stock généré</option>
+              <option value="brouillon">Brouillon</option>
+              <option value="validee">Validée</option>
               <option value="payee">Payée</option>
             </select>
           </div>
@@ -189,14 +189,14 @@ export default function FacturesFournisseursStockPage() {
                     <div className="font-medium text-gray-900">{facture.fournisseur}</div>
                   </td>
                   <td className="px-6 py-4 text-gray-600">
-                    {new Date(facture.date).toLocaleDateString('fr-FR')}
+                    {new Date(facture.dateFacture).toLocaleDateString('fr-FR')}
                   </td>
                   <td className="px-6 py-4">
                     <div className="font-semibold text-gray-900">
-                      {facture.totalTTC.toFixed(2)} €
+                      {(facture.montantTTC || 0).toFixed(2)} €
                     </div>
                     <div className="text-xs text-gray-500">
-                      HT: {facture.totalHT.toFixed(2)} €
+                      HT: {(facture.montantHT || 0).toFixed(2)} €
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -205,19 +205,19 @@ export default function FacturesFournisseursStockPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    {facture.statut === 'en_attente' && (
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
-                        ⏳ En attente
+                    {facture.statut === 'brouillon' && (
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">
+                        🟡 Brouillon
                       </span>
                     )}
-                    {facture.statut === 'stock_genere' && (
+                    {facture.statut === 'validee' && (
                       <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
-                        📦 Stock généré
+                        ✅ Validée
                       </span>
                     )}
                     {facture.statut === 'payee' && (
                       <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
-                        ✅ Payée
+                        💚 Payée
                       </span>
                     )}
                   </td>

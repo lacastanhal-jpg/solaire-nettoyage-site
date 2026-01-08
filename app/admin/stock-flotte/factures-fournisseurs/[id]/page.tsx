@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { type FactureFournisseur, type MouvementStock } from '@/lib/types/stock-flotte'
+import { type MouvementStock } from '@/lib/types/stock-flotte'
 import {
   getFactureFournisseurById,
   genererMouvementsStockFacture,
-  marquerFacturePayee
-} from '@/lib/firebase/stock-factures-fournisseurs'
+  marquerCommePaye as marquerFacturePayee,
+  type FactureFournisseur
+} from '@/lib/firebase/factures-fournisseurs-unifie'
 import { getMouvementStockById } from '@/lib/firebase/stock-mouvements'
 
 export default function DetailFactureFournisseurPage({ params }: { params: { id: string } }) {
@@ -91,7 +92,7 @@ export default function DetailFactureFournisseurPage({ params }: { params: { id:
 
     try {
       const today = new Date().toISOString().split('T')[0]
-      await marquerFacturePayee(params.id, today, 'Virement', '')
+      await marquerFacturePayee(params.id, today, 'virement', '')
       alert('✅ Facture marquée comme payée')
       await chargerFacture()
     } catch (error) {
@@ -133,19 +134,19 @@ export default function DetailFactureFournisseurPage({ params }: { params: { id:
           <div>
             <div className="flex items-center gap-3 mb-2">
               <h1 className="text-3xl font-bold text-gray-900">📄 {facture.numero}</h1>
-              {facture.statut === 'en_attente' && (
-                <span className="px-3 py-1 text-sm font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                  ⏳ En attente
+              {facture.statut === 'brouillon' && (
+                <span className="px-3 py-1 text-sm font-semibold rounded-full bg-gray-100 text-gray-800">
+                  🟡 Brouillon
                 </span>
               )}
-              {facture.statut === 'stock_genere' && (
+              {facture.statut === 'validee' && (
                 <span className="px-3 py-1 text-sm font-semibold rounded-full bg-blue-100 text-blue-800">
-                  📦 Stock généré
+                  ✅ Validée
                 </span>
               )}
               {facture.statut === 'payee' && (
                 <span className="px-3 py-1 text-sm font-semibold rounded-full bg-green-100 text-green-800">
-                  ✅ Payée
+                  💚 Payée
                 </span>
               )}
             </div>
@@ -195,7 +196,7 @@ export default function DetailFactureFournisseurPage({ params }: { params: { id:
               <div>
                 <div className="text-sm text-gray-600">Date Facture</div>
                 <div className="font-semibold text-gray-900">
-                  {new Date(facture.date).toLocaleDateString('fr-FR', {
+                  {new Date(facture.dateFacture).toLocaleDateString('fr-FR', {
                     weekday: 'long',
                     year: 'numeric',
                     month: 'long',
@@ -246,13 +247,13 @@ export default function DetailFactureFournisseurPage({ params }: { params: { id:
                     <tr key={index}>
                       <td className="px-4 py-3">
                         <div className="font-medium text-gray-900">{ligne.articleCode}</div>
-                        <div className="text-xs text-gray-500">{ligne.articleDescription}</div>
+                        <div className="text-xs text-gray-500">{ligne.designation}</div>
                       </td>
                       <td className="px-4 py-3 text-center font-semibold">{ligne.quantite}</td>
-                      <td className="px-4 py-3 text-right">{ligne.prixUnitaire.toFixed(2)} €</td>
-                      <td className="px-4 py-3 text-center">{ligne.tauxTVA}%</td>
-                      <td className="px-4 py-3 text-right font-semibold">{ligne.totalHT.toFixed(2)} €</td>
-                      <td className="px-4 py-3 text-right font-bold">{ligne.totalTTC.toFixed(2)} €</td>
+                      <td className="px-4 py-3 text-right">{(ligne.prixUnitaireHT || 0).toFixed(2)} €</td>
+                      <td className="px-4 py-3 text-center">{ligne.tauxTVA || 0}%</td>
+                      <td className="px-4 py-3 text-right font-semibold">{(ligne.montantHT || 0).toFixed(2)} €</td>
+                      <td className="px-4 py-3 text-right font-bold">{(ligne.montantTTC || 0).toFixed(2)} €</td>
                       <td className="px-4 py-3 text-center text-sm">{ligne.depotDestination}</td>
                     </tr>
                   ))}
@@ -305,16 +306,16 @@ export default function DetailFactureFournisseurPage({ params }: { params: { id:
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-gray-700">Total HT:</span>
-                <span className="font-bold text-gray-900">{facture.totalHT.toFixed(2)} €</span>
+                <span className="font-bold text-gray-900">{(facture.montantHT || 0).toFixed(2)} €</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-700">TVA:</span>
-                <span className="font-bold text-gray-900">{facture.totalTVA.toFixed(2)} €</span>
+                <span className="font-bold text-gray-900">{(facture.montantTVA || 0).toFixed(2)} €</span>
               </div>
               <div className="border-t-2 border-blue-300 pt-3">
                 <div className="flex justify-between">
                   <span className="text-lg font-bold text-gray-900">Total TTC:</span>
-                  <span className="text-2xl font-black text-blue-600">{facture.totalTTC.toFixed(2)} €</span>
+                  <span className="text-2xl font-black text-blue-600">{(facture.montantTTC || 0).toFixed(2)} €</span>
                 </div>
               </div>
             </div>

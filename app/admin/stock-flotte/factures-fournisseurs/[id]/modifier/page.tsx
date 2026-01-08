@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { type FactureFournisseur, type LigneFactureFournisseur } from '@/lib/types/stock-flotte'
 import type { ArticleStock } from '@/lib/firebase/stock-articles'
 import { 
   getFactureFournisseurById,
-  updateFactureFournisseur
-} from '@/lib/firebase/stock-factures-fournisseurs'
+  updateFactureFournisseur,
+  type FactureFournisseur,
+  type LigneFactureFournisseur
+} from '@/lib/firebase/factures-fournisseurs-unifie'
 import { getAllArticlesStock } from '@/lib/firebase/stock-articles'
 
 export default function ModifierFactureFournisseurPage({ params }: { params: { id: string } }) {
@@ -53,7 +54,7 @@ export default function ModifierFactureFournisseurPage({ params }: { params: { i
       setFormData({
         numero: factureData.numero,
         fournisseur: factureData.fournisseur,
-        date: factureData.date,
+        date: factureData.dateFacture,
         dateEcheance: factureData.dateEcheance,
         notes: factureData.notes || ''
       })
@@ -97,7 +98,7 @@ export default function ModifierFactureFournisseurPage({ params }: { params: { i
       await updateFactureFournisseur(params.id, {
         numero: formData.numero,
         fournisseur: formData.fournisseur,
-        date: formData.date,
+        dateFacture: formData.date,
         dateEcheance: formData.dateEcheance,
         lignes,
         notes: formData.notes
@@ -126,9 +127,9 @@ export default function ModifierFactureFournisseurPage({ params }: { params: { i
 
   if (!facture) return null
 
-  const totalHT = lignes.reduce((sum, l) => sum + l.totalHT, 0)
-  const totalTVA = lignes.reduce((sum, l) => sum + l.totalTVA, 0)
-  const totalTTC = lignes.reduce((sum, l) => sum + l.totalTTC, 0)
+  const totalHT = lignes.reduce((sum, l) => sum + (l.montantHT || 0), 0)
+  const totalTVA = lignes.reduce((sum, l) => sum + (l.montantTVA || 0), 0)
+  const totalTTC = lignes.reduce((sum, l) => sum + (l.montantTTC || 0), 0)
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -255,13 +256,13 @@ export default function ModifierFactureFournisseurPage({ params }: { params: { i
                   <tr key={index}>
                     <td className="px-4 py-3">
                       <div className="font-medium text-gray-900">{ligne.articleCode}</div>
-                      <div className="text-xs text-gray-500">{ligne.articleDescription}</div>
+                      <div className="text-xs text-gray-500">{ligne.designation}</div>
                     </td>
                     <td className="px-4 py-3 text-center font-semibold">{ligne.quantite}</td>
-                    <td className="px-4 py-3 text-right">{ligne.prixUnitaire.toFixed(2)} €</td>
-                    <td className="px-4 py-3 text-center">{ligne.tauxTVA}%</td>
-                    <td className="px-4 py-3 text-right font-semibold">{ligne.totalHT.toFixed(2)} €</td>
-                    <td className="px-4 py-3 text-right font-bold">{ligne.totalTTC.toFixed(2)} €</td>
+                    <td className="px-4 py-3 text-right">{(ligne.prixUnitaireHT || 0).toFixed(2)} €</td>
+                    <td className="px-4 py-3 text-center">{ligne.tauxTVA || 0}%</td>
+                    <td className="px-4 py-3 text-right font-semibold">{(ligne.montantHT || 0).toFixed(2)} €</td>
+                    <td className="px-4 py-3 text-right font-bold">{(ligne.montantTTC || 0).toFixed(2)} €</td>
                     <td className="px-4 py-3 text-center text-sm">{ligne.depotDestination}</td>
                     <td className="px-4 py-3 text-center">
                       <button

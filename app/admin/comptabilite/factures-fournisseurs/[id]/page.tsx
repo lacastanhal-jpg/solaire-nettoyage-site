@@ -9,7 +9,7 @@ import {
   validerFactureFournisseur,
   marquerCommePaye,
   type FactureFournisseur 
-} from '@/lib/firebase/factures-fournisseurs'
+} from '@/lib/firebase/factures-fournisseurs-unifie'
 
 export default function DetailFactureFournisseurPage() {
   const params = useParams()

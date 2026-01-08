@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createFactureFournisseur, updateFactureFournisseur, checkDoublonFactureFournisseur, type LigneFactureFournisseur, type DoublonFactureFournisseur } from '@/lib/firebase/factures-fournisseurs'
+import { createFactureFournisseur, updateFactureFournisseur, checkDoublonFactureFournisseur, type DoublonFactureFournisseur, type LigneFactureFournisseur } from '@/lib/firebase/factures-fournisseurs-unifie'
 import { getFournisseursActifs, createFournisseur, type Fournisseur } from '@/lib/firebase/fournisseurs'
 import { getAllArticlesStock, type ArticleStock } from '@/lib/firebase/stock-articles'
 import { getComptesActifs, type CompteComptable } from '@/lib/firebase/plan-comptable'

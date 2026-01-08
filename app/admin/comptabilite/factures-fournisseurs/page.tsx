@@ -7,7 +7,7 @@ import {
   getListeFournisseurs,
   deleteFactureFournisseur,
   type FactureFournisseur 
-} from '@/lib/firebase/factures-fournisseurs'
+} from '@/lib/firebase/factures-fournisseurs-unifie'
 import Link from 'next/link'
 import { Trash2, Eye, Edit, Plus } from 'lucide-react'
 

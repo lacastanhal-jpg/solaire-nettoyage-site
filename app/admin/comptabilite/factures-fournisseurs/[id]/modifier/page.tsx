@@ -8,7 +8,7 @@ import {
   updateFactureFournisseur,
   type FactureFournisseur,
   type LigneFactureFournisseur
-} from '@/lib/firebase/factures-fournisseurs'
+} from '@/lib/firebase/factures-fournisseurs-unifie'
 import { getFournisseursActifs, type Fournisseur } from '@/lib/firebase/fournisseurs'
 import { getAllArticlesStock, type ArticleStock } from '@/lib/firebase/stock-articles'
 import { getComptesActifs, type CompteComptable } from '@/lib/firebase/plan-comptable'
