@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createFactureFournisseur, updateFactureFournisseur, type LigneFactureFournisseur } from '@/lib/firebase/factures-fournisseurs'
+import { createFactureFournisseur, updateFactureFournisseur, checkDoublonFactureFournisseur, type LigneFactureFournisseur, type DoublonFactureFournisseur } from '@/lib/firebase/factures-fournisseurs'
 import { getFournisseursActifs, createFournisseur, type Fournisseur } from '@/lib/firebase/fournisseurs'
 import { getAllArticlesStock, type ArticleStock } from '@/lib/firebase/stock-articles'
 import { getComptesActifs, type CompteComptable } from '@/lib/firebase/plan-comptable'
@@ -74,6 +74,13 @@ export default function NouvelleFactureFournisseurPage() {
     email: ''
   })
 
+  // Détection doublons
+  const [doublons, setDoublons] = useState<DoublonFactureFournisseur | null>(null)
+  const [showModalDoublon, setShowModalDoublon] = useState(false)
+  const [checkingDoublon, setCheckingDoublon] = useState(false)
+  const [ignoreDoublon, setIgnoreDoublon] = useState(false)
+
+
   useEffect(() => {
     loadData()
   }, [])
@@ -119,6 +126,32 @@ export default function NouvelleFactureFournisseurPage() {
     }
   }
 
+  async function checkDoublons() {
+    // Vérifier seulement si on a les deux champs remplis
+    if (!formData.numeroFournisseur || !formData.fournisseurNom) {
+      return
+    }
+
+    setCheckingDoublon(true)
+    try {
+      const resultat = await checkDoublonFactureFournisseur(
+        formData.numeroFournisseur,
+        formData.fournisseurNom
+      )
+      
+      if (resultat.existe) {
+        setDoublons(resultat)
+        setShowModalDoublon(true)
+      } else {
+        setDoublons(null)
+      }
+    } catch (error) {
+      console.error('Erreur vérification doublon:', error)
+    } finally {
+      setCheckingDoublon(false)
+    }
+  }
+
   function handleFournisseurChange(fournisseurId: string) {
     const fournisseur = fournisseurs.find(f => f.id === fournisseurId)
     setFormData({
@@ -126,6 +159,14 @@ export default function NouvelleFactureFournisseurPage() {
       fournisseurId,
       fournisseurNom: fournisseur?.nom || ''
     })
+    
+    // Réinitialiser le flag ignore doublon
+    setIgnoreDoublon(false)
+    
+    // Vérifier doublon si on a déjà un numéro de facture
+    if (formData.numeroFournisseur && fournisseur?.nom) {
+      setTimeout(() => checkDoublons(), 300)
+    }
   }
 
   function handleLigneTypeChange(ligneId: string, type: 'article' | 'manuel') {
@@ -290,6 +331,20 @@ export default function NouvelleFactureFournisseurPage() {
       return
     }
 
+    // Vérification doublon si pas ignoré
+    if (!ignoreDoublon) {
+      const resultatDoublon = await checkDoublonFactureFournisseur(
+        formData.numeroFournisseur,
+        formData.fournisseurNom
+      )
+      
+      if (resultatDoublon.existe) {
+        setDoublons(resultatDoublon)
+        setShowModalDoublon(true)
+        return // Bloquer la création jusqu'à confirmation
+      }
+    }
+
     setLoading(true)
 
     try {
@@ -420,11 +475,20 @@ export default function NouvelleFactureFournisseurPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 N° Facture Fournisseur *
+                {checkingDoublon && (
+                  <span className="ml-2 text-xs text-blue-600">
+                    Vérification...
+                  </span>
+                )}
               </label>
               <input
                 type="text"
                 value={formData.numeroFournisseur}
-                onChange={(e) => setFormData({ ...formData, numeroFournisseur: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, numeroFournisseur: e.target.value })
+                  setIgnoreDoublon(false) // Réinitialiser si modification
+                }}
+                onBlur={checkDoublons}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 placeholder="Ex: FAC-2026-001"
                 required
@@ -832,6 +896,103 @@ export default function NouvelleFactureFournisseurPage() {
                 className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
               >
                 Créer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Alerte Doublon */}
+      {showModalDoublon && doublons && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl">
+            <div className="flex items-start gap-4 mb-4">
+              <div className="flex-shrink-0 w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                <span className="text-2xl">⚠️</span>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-xl font-bold text-orange-900 mb-2">
+                  Facture fournisseur déjà existante
+                </h3>
+                <p className="text-gray-700">
+                  Une ou plusieurs factures avec ce numéro existent déjà pour ce fournisseur.
+                  Voulez-vous continuer quand même ?
+                </p>
+              </div>
+            </div>
+
+            {/* Liste des doublons */}
+            <div className="bg-orange-50 rounded-lg p-4 mb-6 max-h-64 overflow-y-auto">
+              <p className="text-sm font-medium text-orange-900 mb-3">
+                {doublons.factures.length} facture(s) trouvée(s) :
+              </p>
+              <div className="space-y-2">
+                {doublons.factures.map((facture) => (
+                  <div key={facture.id} className="bg-white rounded p-3 border border-orange-200">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {facture.numero} - {facture.numeroFournisseur}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {facture.fournisseur}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Date: {new Date(facture.dateFacture).toLocaleDateString('fr-FR')}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-gray-900">
+                          {facture.montantTTC.toFixed(2)} €
+                        </p>
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          facture.statut === 'validee' ? 'bg-green-100 text-green-700' :
+                          facture.statut === 'payee' ? 'bg-blue-100 text-blue-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>
+                          {facture.statut}
+                        </span>
+                      </div>
+                    </div>
+                    <a 
+                      href={`/admin/comptabilite/factures-fournisseurs/${facture.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-600 hover:text-blue-800 underline mt-2 inline-block"
+                    >
+                      Voir la facture →
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowModalDoublon(false)
+                  setDoublons(null)
+                }}
+                className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIgnoreDoublon(true)
+                  setShowModalDoublon(false)
+                  // Re-soumettre le formulaire
+                  const form = document.querySelector('form')
+                  if (form) {
+                    form.requestSubmit()
+                  }
+                }}
+                className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 font-medium"
+              >
+                Continuer quand même
               </button>
             </div>
           </div>

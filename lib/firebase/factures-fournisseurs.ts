@@ -626,6 +626,84 @@ export async function marquerCommePaye(
 }
 
 /**
+ * 🆕 QUICK FIX - Vérifier l'existence d'un doublon de facture fournisseur
+ * Recherche par numéro fournisseur + nom fournisseur
+ */
+export interface DoublonFactureFournisseur {
+  existe: boolean
+  factures: Array<{
+    id: string
+    numero: string
+    numeroFournisseur: string
+    fournisseur: string
+    dateFacture: string
+    montantTTC: number
+    statut: string
+  }>
+}
+
+export async function checkDoublonFactureFournisseur(
+  numeroFournisseur: string,
+  fournisseur: string,
+  excludeId?: string // Pour exclure la facture en cours de modification
+): Promise<DoublonFactureFournisseur> {
+  try {
+    // Nettoyer et normaliser les inputs
+    const numClean = numeroFournisseur.trim().toUpperCase()
+    const fournClean = fournisseur.trim().toUpperCase()
+    
+    // Query Firestore
+    const q = query(
+      collection(db, COLLECTION),
+      where('numeroFournisseur', '==', numeroFournisseur),
+      where('fournisseur', '==', fournisseur)
+    )
+    
+    const snapshot = await getDocs(q)
+    
+    // Filtrer les résultats
+    const doublons: DoublonFactureFournisseur['factures'] = []
+    
+    snapshot.forEach(doc => {
+      const data = doc.data() as FactureFournisseur
+      
+      // Exclure la facture en cours de modification si nécessaire
+      if (excludeId && doc.id === excludeId) {
+        return
+      }
+      
+      // Vérifier correspondance exacte (case insensitive)
+      const dataNumClean = data.numeroFournisseur.trim().toUpperCase()
+      const dataFournClean = data.fournisseur.trim().toUpperCase()
+      
+      if (dataNumClean === numClean && dataFournClean === fournClean) {
+        doublons.push({
+          id: data.id,
+          numero: data.numero,
+          numeroFournisseur: data.numeroFournisseur,
+          fournisseur: data.fournisseur,
+          dateFacture: data.dateFacture,
+          montantTTC: data.montantTTC,
+          statut: data.statut
+        })
+      }
+    })
+    
+    return {
+      existe: doublons.length > 0,
+      factures: doublons
+    }
+  } catch (error) {
+    console.error('Erreur vérification doublon:', error)
+    // En cas d'erreur, on retourne pas de doublon pour ne pas bloquer
+    return {
+      existe: false,
+      factures: []
+    }
+  }
+}
+
+/**
  * ⏸️ JOUR 3 - Annuler une facture validée
  * → Supprime mouvements stock
  * → Supprime écritures
