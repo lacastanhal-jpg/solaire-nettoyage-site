@@ -16,6 +16,9 @@ import type {
   PrestationCatalogueInput 
 } from '@/lib/types/tarification'
 
+// Réexporter les types pour les autres modules
+export type { PrestationCatalogue, PrestationCatalogueInput }
+
 const COLLECTION = 'prestations_catalogue'
 
 /**

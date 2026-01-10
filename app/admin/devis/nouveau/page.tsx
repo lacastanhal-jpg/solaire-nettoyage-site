@@ -6,6 +6,7 @@ import { createDevis, calculateLigneDevis, type LigneDevis } from '@/lib/firebas
 import { getAllClients, type Client } from '@/lib/firebase/clients'
 import { getSitesByClient, type Site } from '@/lib/firebase/sites'
 import { getAllArticles, type Article } from '@/lib/firebase/articles'
+import { getPrestationsActives, type PrestationCatalogue } from '@/lib/firebase/prestations-catalogue'
 import { SelectSociete } from '@/components/finances/SelectSociete'
 
 interface LigneFormData {
@@ -30,6 +31,8 @@ export default function NouveauDevisPage() {
   const [clients, setClients] = useState<Client[]>([])
   const [sites, setSites] = useState<Site[]>([])
   const [articles, setArticles] = useState<Article[]>([])
+  const [prestations, setPrestations] = useState<PrestationCatalogue[]>([])
+  const [typeLigne, setTypeLigne] = useState<'article' | 'prestation'>('article')
   
   const [societeId, setSocieteId] = useState('')
   const [selectedClientId, setSelectedClientId] = useState('')
@@ -53,12 +56,14 @@ export default function NouveauDevisPage() {
 
   async function loadInitialData() {
     try {
-      const [clientsData, articlesData] = await Promise.all([
+      const [clientsData, articlesData, prestationsData] = await Promise.all([
         getAllClients(),
-        getAllArticles()
+        getAllArticles(),
+        getPrestationsActives()
       ])
       setClients(clientsData.filter(c => c.active !== false))
       setArticles(articlesData.filter(a => a.actif))
+      setPrestations(prestationsData)
     } catch (error) {
       console.error('Erreur chargement données:', error)
       alert('Erreur lors du chargement des données')
@@ -123,6 +128,16 @@ export default function NouveauDevisPage() {
         ligne.articleDescription = article.description || ''
         ligne.prixUnitaire = article.prix
         ligne.tva = article.tva
+      } else {
+        const prestation = prestations.find(p => p.id === value)
+        if (prestation) {
+          ligne.articleId = prestation.id
+          ligne.articleCode = prestation.code
+          ligne.articleNom = prestation.libelle
+          ligne.articleDescription = prestation.description
+          ligne.prixUnitaire = prestation.prixBase
+          ligne.tva = prestation.tauxTVA
+        }
       }
     } else if (field === 'quantite') {
       ligne.quantite = value
@@ -348,7 +363,33 @@ export default function NouveauDevisPage() {
 
                         <div>
                           <label className="block text-sm font-medium text-gray-900 mb-2">
-                            Article <span className="text-red-500">*</span>
+                            Type <span className="text-red-500">*</span>
+                          </label>
+                          <div className="flex gap-4 mb-2">
+                            <label className="flex items-center cursor-pointer">
+                              <input
+                                type="radio"
+                                checked={typeLigne === 'article'}
+                                onChange={() => setTypeLigne('article')}
+                                className="mr-2"
+                              />
+                              <span className="text-gray-900">Article</span>
+                            </label>
+                            <label className="flex items-center cursor-pointer">
+                              <input
+                                type="radio"
+                                checked={typeLigne === 'prestation'}
+                                onChange={() => setTypeLigne('prestation')}
+                                className="mr-2"
+                              />
+                              <span className="text-gray-900">Prestation</span>
+                            </label>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-900 mb-2">
+                            {typeLigne === 'article' ? 'Article' : 'Prestation'} <span className="text-red-500">*</span>
                           </label>
                           <select
                             value={ligne.articleId}
@@ -356,12 +397,22 @@ export default function NouveauDevisPage() {
                             className="w-full px-4 py-3 border-2 border-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-600 text-black font-semibold bg-white"
                             style={{ color: '#000000' }}
                           >
-                            <option value="" className="text-black font-semibold" style={{ color: '#000000' }}>Sélectionner un article</option>
-                            {articles.map(article => (
-                              <option key={article.id} value={article.id} className="text-black font-semibold" style={{ color: '#000000', backgroundColor: '#ffffff' }}>
-                                {article.code} - {article.nom} ({article.prix}€/{article.unite})
-                              </option>
-                            ))}
+                            <option value="" className="text-black font-semibold" style={{ color: '#000000' }}>
+                              Sélectionner {typeLigne === 'article' ? 'un article' : 'une prestation'}
+                            </option>
+                            {typeLigne === 'article' ? (
+                              articles.map(article => (
+                                <option key={article.id} value={article.id} className="text-black font-semibold" style={{ color: '#000000', backgroundColor: '#ffffff' }}>
+                                  {article.code} - {article.nom} ({article.prix}€/{article.unite})
+                                </option>
+                              ))
+                            ) : (
+                              prestations.map(prestation => (
+                                <option key={prestation.id} value={prestation.id} className="text-black font-semibold" style={{ color: '#000000', backgroundColor: '#ffffff' }}>
+                                  {prestation.code} - {prestation.libelle} ({prestation.prixBase}€/{prestation.unite})
+                                </option>
+                              ))
+                            )}
                           </select>
                         </div>
 

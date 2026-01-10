@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { getFactureById, updateFacture, calculateLigneFacture, Facture, LigneFacture } from '@/lib/firebase/factures'
 import { getAllArticles } from '@/lib/firebase/articles'
+import { getPrestationsActives } from '@/lib/firebase/prestations-catalogue'
 
 export default function ModifierFacturePage() {
   const params = useParams()
@@ -12,6 +13,8 @@ export default function ModifierFacturePage() {
   const [saving, setSaving] = useState(false)
   const [facture, setFacture] = useState<Facture | null>(null)
   const [articles, setArticles] = useState<any[]>([])
+  const [prestations, setPrestations] = useState<any[]>([])
+  const [typeLigne, setTypeLigne] = useState<'article' | 'prestation'>('article')
   const [lignes, setLignes] = useState<LigneFacture[]>([])
   
   const [formData, setFormData] = useState({
@@ -30,9 +33,10 @@ export default function ModifierFacturePage() {
   async function loadData() {
     setLoading(true)
     try {
-      const [factureData, articlesData] = await Promise.all([
+      const [factureData, articlesData, prestationsData] = await Promise.all([
         getFactureById(params.id as string),
-        getAllArticles()
+        getAllArticles(),
+        getPrestationsActives()
       ])
       
       if (factureData) {
@@ -49,6 +53,7 @@ export default function ModifierFacturePage() {
       }
       
       setArticles(articlesData)
+      setPrestations(prestationsData)
     } catch (error) {
       console.error('Erreur chargement:', error)
     } finally {
@@ -87,6 +92,15 @@ export default function ModifierFacturePage() {
         ligne.articleNom = article.nom
         ligne.articleDescription = article.description
         ligne.prixUnitaire = article.prixUnitaire || 0
+      } else {
+        const prestation = prestations.find(p => p.id === value || p.code === value)
+        if (prestation) {
+          ligne.articleId = prestation.id
+          ligne.articleCode = prestation.code
+          ligne.articleNom = prestation.libelle
+          ligne.articleDescription = prestation.description
+          ligne.prixUnitaire = prestation.prixBase
+        }
       }
     } else {
       (ligne as any)[field] = value
@@ -226,19 +240,52 @@ export default function ModifierFacturePage() {
           {lignes.map((ligne, index) => (
             <div key={index} className="border border-gray-400 p-4 rounded-lg mb-4 bg-gray-50">
               <div className="grid grid-cols-6 gap-3 mb-3">
+                <div className="col-span-1">
+                  <label className="block text-xs font-bold text-gray-900 mb-1">Type</label>
+                  <div className="flex flex-col gap-1">
+                    <label className="flex items-center text-xs cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={typeLigne === 'article'}
+                        onChange={() => setTypeLigne('article')}
+                        className="mr-1"
+                      />
+                      Article
+                    </label>
+                    <label className="flex items-center text-xs cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={typeLigne === 'prestation'}
+                        onChange={() => setTypeLigne('prestation')}
+                        className="mr-1"
+                      />
+                      Prestation
+                    </label>
+                  </div>
+                </div>
                 <div className="col-span-2">
-                  <label className="block text-xs font-bold text-gray-900 mb-1">Article</label>
+                  <label className="block text-xs font-bold text-gray-900 mb-1">
+                    {typeLigne === 'article' ? 'Article' : 'Prestation'}
+                  </label>
                   <select
                     value={ligne.articleCode || ligne.articleId || ''}
                     onChange={(e) => modifierLigne(index, 'articleId', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-400 rounded text-gray-900 text-sm"
                   >
                     <option value="">Sélectionner</option>
-                    {articles.map(article => (
-                      <option key={article.id} value={article.code}>
-                        {article.code} - {article.nom}
-                      </option>
-                    ))}
+                    {typeLigne === 'article' ? (
+                      articles.map(article => (
+                        <option key={article.id} value={article.code}>
+                          {article.code} - {article.nom}
+                        </option>
+                      ))
+                    ) : (
+                      prestations.map(prestation => (
+                        <option key={prestation.id} value={prestation.code}>
+                          {prestation.code} - {prestation.libelle}
+                        </option>
+                      ))
+                    )}
                   </select>
                 </div>
                 

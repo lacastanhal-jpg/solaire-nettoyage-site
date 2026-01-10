@@ -100,7 +100,10 @@ export default function ClientDashboard() {
     )
   }
 
-  const sitesWithGPS = sites.filter(s => s.lat && s.lng)
+  // Filtrer sites avec GPS valides (lat/lng différents de 0 et non null)
+  const sitesWithGPS = sites.filter(s => 
+    s.lat && s.lng && s.lat !== 0 && s.lng !== 0
+  )
   const interventionsFutures = interventions.filter(i => new Date(i.dateDebut) >= new Date())
   const interventionsPassees = interventions.filter(i => new Date(i.dateDebut) < new Date())
 
@@ -185,7 +188,10 @@ export default function ClientDashboard() {
               <span className="text-2xl">📐</span>
             </div>
             <div className="text-3xl font-bold text-white">
-              {sites.reduce((acc, s) => acc + (s.surface || 0), 0).toLocaleString()}
+              {sites.reduce((acc, s) => {
+                const surf = s.surface || 0
+                return acc + (typeof surf === 'number' && !isNaN(surf) && surf > 0 ? surf : 0)
+              }, 0).toLocaleString()}
             </div>
             <div className="text-xs text-blue-200 mt-1">m²</div>
           </div>
@@ -346,7 +352,10 @@ export default function ClientDashboard() {
                         <div className="space-y-2 text-sm text-gray-700 font-medium">
                           <div>📍 {clientSites.length} sites</div>
                           <div>📅 {clientInterventions.length} interventions</div>
-                          <div>📐 {clientSites.reduce((acc, s) => acc + (s.surface || 0), 0).toLocaleString()} m²</div>
+                          <div>📐 {clientSites.reduce((acc, s) => {
+                            const surf = s.surface || 0
+                            return acc + (typeof surf === 'number' && !isNaN(surf) && surf > 0 ? surf : 0)
+                          }, 0).toLocaleString()} m²</div>
                           {client.email && <div className="text-xs">📧 {client.email}</div>}
                         </div>
                       </div>

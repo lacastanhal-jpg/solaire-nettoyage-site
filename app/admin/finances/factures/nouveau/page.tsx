@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createFacture, calculateLigneFacture, LigneFacture } from '@/lib/firebase/factures'
 import { getAllClients } from '@/lib/firebase/clients'
 import { getAllArticles } from '@/lib/firebase/articles'
+import { getPrestationsActives } from '@/lib/firebase/prestations-catalogue'
 import { SelectSociete } from '@/components/finances/SelectSociete'
 
 export default function NouvelleFacturePage() {
@@ -12,6 +13,8 @@ export default function NouvelleFacturePage() {
   const [loading, setLoading] = useState(false)
   const [clients, setClients] = useState<any[]>([])
   const [articles, setArticles] = useState<any[]>([])
+  const [prestations, setPrestations] = useState<any[]>([])
+  const [typeLigne, setTypeLigne] = useState<'article' | 'prestation'>('article')
   const [lignes, setLignes] = useState<LigneFacture[]>([])
   
   const [formData, setFormData] = useState({
@@ -30,12 +33,14 @@ export default function NouvelleFacturePage() {
 
   async function loadData() {
     try {
-      const [clientsData, articlesData] = await Promise.all([
+      const [clientsData, articlesData, prestationsData] = await Promise.all([
         getAllClients(),
-        getAllArticles()
+        getAllArticles(),
+        getPrestationsActives()
       ])
       setClients(clientsData)
       setArticles(articlesData)
+      setPrestations(prestationsData)
     } catch (error) {
       console.error('Erreur chargement données:', error)
     }
@@ -80,6 +85,15 @@ export default function NouvelleFacturePage() {
         ligne.articleNom = article.nom
         ligne.articleDescription = article.description
         ligne.prixUnitaire = article.prixUnitaire || 0
+      } else {
+        const prestation = prestations.find(p => p.id === value)
+        if (prestation) {
+          ligne.articleId = prestation.id
+          ligne.articleCode = prestation.code
+          ligne.articleNom = prestation.libelle
+          ligne.articleDescription = prestation.description
+          ligne.prixUnitaire = prestation.prixBase
+        }
       }
     } else {
       (ligne as any)[field] = value
@@ -222,19 +236,52 @@ export default function NouvelleFacturePage() {
           {lignes.map((ligne, index) => (
             <div key={index} className="border border-gray-400 p-4 rounded-lg mb-4 bg-gray-50">
               <div className="grid grid-cols-6 gap-3 mb-3">
+                <div className="col-span-1">
+                  <label className="block text-xs font-bold text-gray-900 mb-1">Type</label>
+                  <div className="flex flex-col gap-1">
+                    <label className="flex items-center text-xs cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={typeLigne === 'article'}
+                        onChange={() => setTypeLigne('article')}
+                        className="mr-1"
+                      />
+                      Article
+                    </label>
+                    <label className="flex items-center text-xs cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={typeLigne === 'prestation'}
+                        onChange={() => setTypeLigne('prestation')}
+                        className="mr-1"
+                      />
+                      Prestation
+                    </label>
+                  </div>
+                </div>
                 <div className="col-span-2">
-                  <label className="block text-xs font-bold text-gray-900 mb-1">Article</label>
+                  <label className="block text-xs font-bold text-gray-900 mb-1">
+                    {typeLigne === 'article' ? 'Article' : 'Prestation'}
+                  </label>
                   <select
                     value={ligne.articleId}
                     onChange={(e) => modifierLigne(index, 'articleId', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-400 rounded text-gray-900 text-sm"
                   >
                     <option value="">Sélectionner</option>
-                    {articles.map(article => (
-                      <option key={article.id} value={article.id}>
-                        {article.code} - {article.nom}
-                      </option>
-                    ))}
+                    {typeLigne === 'article' ? (
+                      articles.map(article => (
+                        <option key={article.id} value={article.id}>
+                          {article.code} - {article.nom}
+                        </option>
+                      ))
+                    ) : (
+                      prestations.map(prestation => (
+                        <option key={prestation.id} value={prestation.id}>
+                          {prestation.code} - {prestation.libelle}
+                        </option>
+                      ))
+                    )}
                   </select>
                 </div>
                 

@@ -17,6 +17,7 @@ import { getAllClients, type Client } from '@/lib/firebase/clients'
 import { getAllGroupes } from '@/lib/firebase/groupes'
 import { getSitesByClient } from '@/lib/firebase/sites'
 import { getAllArticles, type Article } from '@/lib/firebase/articles'
+import { getPrestationsActives, type PrestationCatalogue } from '@/lib/firebase/prestations-catalogue'
 import type {
   ContratRecurrent,
   FrequenceContrat,
@@ -51,6 +52,8 @@ export default function NouveauContratPage() {
   const [groupes, setGroupes] = useState<any[]>([])
   const [sites, setSites] = useState<Site[]>([])
   const [articles, setArticles] = useState<Article[]>([])
+  const [prestations, setPrestations] = useState<PrestationCatalogue[]>([])
+  const [typeLigne, setTypeLigne] = useState<'article' | 'prestation'>('article')
   
   // État formulaire
   const [etapeActive, setEtapeActive] = useState(1)
@@ -138,15 +141,17 @@ export default function NouveauContratPage() {
 
   async function chargerDonnees() {
     try {
-      const [clientsData, groupesData, articlesData] = await Promise.all([
+      const [clientsData, groupesData, articlesData, prestationsData] = await Promise.all([
         getAllClients(),
         getAllGroupes(),
-        getAllArticles()
+        getAllArticles(),
+        getPrestationsActives()
       ])
       
       setClients(clientsData)
       setGroupes(groupesData)
       setArticles(articlesData)
+      setPrestations(prestationsData)
     } catch (error) {
       console.error('Erreur chargement données:', error)
     }
@@ -682,7 +687,33 @@ export default function NouveauContratPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Article
+                      Type
+                    </label>
+                    <div className="flex gap-4">
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          checked={typeLigne === 'article'}
+                          onChange={() => setTypeLigne('article')}
+                          className="mr-2"
+                        />
+                        Article
+                      </label>
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          checked={typeLigne === 'prestation'}
+                          onChange={() => setTypeLigne('prestation')}
+                          className="mr-2"
+                        />
+                        Prestation
+                      </label>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {typeLigne === 'article' ? 'Article' : 'Prestation'}
                     </label>
                     <select
                       value={nouvelleLigne.articleId}
@@ -690,11 +721,19 @@ export default function NouveauContratPage() {
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="">Sélectionner</option>
-                      {articles.map(article => (
-                        <option key={article.id} value={article.id}>
-                          {article.code} - {article.nom}
-                        </option>
-                      ))}
+                      {typeLigne === 'article' ? (
+                        articles.map(article => (
+                          <option key={article.id} value={article.id}>
+                            {article.code} - {article.nom}
+                          </option>
+                        ))
+                      ) : (
+                        prestations.map(prestation => (
+                          <option key={prestation.id} value={prestation.id}>
+                            {prestation.code} - {prestation.libelle}
+                          </option>
+                        ))
+                      )}
                     </select>
                   </div>
 
